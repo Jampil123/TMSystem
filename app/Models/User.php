@@ -20,8 +20,11 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
         'password',
+        'role_id',
+        'user_status_id',
     ];
 
     /**
@@ -48,5 +51,21 @@ class User extends Authenticatable
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Get the user's role.
+     */
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    /**
+     * Get the user's status.
+     */
+    public function userStatus()
+    {
+        return $this->belongsTo(Userstatus::class, 'user_status_id');
     }
 }

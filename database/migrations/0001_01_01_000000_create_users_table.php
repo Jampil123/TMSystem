@@ -16,14 +16,22 @@ return new class extends Migration
             $table->string('name')->unique();
             $table->timestamps();
         });
-        
+
+        Schema::create('user_statuses', function (Blueprint $table) {
+            $table->id();
+            $table->string('status')->unique();
+            $table->timestamps();
+        });
+
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('username')->unique();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->foreignId('role_id')->nullable()->constrained('roles')->onDelete('cascade');
+            $table->foreignId('user_status_id')->nullable()->constrained('user_statuses')->onDelete('cascade');
             $table->rememberToken();
             $table->timestamps();
         });
@@ -53,6 +61,7 @@ return new class extends Migration
         Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('user_statuses');
         Schema::dropIfExists('roles');
     }
 };

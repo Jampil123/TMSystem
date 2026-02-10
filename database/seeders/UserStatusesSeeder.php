@@ -6,41 +6,31 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Seeder;
 
-class RolesTableSeeder extends Seeder
+class UserStatusesSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-         DB::table('roles')->insert([
+        DB::table('user_statuses')->insert([
             [
-                'name' => 'Admin',
-                'created_at' => now(),
-                    'updated_at' => now(),
-            ],
-            [
-                'name' => 'Tourism Officer',
+                'status' => 'Active',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'LGU Officer',
+                'status' => 'Inactive',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'External Operator',
+                'status' => 'Pending',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Tourism Staff',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'name' => 'Tourist',
+                'status' => 'Blocked',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

@@ -20,13 +20,16 @@ class DatabaseSeeder extends Seeder
         // Call your roles seeders first
         $this->call([
             RolesTableSeeder::class,
+            UserStatusesSeeder::class,
         ]);
 
         User::create([
             'name' => 'Administrator',
+            'username' => 'admin',
             'email' => 'admin@example.com',
             'password' => Hash::make('admin123'), 
             'role_id' => 1,
+            'user_status_id' => 1,
         ]);
     }
 }
