@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
+use App\Http\Controllers\Admin\UserController;
 
 Route::redirect('/', '/login')->name('home');
 
@@ -39,12 +40,12 @@ Route::get('staff-dashboard', function () {
     return Inertia::render('dashboards/staff-dashboard');
 })->middleware(['auth', 'verified'])->name('staff.dashboard');
 
-Route::get('users', function () {
-    $user = auth()->user();
-    if ($user?->role?->name !== 'Admin') {
-        abort(403, 'Unauthorized access to User Management');
-    }
-    return Inertia::render('admin/users/index');
-})->middleware(['auth', 'verified'])->name('users.index');
+// Admin-only user management routes
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('users', [UserController::class, 'index'])->name('users.index');
+    Route::post('users', [UserController::class, 'store'])->name('users.store');
+    Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
+    Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+});
 
 require __DIR__.'/settings.php';

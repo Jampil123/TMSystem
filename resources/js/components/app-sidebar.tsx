@@ -16,7 +16,7 @@ import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
-    const { auth } = usePage().props;
+    const { auth } = usePage().props as any;
     const isAdmin = auth?.user?.role?.name === 'Admin';
     
     const mainNavItems: NavItem[] = [

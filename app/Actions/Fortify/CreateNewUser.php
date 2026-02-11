@@ -29,8 +29,11 @@ class CreateNewUser implements CreatesNewUsers
         // Get default role (Tourist) - ID is 6 based on seeder
         $touristRole = Role::where('name', 'Tourist')->first();
         
-        // Get default status (Pending) - ID is 3 based on seeder
-        $pendingStatus = Userstatus::where('status', 'Pending')->first();
+        // Get default status (PENDING) - new users start as pending approval
+        $pendingStatus = Userstatus::where('status', 'PENDING')->first();
+        
+        // Get offline status - new users start as offline
+        $offlineStatus = Userstatus::where('status', 'OFFLINE')->where('type', 'ONLINE')->first();
 
         return User::create([
             'name' => $input['name'],
@@ -38,7 +41,8 @@ class CreateNewUser implements CreatesNewUsers
             'email' => $input['email'],
             'password' => $input['password'],
             'role_id' => $touristRole?->id,
-            'user_status_id' => $pendingStatus?->id,
+            'account_status_id' => $pendingStatus?->id,
+            'online_status_id' => $offlineStatus?->id,
         ]);
     }
 }

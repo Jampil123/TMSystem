@@ -24,7 +24,8 @@ class User extends Authenticatable
         'email',
         'password',
         'role_id',
-        'user_status_id',
+        'account_status_id',
+        'online_status_id',
     ];
 
     /**
@@ -62,10 +63,18 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the user's status.
+     * Get the user's account status.
      */
-    public function userStatus()
+    public function accountStatus()
     {
-        return $this->belongsTo(Userstatus::class, 'user_status_id');
+        return $this->belongsTo(Userstatus::class, 'account_status_id');
+    }
+
+    /**
+     * Get the user's online status.
+     */
+    public function onlineStatus()
+    {
+        return $this->belongsTo(Userstatus::class, 'online_status_id');
     }
 }

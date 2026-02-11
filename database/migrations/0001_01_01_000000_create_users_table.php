@@ -20,6 +20,8 @@ return new class extends Migration
         Schema::create('user_statuses', function (Blueprint $table) {
             $table->id();
             $table->string('status')->unique();
+            $table->string('type'); // ACCOUNT or ONLINE
+            $table->string('description')->nullable();
             $table->timestamps();
         });
 
@@ -30,11 +32,28 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->foreignId('role_id')->nullable()->constrained('roles')->onDelete('cascade');
-            $table->foreignId('user_status_id')->nullable()->constrained('user_statuses')->onDelete('cascade');
+
+            $table->foreignId('role_id')
+                ->nullable()
+                ->constrained('roles')
+                ->cascadeOnDelete();
+
+            // Account approval / restriction
+            $table->foreignId('account_status_id')
+                ->nullable()
+                ->constrained('user_statuses')
+                ->cascadeOnDelete();
+
+            // Login session tracking
+            $table->foreignId('online_status_id')
+                ->nullable()
+                ->constrained('user_statuses')
+                ->cascadeOnDelete();
+
             $table->rememberToken();
             $table->timestamps();
         });
+
 
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

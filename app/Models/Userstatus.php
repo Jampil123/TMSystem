@@ -13,10 +13,17 @@ class Userstatus extends Model
 
     protected $fillable = [
         'status',
+        'type',
+        'description',
     ];
 
-    public function users()
+    public function accountUsers()
     {
-        return $this->hasMany(User::class, 'user_status_id');
+        return $this->hasMany(User::class, 'account_status_id');
+    }
+
+    public function onlineUsers()
+    {
+        return $this->hasMany(User::class, 'online_status_id');
     }
 }
