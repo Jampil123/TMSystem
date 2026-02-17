@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Users, Settings } from 'lucide-react';
+import { LayoutGrid, Users, Compass, Zap, Building2 } from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -31,10 +31,21 @@ export function AppSidebar() {
             icon: Users,
         }] : []),
         {
-            title: 'Settings',
-            href: '/settings',
-            icon: Settings,
+            title: 'Attraction Management',
+            href: '/attractions',
+            icon: Compass,
         },
+        {
+            title: 'Activity Management',
+            href: '/activities',
+            icon: Zap,
+        },
+        {
+            title: 'Accommodation Management',
+            href: '/accommodations',
+            icon: Building2,
+        },
+
     ];
 
     return (
