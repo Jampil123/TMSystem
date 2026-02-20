@@ -35,6 +35,8 @@ class AttractionController extends Controller
             'image_url' => 'nullable|string',
             'rating' => 'nullable|numeric|min:0|max:5',
             'status' => 'required|in:active,inactive',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
         ]);
 
         Attraction::create($validated);
@@ -54,6 +56,8 @@ class AttractionController extends Controller
             'image_url' => 'nullable|string',
             'rating' => 'nullable|numeric|min:0|max:5',
             'status' => 'required|in:active,inactive',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
         ]);
 
         $attraction->update($validated);

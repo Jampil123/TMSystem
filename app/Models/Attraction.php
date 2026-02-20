@@ -16,6 +16,8 @@ class Attraction extends Model
         'image_url',
         'rating',
         'status',
+        'latitude',
+        'longitude',
     ];
 
     protected $table = 'attractions';

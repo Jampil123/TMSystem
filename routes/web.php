@@ -12,6 +12,12 @@ use App\Http\Controllers\Portal\ActivityDetailController;
 use App\Http\Controllers\Portal\AttractionDetailController;
 use App\Http\Controllers\Portal\ContactController;
 use App\Http\Controllers\Portal\AboutController;
+use App\Http\Controllers\Portal\OperatorController;
+use App\Http\Controllers\Dashboard\TouristDashboardController;
+use App\Http\Controllers\Tourist\ExploreActivityController;
+use App\Http\Controllers\Tourist\ExploreAttractionController;
+use App\Http\Controllers\Tourist\ExploreAccommodationController;
+use App\Http\Controllers\Tourist\OperatorListingController;
 
 Route::redirect('/', '/login')->name('home');
 
@@ -21,6 +27,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
     Route::get('about', [AboutController::class, 'show'])->name('about');
     Route::get('activity/{activity}', [ActivityDetailController::class, 'show'])->name('activity.show');
     Route::get('attraction/{attraction}', [AttractionDetailController::class, 'show'])->name('attraction.show');
+    Route::get('operators', [OperatorController::class, 'index'])->name('operators');
     
     Route::get('destinations', function () {
         return Inertia::render('portal/destinations');
@@ -59,9 +66,17 @@ Route::get('dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 // Role-based dashboards
-Route::get('tourist-dashboard', function () {
-    return Inertia::render('dashboards/tourist-dashboard');
-})->middleware(['auth', 'verified'])->name('tourist.dashboard');
+Route::get('tourist-dashboard', [TouristDashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('tourist.dashboard');
+
+// Tourist Explore Routes
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('tourist/activities', [ExploreActivityController::class, 'index'])->name('tourist.activities');
+    Route::get('tourist/attractions', [ExploreAttractionController::class, 'index'])->name('tourist.attractions');
+    Route::get('tourist/accommodations', [ExploreAccommodationController::class, 'index'])->name('tourist.accommodations');
+    Route::get('tourist/operators', [OperatorListingController::class, 'index'])->name('tourist.operators');
+});
 
 Route::get('operator-dashboard', function () {
     return Inertia::render('dashboards/operator-dashboard');

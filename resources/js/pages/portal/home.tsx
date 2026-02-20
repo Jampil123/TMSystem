@@ -175,7 +175,7 @@ export default function PortalHome({ attractions = [], activities = [], accommod
                 <div
                     className="absolute inset-0 w-full opacity-40"
                     style={{
-                        backgroundImage: 'url("https://scontent.fceb1-4.fna.fbcdn.net/v/t39.30808-6/484835250_666139572605575_7482890705974402856_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=86c6b0&_nc_eui2=AeGg6h64-WNQrHvqRuDwksQ9DTpd_rXJWRANOl3-tclZEC4qzf8Pj-4Csae5uOeqwJDdcBUItN0KQ91NimM4fQld&_nc_ohc=-SYEOFAOjtAQ7kNvwEnZIuD&_nc_oc=AdlUGEyJFU20Q8_oWtU87pflYXglobR0okFiJNGDlYwnxr_OlvHJFtcv0gGAN9nurK8&_nc_zt=23&_nc_ht=scontent.fceb1-4.fna&_nc_gid=jJC0UPxfRPbMFXK7DGscwA&oh=00_AfsTq4RXbHjeQhBC8p8xCZhrJkOFKrfPSmPDiPWbeRJ31Q&oe=69946899")',
+                        backgroundImage: 'url("/images/background.jpg")',
                         backgroundSize: 'cover',
                         backgroundPosition: 'center top',
                         height: '400px',

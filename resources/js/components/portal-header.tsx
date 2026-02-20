@@ -126,6 +126,10 @@ export default function PortalHeader({ activities = [], attractions = [] }: Port
                             </div>
                         </div>
 
+                        <Link href="/portal/operators" className="text-[#6B8071] dark:text-[#AEC3B0] hover:text-[#0F2A1D] dark:hover:text-white transition font-medium">
+                            Operators
+                        </Link>
+
                         <Link href="/portal/contact" className="text-[#6B8071] dark:text-[#AEC3B0] hover:text-[#0F2A1D] dark:hover:text-white transition font-medium">
                             Contact Us
                         </Link>

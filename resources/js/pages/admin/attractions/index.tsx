@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Compass, Plus, Trash2, Edit, X, AlertTriangle, Star, MapPin } from 'lucide-react';
@@ -41,6 +41,10 @@ export default function AttractionManagement({ attractions = [], stats = { total
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deleteConfirmationAttraction, setDeleteConfirmationAttraction] = useState<Attraction | null>(null);
+    const [showMapPicker, setShowMapPicker] = useState(false);
+    const mapContainer = useRef<HTMLDivElement>(null);
+    const mapInstance = useRef<any>(null);
+    
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -51,6 +55,8 @@ export default function AttractionManagement({ attractions = [], stats = { total
         image_url: '',
         rating: '',
         status: 'active',
+        latitude: '9.4619',
+        longitude: '123.7473',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -65,6 +71,8 @@ export default function AttractionManagement({ attractions = [], stats = { total
             image_url: '',
             rating: '',
             status: 'active',
+            latitude: '9.4619',
+            longitude: '123.7473',
         });
         setEditingAttraction(null);
         setIsAdding(true);
@@ -82,6 +90,8 @@ export default function AttractionManagement({ attractions = [], stats = { total
             image_url: attraction.image_url || '',
             rating: attraction.rating?.toString() || '',
             status: attraction.status,
+            latitude: '9.4619',
+            longitude: '123.7473',
         });
         setIsEditModalOpen(true);
     };
@@ -90,6 +100,107 @@ export default function AttractionManagement({ attractions = [], stats = { total
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
+
+    const initMapPicker = () => {
+        if (typeof window === 'undefined' || !(window as any).L) return;
+
+        const L = (window as any).L;
+
+        // Clear existing map if any
+        if (mapInstance.current) {
+            mapInstance.current.remove();
+            mapInstance.current = null;
+        }
+
+        if (mapContainer.current) {
+            mapContainer.current.innerHTML = '';
+        }
+
+        try {
+            const lat = parseFloat(formData.latitude) || 9.4619;
+            const lng = parseFloat(formData.longitude) || 123.7473;
+
+            // Create map
+            const map = L.map(mapContainer.current, {
+                center: [lat, lng],
+                zoom: 15,
+                zoomControl: true,
+                scrollWheelZoom: true,
+            });
+
+            mapInstance.current = map;
+
+            // Add tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap',
+            }).addTo(map);
+
+            // Add marker
+            const markerIcon = L.icon({
+                iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                shadowSize: [41, 41],
+                popupAnchor: [1, -34],
+            });
+
+            const marker = L.marker([lat, lng], { icon: markerIcon })
+                .bindPopup(`Coordinates: ${lat.toFixed(4)}, ${lng.toFixed(4)}`)
+                .openPopup()
+                .addTo(map);
+
+            // Handle map clicks
+            map.on('click', (e: any) => {
+                const { lat: newLat, lng: newLng } = e.latlng;
+                setFormData(prev => ({
+                    ...prev,
+                    latitude: newLat.toString(),
+                    longitude: newLng.toString(),
+                }));
+
+                // Move marker
+                marker.setLatLng([newLat, newLng]);
+                marker.setPopupContent(`Coordinates: ${newLat.toFixed(4)}, ${newLng.toFixed(4)}`);
+                marker.openPopup();
+            });
+
+            // Fix map display
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 100);
+        } catch (error) {
+            console.error('Map error:', error);
+        }
+    };
+
+    useEffect(() => {
+        if (showMapPicker && !((window as any).L)) {
+            // Load Leaflet
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+            document.head.appendChild(link);
+
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+            script.async = true;
+            script.onload = () => {
+                setTimeout(() => initMapPicker(), 100);
+            };
+            document.head.appendChild(script);
+        } else if (showMapPicker) {
+            setTimeout(() => initMapPicker(), 100);
+        }
+
+        return () => {
+            if (mapInstance.current) {
+                mapInstance.current.remove();
+                mapInstance.current = null;
+            }
+        };
+    }, [showMapPicker]);
 
     const handleSaveNew = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -108,6 +219,8 @@ export default function AttractionManagement({ attractions = [], stats = { total
                     image_url: '',
                     rating: '',
                     status: 'active',
+                    latitude: '9.4619',
+                    longitude: '123.7473',
                 });
                 setIsSubmitting(false);
                 router.reload();
@@ -407,6 +520,70 @@ export default function AttractionManagement({ attractions = [], stats = { total
                                         rows={3}
                                         className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#375534] focus:border-transparent dark:bg-[#0F2A1D] dark:text-white transition resize-none"
                                     />
+                                </div>
+
+                                {/* Map Picker Section */}
+                                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 bg-gray-50 dark:bg-[#0F2A1D]/50">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                                <MapPin className="w-4 h-4 text-[#375534]" />
+                                                Set Location on Map
+                                            </h4>
+                                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Click on the map to set coordinates for this attraction</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowMapPicker(!showMapPicker)}
+                                            className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
+                                                showMapPicker
+                                                    ? 'bg-red-500 hover:bg-red-600 text-white'
+                                                    : 'bg-[#375534] hover:bg-[#0F2A1D] text-white'
+                                            }`}
+                                        >
+                                            {showMapPicker ? 'Hide Map' : 'Show Map'}
+                                        </button>
+                                    </div>
+
+                                    {/* Map Display */}
+                                    {showMapPicker && (
+                                        <div
+                                            ref={mapContainer}
+                                            className="w-full h-80 rounded-lg border-2 border-gray-300 dark:border-gray-600 mb-4 bg-white dark:bg-[#1F3A2F]"
+                                            style={{ minHeight: '400px' }}
+                                        />
+                                    )}
+
+                                    {/* Coordinates Display */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                Latitude
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={formData.latitude}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, latitude: e.target.value }))}
+                                                className="w-full px-3 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#375534] dark:bg-[#0F2A1D] dark:text-white"
+                                                placeholder="9.4619"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                Longitude
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={formData.longitude}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, longitude: e.target.value }))}
+                                                className="w-full px-3 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#375534] dark:bg-[#0F2A1D] dark:text-white"
+                                                placeholder="123.7473"
+                                            />
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-3">
+                                        Current: {parseFloat(formData.latitude).toFixed(4)}, {parseFloat(formData.longitude).toFixed(4)}
+                                    </p>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
