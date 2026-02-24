@@ -35,11 +35,21 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        
+        // Load relationships and check if all documents are approved
+        if ($user) {
+            $user->loadMissing(['role', 'accountStatus', 'documents']);
+        }
+
+        $documentsApproved = $user ? $user->hasAllDocumentsApproved() : false;
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user() ? $request->user()->load('role') : null,
+                'user' => $user,
+                'documentsApproved' => $documentsApproved,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

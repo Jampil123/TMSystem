@@ -16,17 +16,7 @@ export function TouristSidebarHeader() {
         <header className="flex h-16 shrink-0 items-center justify-end gap-4 border-b border-[#AEC3B0]/40 dark:border-[#375534]/40 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4 bg-white dark:bg-[#0F2A1D]">
             {/* Right Section */}
             <div className="flex items-center gap-6">
-                {/* Contact Info */}
-                <div className="flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-2 text-[#6B8071] dark:text-[#AEC3B0]">
-                        <Phone className="w-4 h-4" />
-                        <span>+2 025 234 9123</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-[#6B8071] dark:text-[#AEC3B0]">
-                        <MessageCircle className="w-4 h-4" />
-                        <span>info@ourwebsite.com</span>
-                    </div>
-                </div>
+                
 
                 {/* Divider */}
                 <div className="h-6 w-px bg-[#AEC3B0]/40 dark:bg-[#375534]/40"></div>

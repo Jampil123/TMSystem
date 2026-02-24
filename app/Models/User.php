@@ -26,6 +26,7 @@ class User extends Authenticatable
         'role_id',
         'account_status_id',
         'online_status_id',
+        'documents_submitted_at',
     ];
 
     /**
@@ -51,6 +52,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'documents_submitted_at' => 'datetime',
         ];
     }
 
@@ -76,5 +78,37 @@ class User extends Authenticatable
     public function onlineStatus()
     {
         return $this->belongsTo(Userstatus::class, 'online_status_id');
+    }
+
+    /**
+     * Get the user's profile (business details and profile picture).
+     */
+    public function profile()
+    {
+        return $this->hasOne(UserProfile::class);
+    }
+
+    /**
+     * Get the user's operator documents.
+     */
+    public function documents()
+    {
+        return $this->hasMany(OperatorDocument::class);
+    }
+
+    /**
+     * Check if all operator documents are approved and uploaded.
+     */
+    public function hasAllDocumentsApproved(): bool
+    {
+        $documents = $this->documents()->get();
+        
+        if ($documents->isEmpty()) {
+            return false;
+        }
+
+        return $documents->every(function ($doc) {
+            return $doc->status === 'approved' && $doc->file_path && trim($doc->file_path) !== '';
+        });
     }
 }

@@ -7,12 +7,15 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AttractionController;
 use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\Admin\AccommodationController;
+use App\Http\Controllers\Admin\OperatorManagementController;
 use App\Http\Controllers\Portal\HomeController;
 use App\Http\Controllers\Portal\ActivityDetailController;
 use App\Http\Controllers\Portal\AttractionDetailController;
 use App\Http\Controllers\Portal\ContactController;
 use App\Http\Controllers\Portal\AboutController;
 use App\Http\Controllers\Portal\OperatorController;
+use App\Http\Controllers\Operator\ProfileController;
+use App\Http\Controllers\Operator\DocumentController;
 use App\Http\Controllers\Dashboard\TouristDashboardController;
 use App\Http\Controllers\Tourist\ExploreActivityController;
 use App\Http\Controllers\Tourist\ExploreAttractionController;
@@ -82,6 +85,30 @@ Route::get('operator-dashboard', function () {
     return Inertia::render('dashboards/operator-dashboard');
 })->middleware(['auth', 'verified'])->name('operator.dashboard');
 
+Route::get('operator/documents', [DocumentController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('operator.documents');
+
+Route::post('operator/documents/upload', [DocumentController::class, 'upload'])
+    ->middleware(['auth', 'verified'])
+    ->name('operator.documents.upload');
+
+Route::delete('operator/documents/{document}', [DocumentController::class, 'destroy'])
+    ->middleware(['auth', 'verified'])
+    ->name('operator.documents.destroy');
+
+Route::post('operator/documents/submit', [DocumentController::class, 'submit'])
+    ->middleware(['auth', 'verified'])
+    ->name('operator.documents.submit');
+
+Route::get('operator/profile', [ProfileController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('operator.profile');
+
+Route::post('operator/profile', [ProfileController::class, 'update'])
+    ->middleware(['auth', 'verified'])
+    ->name('operator.profile.update');
+
 Route::get('lgu-dot-dashboard', function () {
     return Inertia::render('dashboards/lgu-dot-dashboard');
 })->middleware(['auth', 'verified'])->name('lgu-dot.dashboard');
@@ -96,6 +123,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('users', [UserController::class, 'store'])->name('users.store');
     Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+
+    Route::get('operators', [OperatorManagementController::class, 'index'])->name('operators.index');
+    Route::get('operators/{user}', [OperatorManagementController::class, 'show'])->name('operators.show');
+    Route::put('operators/{user}/approve', [OperatorManagementController::class, 'approve'])->name('operators.approve');
+    Route::put('operators/{user}/reject', [OperatorManagementController::class, 'reject'])->name('operators.reject');
+    Route::put('operators/{user}/documents/{document}/approve', [OperatorManagementController::class, 'approveDocument'])->name('operators.document.approve');
+    Route::put('operators/{user}/documents/{document}/reject', [OperatorManagementController::class, 'rejectDocument'])->name('operators.document.reject');
 
     Route::get('attractions', [AttractionController::class, 'index'])->name('attractions.index');
     Route::post('attractions', [AttractionController::class, 'store'])->name('attractions.store');
