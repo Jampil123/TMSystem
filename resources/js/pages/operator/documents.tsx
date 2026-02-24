@@ -196,29 +196,50 @@ export default function OperatorDocuments() {
 
         const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content;
         console.log('CSRF Token:', csrfToken ? 'Present' : 'MISSING!');
+        
+        if (!csrfToken) {
+            const errorMsg = 'CSRF token not found. Please refresh the page and try again.';
+            setError(errorMsg);
+            setUploadStates((prev) => ({ ...prev, [docId]: 'error' }));
+            setUploadErrors((prev) => ({ ...prev, [docId]: 'CSRF token missing' }));
+            return;
+        }
 
         const formData = new FormData();
         formData.append('document_id', docId.toString());
         formData.append('file', file);
-        formData.append('_token', csrfToken || '');
+        formData.append('_token', csrfToken);
 
         try {
             console.log('Uploading file:', file.name, 'to document ID:', docId);
             const response = await fetch('/operator/documents/upload', {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': csrfToken || '',
                     'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
                 },
                 body: formData,
                 credentials: 'same-origin',
             });
 
             console.log('Response status:', response.status);
+            
+            if (!response.ok) {
+                // Handle non-200 responses
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                const errorMsg = `Upload failed: ${response.status}`;
+                setUploadStates((prev) => ({ ...prev, [docId]: 'error' }));
+                setUploadErrors((prev) => ({ ...prev, [docId]: errorMsg }));
+                setError(errorMsg);
+                return;
+            }
+            
             const data = await response.json();
             console.log('Response data:', data);
 
-            if (response.ok && data.success) {
+            if (data.success) {
                 setUploadStates((prev) => ({ ...prev, [docId]: 'success' }));
                 setSuccess(data.message);
                 setTimeout(() => {
@@ -268,22 +289,37 @@ export default function OperatorDocuments() {
         setSuccess('');
 
         const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content;
+        
+        if (!csrfToken) {
+            setError('CSRF token not found. Please refresh the page and try again.');
+            setIsSubmitting(false);
+            return;
+        }
 
         try {
             const response = await fetch('/operator/documents/submit', {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': csrfToken || '',
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
                 credentials: 'same-origin',
                 body: JSON.stringify({}),
             });
 
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                setError(`Upload failed: ${response.status}`);
+                setIsSubmitting(false);
+                return;
+            }
+
             const data = await response.json();
 
-            if (response.ok && data.success) {
+            if (data.success) {
                 setSuccess(data.message || 'Documents submitted for review successfully!');
                 setTimeout(() => {
                     window.location.href = '/operator-dashboard';
@@ -308,20 +344,45 @@ export default function OperatorDocuments() {
         setSuccess('');
 
         const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content;
+        
+        if (!csrfToken) {
+            setError('CSRF token not found. Please refresh the page and try again.');
+            setUploadStates((prev) => ({ ...prev, [docId]: 'error' }));
+            setDeletingDocs((prev) => {
+                const newSet = new Set(prev);
+                newSet.delete(docId);
+                return newSet;
+            });
+            return;
+        }
 
         try {
             const response = await fetch(`/operator/documents/${docId}`, {
                 method: 'DELETE',
                 headers: {
-                    'X-CSRF-TOKEN': csrfToken || '',
                     'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
                 credentials: 'same-origin',
             });
 
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                setError(`Removal failed: ${response.status}`);
+                setUploadStates((prev) => ({ ...prev, [docId]: 'error' }));
+                setDeletingDocs((prev) => {
+                    const newSet = new Set(prev);
+                    newSet.delete(docId);
+                    return newSet;
+                });
+                return;
+            }
+
             const data = await response.json();
 
-            if (response.ok && data.success) {
+            if (data.success) {
                 setUploadStates((prev) => ({ ...prev, [docId]: 'success' }));
                 setSuccess(data.message);
                 setTimeout(() => {
