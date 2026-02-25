@@ -26,6 +26,12 @@ class OperatorDocument extends Model
         'expires_date' => 'date:Y-m-d',
     ];
 
+    protected $attributes = [
+        'uploaded_date' => null,
+        'file_path' => null,
+        'status' => 'pending',
+    ];
+
     /**
      * Get the user that owns this document.
      */

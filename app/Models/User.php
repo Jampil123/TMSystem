@@ -89,6 +89,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the user's operator profile (company information).
+     */
+    public function operatorProfile()
+    {
+        return $this->hasOne(OperatorProfile::class);
+    }
+
+    /**
      * Get the user's operator documents.
      */
     public function documents()

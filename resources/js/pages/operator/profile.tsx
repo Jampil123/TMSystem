@@ -12,21 +12,19 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function OperatorProfile({ operator, profile, documents, flash }: any) {
     const [previewImage, setPreviewImage] = useState<string | null>(
-        profile?.profile_picture ? `/storage/${profile.profile_picture}` : null
+        profile?.logo_path ? `/storage/${profile.logo_path}` : null
     );
     const [successMessage, setSuccessMessage] = useState<string | null>(flash?.success ?? null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(flash?.error ?? null);
+    const [fileError, setFileError] = useState<string | null>(null);
 
     const { data, setData, post, processing, errors, recentlySuccessful } = useForm({
-        business_name: profile?.business_name ?? operator?.business_name ?? '',
-        operator_type: profile?.operator_type ?? operator?.operator_type ?? '',
+        company_name: profile?.company_name ?? operator?.company_name ?? '',
+        contact_person: profile?.contact_person ?? operator?.name ?? '',
+        contact_number: profile?.contact_number ?? operator?.contact_number ?? '',
+        business_address: profile?.business_address ?? operator?.business_address ?? '',
         description: profile?.description ?? '',
-        years_of_operation: profile?.years_of_operation ?? '',
-        contact_name: profile?.contact_name ?? operator?.name ?? '',
-        email: operator?.email ?? '',
-        phone: profile?.phone ?? operator?.phone ?? '',
-        address: profile?.address ?? operator?.address ?? '',
-        lgu_area: profile?.lgu_area ?? '',
-        profile_picture: null as File | null,
+        logo_path: null as File | null,
     });
 
     useEffect(() => {
@@ -38,13 +36,39 @@ export default function OperatorProfile({ operator, profile, documents, flash }:
     }, [recentlySuccessful]);
 
     const totalDocs = (documents && documents.length) ? documents.length : 5;
+    const approvedDocs = (documents && documents.filter((d: any) => d.status === 'approved').length) || 0;
     const uploadedDocs = (documents && documents.filter((d: any) => d.file_path && d.file_path.trim() !== '').length) || 0;
-    const percent = Math.round((uploadedDocs / totalDocs) * 100);
+    const allDocsApproved = approvedDocs === totalDocs && totalDocs > 0;
+    const percent = Math.round((approvedDocs / totalDocs) * 100);
+    
+    let profileStatus = 'Pending';
+    if (allDocsApproved) {
+        profileStatus = 'Approved';
+    } else if (approvedDocs > 0) {
+        profileStatus = 'In Review';
+    } else if (uploadedDocs > 0) {
+        profileStatus = 'Submitted';
+    }
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+        setFileError(null);
+        
         if (file) {
-            setData('profile_picture', file);
+            // Validate file size (max 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                setFileError('File size must be less than 10MB');
+                return;
+            }
+            
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+            if (!allowedTypes.includes(file.type)) {
+                setFileError('File must be an image (JPEG, PNG, JPG, or GIF)');
+                return;
+            }
+            
+            setData('logo_path', file);
             const reader = new FileReader();
             reader.onload = (event) => {
                 setPreviewImage(event.target?.result as string);
@@ -58,6 +82,9 @@ export default function OperatorProfile({ operator, profile, documents, flash }:
         post('/operator/profile', {
             forceFormData: true,
             preserveScroll: true,
+            onError: (errors) => {
+                console.error('Form errors:', errors);
+            },
         });
     };
 
@@ -82,7 +109,7 @@ export default function OperatorProfile({ operator, profile, documents, flash }:
                                         ) : (
                                             <div className="w-full h-full bg-gradient-to-br from-[#375534] to-[#6B8071] flex items-center justify-center">
                                                 <span className="text-4xl text-white font-bold">
-                                                    {(data.contact_name || operator?.name || 'O').charAt(0).toUpperCase()}
+                                                    {(data.contact_person || operator?.name || 'O').charAt(0).toUpperCase()}
                                                 </span>
                                             </div>
                                         )}
@@ -97,11 +124,17 @@ export default function OperatorProfile({ operator, profile, documents, flash }:
                                         />
                                     </label>
                                 </div>
+                                {data.logo_path && (
+                                    <p className="text-xs text-green-600 mt-2">✓ File selected: {(data.logo_path as any).name}</p>
+                                )}
+                                {fileError && (
+                                    <p className="text-xs text-red-600 mt-2">✗ {fileError}</p>
+                                )}
                                 <h3 className="text-lg font-semibold text-[#375534] dark:text-white">
-                                    {data.contact_name || 'Operator Name'}
+                                    {data.contact_person || 'Contact Person'}
                                 </h3>
                                 <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0]">
-                                    {data.operator_type || 'Operator Type'}
+                                    {data.company_name || 'Company Name'}
                                 </p>
                             </div>
                             <nav className="mt-6 space-y-2">
@@ -111,13 +144,23 @@ export default function OperatorProfile({ operator, profile, documents, flash }:
 
                         {/* main form area */}
                         <main className="w-full md:w-3/4 space-y-6">
-                            {/* success/error messages */}
+                            {/* success message */}
                             {successMessage && (
                                 <div className="flex gap-3 bg-green-50 border border-green-200 rounded-lg p-4 text-green-800">
                                     <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                                     <p>{successMessage}</p>
                                 </div>
                             )}
+                            
+                            {/* error messages */}
+                            {(errorMessage || fileError) && (
+                                <div className="flex gap-3 bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
+                                    <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                                    <p>{errorMessage || fileError}</p>
+                                </div>
+                            )}
+                            
+                            {/* validation errors */}
                             {Object.keys(errors).length > 0 && (
                                 <div className="flex gap-3 bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
                                     <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -140,8 +183,13 @@ export default function OperatorProfile({ operator, profile, documents, flash }:
                                         Update your business information and submit for LGU approval.
                                     </p>
                                 </div>
-                                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white text-[#375534] shadow">
-                                    <CheckCircle className="w-5 h-5" /> {profile?.accreditation_status ?? 'Pending'}
+                                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full shadow ${
+                                    allDocsApproved 
+                                        ? 'bg-green-100 text-green-700'
+                                        : 'bg-white text-[#375534]'
+                                }`}>
+                                    {allDocsApproved ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+                                    {profileStatus}
                                 </span>
                             </div>
 
@@ -153,27 +201,27 @@ export default function OperatorProfile({ operator, profile, documents, flash }:
                                         <h2 className="text-lg font-semibold text-[#375534] mb-4">Business Information</h2>
                                         <div className="space-y-4">
                                             <div>
-                                                <label className="block font-medium">Business Name</label>
+                                                <label className="block font-medium">Company Name</label>
                                                 <input
                                                     type="text"
-                                                    value={data.business_name}
-                                                    onChange={(e) => setData('business_name', e.target.value)}
+                                                    value={data.company_name}
+                                                    onChange={(e) => setData('company_name', e.target.value)}
                                                     className="mt-1 w-full p-2 border border-[#AEC3B0]/40 rounded focus:border-[#375534] focus:ring-[#375534]/50"
                                                 />
-                                                {errors.business_name && (
-                                                    <p className="text-red-500 text-xs mt-1">{errors.business_name}</p>
+                                                {errors.company_name && (
+                                                    <p className="text-red-500 text-xs mt-1">{errors.company_name}</p>
                                                 )}
                                             </div>
                                             <div>
-                                                <label className="block font-medium">Operator Type</label>
-                                                <input
-                                                    type="text"
-                                                    value={data.operator_type}
-                                                    onChange={(e) => setData('operator_type', e.target.value)}
+                                                <label className="block font-medium">Business Address</label>
+                                                <textarea
+                                                    value={data.business_address}
+                                                    onChange={(e) => setData('business_address', e.target.value)}
+                                                    rows={2}
                                                     className="mt-1 w-full p-2 border border-[#AEC3B0]/40 rounded focus:border-[#375534] focus:ring-[#375534]/50"
                                                 />
-                                                {errors.operator_type && (
-                                                    <p className="text-red-500 text-xs mt-1">{errors.operator_type}</p>
+                                                {errors.business_address && (
+                                                    <p className="text-red-500 text-xs mt-1">{errors.business_address}</p>
                                                 )}
                                             </div>
                                             <div>
@@ -189,69 +237,33 @@ export default function OperatorProfile({ operator, profile, documents, flash }:
                                                     <p className="text-red-500 text-xs mt-1">{errors.description}</p>
                                                 )}
                                             </div>
-                                            <div>
-                                                <label className="block font-medium">Years of Operation</label>
-                                                <input
-                                                    type="number"
-                                                    value={data.years_of_operation}
-                                                    onChange={(e) => setData('years_of_operation', parseInt(e.target.value) || 0)}
-                                                    className="mt-1 w-full p-2 border border-[#AEC3B0]/40 rounded focus:border-[#375534] focus:ring-[#375534]/50"
-                                                />
-                                                {errors.years_of_operation && (
-                                                    <p className="text-red-500 text-xs mt-1">{errors.years_of_operation}</p>
-                                                )}
-                                            </div>
                                         </div>
                                     </div>
                                     <div className="rounded-2xl bg-white dark:bg-[#0F2A1D] border border-[#AEC3B0]/40 dark:border-[#375534]/40 shadow p-6">
-                                        <h2 className="text-lg font-semibold text-[#375534] mb-4">Contact & Operator Details</h2>
+                                        <h2 className="text-lg font-semibold text-[#375534] mb-4">Contact Information</h2>
                                         <div className="space-y-4">
                                             <div>
-                                                <label className="block font-medium">Contact Name</label>
+                                                <label className="block font-medium">Contact Person</label>
                                                 <input
                                                     type="text"
-                                                    value={data.contact_name}
-                                                    onChange={(e) => setData('contact_name', e.target.value)}
+                                                    value={data.contact_person}
+                                                    onChange={(e) => setData('contact_person', e.target.value)}
                                                     className="mt-1 w-full p-2 border border-[#AEC3B0]/40 rounded focus:border-[#375534] focus:ring-[#375534]/50"
                                                 />
-                                                {errors.contact_name && (
-                                                    <p className="text-red-500 text-xs mt-1">{errors.contact_name}</p>
+                                                {errors.contact_person && (
+                                                    <p className="text-red-500 text-xs mt-1">{errors.contact_person}</p>
                                                 )}
                                             </div>
                                             <div>
-                                                <label className="block font-medium">Email Address</label>
-                                                <input
-                                                    type="email"
-                                                    value={data.email}
-                                                    onChange={(e) => setData('email', e.target.value)}
-                                                    className="mt-1 w-full p-2 border border-[#AEC3B0]/40 rounded focus:border-[#375534] focus:ring-[#375534]/50"
-                                                />
-                                                {errors.email && (
-                                                    <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <label className="block font-medium">Phone</label>
+                                                <label className="block font-medium">Contact Number</label>
                                                 <input
                                                     type="text"
-                                                    value={data.phone}
-                                                    onChange={(e) => setData('phone', e.target.value)}
+                                                    value={data.contact_number}
+                                                    onChange={(e) => setData('contact_number', e.target.value)}
                                                     className="mt-1 w-full p-2 border border-[#AEC3B0]/40 rounded focus:border-[#375534] focus:ring-[#375534]/50"
                                                 />
-                                                {errors.phone && (
-                                                    <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <label className="block font-medium">Office/Business Address</label>
-                                                <textarea
-                                                    value={data.address}
-                                                    onChange={(e) => setData('address', e.target.value)}
-                                                    rows={2}
-                                                    className="mt-1 w-full p-2 border border-[#AEC3B0]/40 rounded focus:border-[#375534] focus:ring-[#375534]/50"
-                                                />
-                                                {errors.address && (
-                                                    <p className="text-red-500 text-xs mt-1">{errors.address}</p>
+                                                {errors.contact_number && (
+                                                    <p className="text-red-500 text-xs mt-1">{errors.contact_number}</p>
                                                 )}
                                             </div>
                                         </div>
@@ -266,7 +278,7 @@ export default function OperatorProfile({ operator, profile, documents, flash }:
                                     <div className="mb-6">
                                         <div className="flex justify-between items-center mb-2">
                                             <p className="text-sm font-medium text-[#375534] dark:text-[#E3EED4]">
-                                                Completion: {uploadedDocs} / {totalDocs}
+                                                Approved: {approvedDocs} / {totalDocs}
                                             </p>
                                             <p className="text-sm font-medium text-[#375534] dark:text-[#E3EED4]">
                                                 {percent}%
@@ -322,14 +334,19 @@ export default function OperatorProfile({ operator, profile, documents, flash }:
                                         })}
                                     </div>
                                     
-                                    {uploadedDocs < totalDocs && (
-                                        <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/10 rounded-lg">
-                                            ⚠️ {totalDocs - uploadedDocs} document(s) still need to be uploaded to complete your profile.
+                                    {approvedDocs < uploadedDocs && uploadedDocs > 0 && (
+                                        <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/10 rounded-lg">
+                                            ⏳ {totalDocs - approvedDocs} document(s) awaiting LGU approval.
                                         </p>
                                     )}
-                                    {uploadedDocs === totalDocs && (
+                                    {uploadedDocs < totalDocs && (
+                                        <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mt-4 p-3 bg-orange-50 dark:bg-orange-900/10 rounded-lg">
+                                            ⚠️ {totalDocs - uploadedDocs} document(s) still need to be uploaded.
+                                        </p>
+                                    )}
+                                    {allDocsApproved && (
                                         <p className="text-xs text-green-700 dark:text-green-300 mt-4 p-3 bg-green-50 dark:bg-green-900/10 rounded-lg">
-                                            ✓ All documents uploaded! Awaiting LGU approval.
+                                            ✓ All documents approved! Your profile is complete.
                                         </p>
                                     )}
                                 </div>
