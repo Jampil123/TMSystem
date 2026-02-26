@@ -21,4 +21,20 @@ class Attraction extends Model
     ];
 
     protected $table = 'attractions';
+
+    /**
+     * Get all services available at this attraction.
+     */
+    public function services()
+    {
+        return $this->hasMany(Service::class, 'tourist_spot_id');
+    }
+
+    /**
+     * Get approved services available at this attraction.
+     */
+    public function approvedServices()
+    {
+        return $this->services()->where('status', 'Approved');
+    }
 }

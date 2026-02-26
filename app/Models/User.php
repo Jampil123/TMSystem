@@ -119,4 +119,20 @@ class User extends Authenticatable
             return $doc->status === 'approved' && $doc->file_path && trim($doc->file_path) !== '';
         });
     }
+
+    /**
+     * Get all services provided by this operator.
+     */
+    public function services()
+    {
+        return $this->hasMany(Service::class, 'operator_id');
+    }
+
+    /**
+     * Get all services approved by this admin.
+     */
+    public function approvedServices()
+    {
+        return $this->hasMany(Service::class, 'approved_by');
+    }
 }

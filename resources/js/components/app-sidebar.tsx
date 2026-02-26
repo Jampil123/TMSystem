@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Users, Compass, Zap, Building2, Home, User, FileText, Bell, Settings, ClipboardList, CheckCircle } from 'lucide-react';
+import { LayoutGrid, Users, Compass, Zap, Building2, Home, User, FileText, Bell, Settings, ClipboardList, CheckCircle, Package, Plus, List, CheckCheck } from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -23,27 +23,44 @@ export function AppSidebar() {
     // Services and Guest Submission are only enabled when all documents are approved and uploaded
     const isApproved = auth?.documentsApproved === true;
 
-    // default items for admin/other roles
+    // default items for admin only
     const defaultNavItems: NavItem[] = [
         {
             title: 'Dashboard',
             href: dashboard(),
             icon: LayoutGrid,
         },
-        ...(isAdmin
-            ? [
-                  {
-                      title: 'User Management',
-                      href: '/users',
-                      icon: Users,
-                  },
-                  {
-                      title: 'Operator Management',
-                      href: '/operators',
-                      icon: CheckCircle,
-                  },
-              ]
-            : []),
+        {
+            title: 'User Management',
+            href: '/users',
+            icon: Users,
+        },
+        {
+            title: 'Operator Management',
+            href: '/operators',
+            icon: CheckCircle,
+        },
+        {
+            title: 'Service Management',
+            icon: Package,
+            items: [
+                {
+                    title: 'All Services',
+                    href: '/services',
+                    icon: List,
+                },
+                {
+                    title: 'Pending Services',
+                    href: '/services/pending',
+                    icon: Bell,
+                },
+                {
+                    title: 'Approved Services',
+                    href: '/services/approved',
+                    icon: CheckCheck,
+                },
+            ],
+        },
         {
             title: 'Attraction Management',
             href: '/attractions',
@@ -80,9 +97,28 @@ export function AppSidebar() {
         },
         {
             title: 'Services',
-            href: '/operator/services',
-            icon: Bell,
+            icon: Package,
             disabled: !isApproved,
+            items: [
+                {
+                    title: 'All Services',
+                    href: '/operator/services',
+                    icon: List,
+                    disabled: !isApproved,
+                },
+                {
+                    title: 'Create Service',
+                    href: '/operator/services/create',
+                    icon: Plus,
+                    disabled: !isApproved,
+                },
+                {
+                    title: 'Service Requests',
+                    href: '/operator/services/requests',
+                    icon: Bell,
+                    disabled: !isApproved,
+                },
+            ],
         },
         {
             title: 'Guest Submission',

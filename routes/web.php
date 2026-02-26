@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\AttractionController;
 use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\Admin\AccommodationController;
 use App\Http\Controllers\Admin\OperatorManagementController;
+use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Portal\HomeController;
 use App\Http\Controllers\Portal\ActivityDetailController;
 use App\Http\Controllers\Portal\AttractionDetailController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Portal\AboutController;
 use App\Http\Controllers\Portal\OperatorController;
 use App\Http\Controllers\Operator\ProfileController;
 use App\Http\Controllers\Operator\DocumentController;
+use App\Http\Controllers\Operator\ServiceController;
 use App\Http\Controllers\Dashboard\TouristDashboardController;
 use App\Http\Controllers\Tourist\ExploreActivityController;
 use App\Http\Controllers\Tourist\ExploreAttractionController;
@@ -109,6 +111,32 @@ Route::post('operator/profile', [ProfileController::class, 'update'])
     ->middleware(['auth', 'verified'])
     ->name('operator.profile.update');
 
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('operator/services', [ServiceController::class, 'index'])
+        ->name('operator.services.index');
+
+    Route::get('operator/services/create', [ServiceController::class, 'create'])
+        ->name('operator.services.create');
+
+    Route::get('operator/services/requests', [ServiceController::class, 'requests'])
+        ->name('operator.services.requests');
+
+    Route::post('operator/services', [ServiceController::class, 'store'])
+        ->name('operator.services.store');
+
+    Route::get('operator/services/{service}', [ServiceController::class, 'show'])
+        ->name('operator.services.show');
+
+    Route::get('operator/services/{service}/edit', [ServiceController::class, 'edit'])
+        ->name('operator.services.edit');
+
+    Route::put('operator/services/{service}', [ServiceController::class, 'update'])
+        ->name('operator.services.update');
+
+    Route::delete('operator/services/{service}', [ServiceController::class, 'destroy'])
+        ->name('operator.services.destroy');
+});
+
 Route::get('lgu-dot-dashboard', function () {
     return Inertia::render('dashboards/lgu-dot-dashboard');
 })->middleware(['auth', 'verified'])->name('lgu-dot.dashboard');
@@ -145,6 +173,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('accommodations/{accommodation}', [AccommodationController::class, 'update'])->name('accommodations.update');
     Route::delete('accommodations/{accommodation}', [AccommodationController::class, 'destroy'])->name('accommodations.destroy');
     Route::delete('activities/{activity}', [ActivityController::class, 'destroy'])->name('activities.destroy');
+
+    // Admin Service Management Routes
+    Route::get('services', [AdminServiceController::class, 'index'])->name('services.index');
+    Route::get('services/pending', [AdminServiceController::class, 'pending'])->name('services.pending');
+    Route::get('services/approved', [AdminServiceController::class, 'approved'])->name('services.approved');
+    Route::get('services/{service}', [AdminServiceController::class, 'show'])->name('services.show');
+    Route::post('services/{service}/approve', [AdminServiceController::class, 'approve'])->name('services.approve');
+    Route::post('services/{service}/reject', [AdminServiceController::class, 'reject'])->name('services.reject');
+    Route::post('services/{service}/request-revision', [AdminServiceController::class, 'requestRevision'])->name('services.request-revision');
 });
 
 require __DIR__.'/settings.php';

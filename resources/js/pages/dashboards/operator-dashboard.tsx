@@ -241,7 +241,7 @@ export default function OperatorDashboard() {
                     </div>
                 </div>
 
-                {/* 4 & 5. Alerts and Action Required */}
+                {/* 4. & 5. Alerts and Action Required */}
                 <div className="grid gap-6 lg:grid-cols-2">
                     <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
                         <h3 className="text-lg font-semibold mb-4 text-[#0F2A1D] dark:text-[#E3EED4]">
