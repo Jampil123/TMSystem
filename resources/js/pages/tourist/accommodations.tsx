@@ -1,94 +1,38 @@
 import { Head } from '@inertiajs/react';
 import TouristLayout from '@/layouts/app/tourist-layout';
-import { MapPin, Star, Users, Search, Filter, Wifi, Utensils, Bed } from 'lucide-react';
+import { MapPin, Star, Search, Filter } from 'lucide-react';
 import { useState } from 'react';
 
-const accommodations = [
-    {
-        id: 1,
-        title: 'Luxury Ocean Resort',
-        location: 'Maldives',
-        price: '$250/night',
-        rating: 4.9,
-        rooms: 50,
-        image: 'https://via.placeholder.com/300x200/375534/ffffff?text=Ocean+Resort',
-        description: 'All-inclusive resort with private beach and water sports.',
-        amenities: ['WiFi', 'Restaurant', 'Spa', 'Pool'],
-        type: 'Resort',
-    },
-    {
-        id: 2,
-        title: 'Boutique City Hotel',
-        location: 'Barcelona, Spain',
-        price: '$120/night',
-        rating: 4.7,
-        rooms: 45,
-        image: 'https://via.placeholder.com/300x200/375534/ffffff?text=City+Hotel',
-        description: 'Charming hotel in the heart of Barcelona\'s Gothic Quarter.',
-        amenities: ['WiFi', 'Restaurant', 'Bar', 'Gym'],
-        type: 'Hotel',
-    },
-    {
-        id: 3,
-        title: 'Alpine Cabin Lodge',
-        location: 'Swiss Alps',
-        price: '$85/night',
-        rating: 4.8,
-        rooms: 30,
-        image: 'https://via.placeholder.com/300x200/375534/ffffff?text=Alpine+Cabin',
-        description: 'Cozy mountain lodge perfect for hiking and nature lovers.',
-        amenities: ['WiFi', 'Restaurant', 'Fireplace', 'Sauna'],
-        type: 'Lodge',
-    },
-    {
-        id: 4,
-        title: 'Beach Bungalows',
-        location: 'Bali, Indonesia',
-        price: '$60/night',
-        rating: 4.6,
-        rooms: 40,
-        image: 'https://via.placeholder.com/300x200/375534/ffffff?text=Beach+Bungalows',
-        description: 'Tropical bungalows with direct beach access and sunset views.',
-        amenities: ['WiFi', 'Restaurant', 'Pool', 'Beach Bar'],
-        type: 'Bungalow',
-    },
-    {
-        id: 5,
-        title: 'Historic Castle Hotel',
-        location: 'Edinburgh, Scotland',
-        price: '$140/night',
-        rating: 4.8,
-        rooms: 35,
-        image: 'https://via.placeholder.com/300x200/375534/ffffff?text=Castle+Hotel',
-        description: 'Unique experience in a restored historic castle overlooking the city.',
-        amenities: ['WiFi', 'Restaurant', 'Library', 'Heritage Tours'],
-        type: 'Historic',
-    },
-    {
-        id: 6,
-        title: 'Urban Apartment Suites',
-        location: 'Tokyo, Japan',
-        price: '$95/night',
-        rating: 4.7,
-        rooms: 60,
-        image: 'https://via.placeholder.com/300x200/375534/ffffff?text=Apartment+Suites',
-        description: 'Modern apartments with kitchens and living spaces in trendy districts.',
-        amenities: ['WiFi', 'Laundry', 'Concierge', 'Gym'],
-        type: 'Apartment',
-    },
-];
+interface Accommodation {
+    id: number;
+    title: string;
+    location: string;
+    rating: number;
+    image: string;
+    description: string;
+    type: string;
+}
 
-export default function Accommodations() {
+interface Props {
+    accommodations: {
+        data: Accommodation[];
+        current_page: number;
+        last_page: number;
+        total: number;
+    };
+}
+
+export default function Accommodations({ accommodations }: Props) {
     const [searchQuery, setSearchQuery] = useState('');
-    const [filteredAccommodations, setFilteredAccommodations] = useState(accommodations);
+    const [filteredAccommodations, setFilteredAccommodations] = useState(accommodations.data);
 
     const handleSearch = (query: string) => {
         setSearchQuery(query);
         if (query.trim() === '') {
-            setFilteredAccommodations(accommodations);
+            setFilteredAccommodations(accommodations.data);
         } else {
             setFilteredAccommodations(
-                accommodations.filter(
+                accommodations.data.filter(
                     (accommodation) =>
                         accommodation.title.toLowerCase().includes(query.toLowerCase()) ||
                         accommodation.location.toLowerCase().includes(query.toLowerCase())
@@ -159,26 +103,12 @@ export default function Accommodations() {
                                         <MapPin className="w-4 h-4" />
                                         {accommodation.location}
                                     </div>
-                                    <div className="flex items-center gap-2 text-sm text-[#6B8071] dark:text-[#AEC3B0]">
-                                        <Bed className="w-4 h-4" />
-                                        {accommodation.rooms} rooms available
-                                    </div>
-                                </div>
-
-                                {/* Amenities */}
-                                <div className="mb-4 flex gap-2 flex-wrap">
-                                    {accommodation.amenities.slice(0, 3).map((amenity, idx) => (
-                                        <span key={idx} className="text-xs px-2 py-1 rounded-full bg-[#E3EED4] dark:bg-[#375534]/30 text-[#6B8071] dark:text-[#AEC3B0]">
-                                            {amenity}
-                                        </span>
-                                    ))}
                                 </div>
 
                                 {/* Footer */}
                                 <div className="flex items-center justify-between pt-4 border-t border-[#AEC3B0]/20 dark:border-[#375534]/20">
-                                    <p className="text-[#C84B59] dark:text-[#E89BA3] font-semibold">{accommodation.price}</p>
                                     <button className="px-4 py-2 rounded-lg bg-[#375534] text-white hover:bg-[#2d4227] transition-colors font-medium text-sm">
-                                        Book Now
+                                        View Details
                                     </button>
                                 </div>
                             </div>

@@ -3,86 +3,38 @@ import TouristLayout from '@/layouts/app/tourist-layout';
 import { MapPin, Star, Clock, Users, Search, Filter } from 'lucide-react';
 import { useState } from 'react';
 
-const activities = [
-    {
-        id: 1,
-        title: 'Island Hopping Tour',
-        location: 'Bali, Indonesia',
-        price: '$45/person',
-        rating: 4.8,
-        duration: '4 hours',
-        capacity: 30,
-        image: 'https://via.placeholder.com/300x200/375534/ffffff?text=Island+Hopping',
-        description: 'Explore beautiful islands around Bali with professional guides.',
-    },
-    {
-        id: 2,
-        title: 'Scuba Diving Adventure',
-        location: 'Coral Triangle',
-        price: '$65/person',
-        rating: 4.9,
-        duration: '5 hours',
-        capacity: 12,
-        image: 'https://via.placeholder.com/300x200/375534/ffffff?text=Scuba+Diving',
-        description: 'Experience the vibrant underwater world with certified instructors.',
-    },
-    {
-        id: 3,
-        title: 'Mountain Hiking',
-        location: 'Swiss Alps',
-        price: '$35/person',
-        rating: 4.7,
-        duration: '6 hours',
-        capacity: 20,
-        image: 'https://via.placeholder.com/300x200/375534/ffffff?text=Mountain+Hiking',
-        description: 'Trek through stunning alpine scenery with breathtaking views.',
-    },
-    {
-        id: 4,
-        title: 'Cultural Walking Tour',
-        location: 'Bangkok, Thailand',
-        price: '$25/person',
-        rating: 4.6,
-        duration: '3 hours',
-        capacity: 40,
-        image: 'https://via.placeholder.com/300x200/375534/ffffff?text=Walking+Tour',
-        description: 'Immerse yourself in Thai culture and traditions.',
-    },
-    {
-        id: 5,
-        title: 'Food Tasting Experience',
-        location: 'Paris, France',
-        price: '$55/person',
-        rating: 4.9,
-        duration: '2.5 hours',
-        capacity: 15,
-        image: 'https://via.placeholder.com/300x200/375534/ffffff?text=Food+Tasting',
-        description: 'Savor authentic French cuisine from local chefs.',
-    },
-    {
-        id: 6,
-        title: 'Adventure Paragliding',
-        location: 'Interlaken, Switzerland',
-        price: '$75/person',
-        rating: 4.8,
-        duration: '1 hour',
-        capacity: 6,
-        image: 'https://via.placeholder.com/300x200/375534/ffffff?text=Paragliding',
-        description: 'Experience the thrill of flying over stunning landscapes.',
-    },
-];
+interface Activity {
+    id: number;
+    title: string;
+    location: string;
+    price: string;
+    rating: number;
+    duration: string;
+    capacity: number;
+    image: string;
+    description: string;
+}
 
-export default function Activities() {
+interface Props {
+    activities: {
+        data: Activity[];
+        current_page: number;
+        last_page: number;
+        total: number;
+    };
+}
+
+export default function Activities({ activities }: Props) {
     const [searchQuery, setSearchQuery] = useState('');
-    const [filteredActivities, setFilteredActivities] = useState(activities);
+    const [filteredActivities, setFilteredActivities] = useState(activities.data);
 
     const handleSearch = (query: string) => {
         setSearchQuery(query);
         if (query.trim() === '') {
-            setFilteredActivities(activities);
+            setFilteredActivities(activities.data);
         } else {
             setFilteredActivities(
-                activities.filter(
+                activities.data.filter(
                     (activity) =>
                         activity.title.toLowerCase().includes(query.toLowerCase()) ||
                         activity.location.toLowerCase().includes(query.toLowerCase())
@@ -182,3 +134,5 @@ export default function Activities() {
         </TouristLayout>
     );
 }
+
+

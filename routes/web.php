@@ -18,6 +18,7 @@ use App\Http\Controllers\Portal\OperatorController;
 use App\Http\Controllers\Operator\ProfileController;
 use App\Http\Controllers\Operator\DocumentController;
 use App\Http\Controllers\Operator\ServiceController;
+use App\Http\Controllers\Operator\GuestSubmissionController;
 use App\Http\Controllers\Dashboard\TouristDashboardController;
 use App\Http\Controllers\Tourist\ExploreActivityController;
 use App\Http\Controllers\Tourist\ExploreAttractionController;
@@ -135,6 +136,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::delete('operator/services/{service}', [ServiceController::class, 'destroy'])
         ->name('operator.services.destroy');
+});
+
+// Guest Submission Routes
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('operator/guest-submission', [GuestSubmissionController::class, 'index'])
+        ->name('operator.guest-submission.index');
+    
+    Route::post('operator/guest-submission', [GuestSubmissionController::class, 'store'])
+        ->name('operator.guest-submission.store');
+
+    Route::get('operator/guest-submission/{id}', [GuestSubmissionController::class, 'show'])
+        ->name('operator.guest-submission.show');
+
+    Route::delete('operator/guest-submission/{id}', [GuestSubmissionController::class, 'destroy'])
+        ->name('operator.guest-submission.destroy');
 });
 
 Route::get('lgu-dot-dashboard', function () {
