@@ -173,6 +173,12 @@ class GuestSubmissionController extends Controller
             ],
             'qrCodes' => $qrCodes,
             'qrStats' => $qrStats,
+            // Temporary mock data for guides - replace with real data when guide system is implemented
+            'assignedGuides' => [
+                ['id' => 1, 'name' => 'Juan Dela Cruz'],
+                ['id' => 2, 'name' => 'Maria Santos'],
+            ],
+            'availableGuides' => 3, // Replace with actual count from database
         ]);
     }
 

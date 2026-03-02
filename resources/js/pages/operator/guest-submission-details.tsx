@@ -33,10 +33,17 @@ interface QRStats {
     expired: number;
 }
 
+interface Guide {
+    id: number;
+    name: string;
+}
+
 interface Props {
     guestList: GuestListDetails;
     qrCodes: QRCode[];
     qrStats: QRStats;
+    assignedGuides?: Guide[];
+    availableGuides?: number;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -45,10 +52,21 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Details', href: '#' },
 ];
 
-export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats }: Props) {
+export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats, assignedGuides = [], availableGuides = 0 }: Props) {
     const [showQRModal, setShowQRModal] = useState<string | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Guide validation logic
+    const isCanyoneering = guestList.serviceType === 'Canyoneering' || guestList.serviceName?.toLowerCase().includes('canyoneering') || guestList.serviceName?.toLowerCase().includes('badian');
+    const showGuideValidation = true; // Temporarily enabled for all services for demo
+    const requiredGuides = isCanyoneering ? guestList.totalGuests : 0;
+    const validationStatus = isCanyoneering 
+        ? availableGuides >= requiredGuides 
+            ? 'CONFIRMED' 
+            : 'BLOCKED'
+        : null;
+    const isBlocked = validationStatus === 'BLOCKED';
 
     const handleDelete = () => {
         setIsDeleting(true);
@@ -165,7 +183,99 @@ export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats }: 
                             </div>
                         </div>
 
-                        {/* Guest Information */}
+                        {/* Guide Assignment & Safety Validation */}
+                        {showGuideValidation && (
+                            <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
+                                <div className="flex items-start justify-between mb-6">
+                                    <h2 className="text-lg font-semibold text-[#0F2A1D] dark:text-[#E3EED4] flex items-center gap-2">
+                                        <Users className="w-5 h-5" />
+                                        Guide Information
+                                    </h2>
+                                    <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${
+                                        validationStatus === 'CONFIRMED'
+                                            ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+                                            : 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+                                    }`}>
+                                        {validationStatus === 'CONFIRMED' ? (
+                                            <CheckCircle className="w-4 h-4" />
+                                        ) : (
+                                            <AlertCircle className="w-4 h-4" />
+                                        )}
+                                        {validationStatus}
+                                    </span>
+                                </div>
+
+                                {isBlocked && (
+                                    <div className="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 flex items-start gap-3">
+                                        <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                                        <p className="text-sm text-red-700 dark:text-red-300">
+                                            Insufficient available guides based on 1:1 safety policy.
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mb-1">Assigned Guide(s)</p>
+                                        <div className="space-y-2">
+                                            {assignedGuides.length > 0 ? (
+                                                assignedGuides.map((guide) => (
+                                                    <div
+                                                        key={guide.id}
+                                                        className="px-3 py-2 rounded-lg bg-[#F8FAFB] dark:bg-[#1a3a2e] border border-[#AEC3B0]/20 dark:border-[#375534]/20 text-sm text-[#0F2A1D] dark:text-[#E3EED4]"
+                                                    >
+                                                        {guide.name}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] italic">
+                                                    No guides assigned
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div className="p-4 rounded-lg bg-[#F8FAFB] dark:bg-[#1a3a2e] border border-[#AEC3B0]/20 dark:border-[#375534]/20">
+                                            <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mb-2">Total Guests</p>
+                                            <p className="text-2xl font-bold text-[#375534] dark:text-[#AEC3B0]">
+                                                {guestList.totalGuests}
+                                            </p>
+                                        </div>
+                                        <div className="p-4 rounded-lg bg-[#F8FAFB] dark:bg-[#1a3a2e] border border-[#AEC3B0]/20 dark:border-[#375534]/20">
+                                            <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mb-2">Required Guides</p>
+                                            <p className="text-2xl font-bold text-[#375534] dark:text-[#AEC3B0]">
+                                                {requiredGuides}
+                                            </p>
+                                        </div>
+                                        <div className={`p-4 rounded-lg border ${
+                                            isBlocked
+                                                ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/30'
+                                                : 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-900/30'
+                                        }`}>
+                                            <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mb-2">Available Guides</p>
+                                            <p className={`text-2xl font-bold ${
+                                                isBlocked
+                                                    ? 'text-red-600 dark:text-red-400'
+                                                    : 'text-green-600 dark:text-green-400'
+                                            }`}>
+                                                {availableGuides}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {isCanyoneering && (
+                                    <div className="mt-6 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30">
+                                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                                            <strong>Badian Safety Policy:</strong> 1 Guide per 1 Guest ratio is required. {requiredGuides} guide{requiredGuides !== 1 ? 's' : ''} needed for {guestList.totalGuests} guest{guestList.totalGuests !== 1 ? 's' : ''}.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        
                         <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
                             <h2 className="text-lg font-semibold text-[#0F2A1D] dark:text-[#E3EED4] mb-4 flex items-center gap-2">
                                 <Users className="w-5 h-5" />
@@ -225,8 +335,25 @@ export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats }: 
 
                     {/* QR Codes Sidebar */}
                     <div className="space-y-6">
+                        {isBlocked && (
+                            <div className="rounded-2xl border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 p-4 flex items-start gap-3">
+                                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-sm font-semibold text-red-700 dark:text-red-300 mb-1">
+                                        QR Codes Disabled
+                                    </p>
+                                    <p className="text-xs text-red-600 dark:text-red-400">
+                                        QR code functionality is disabled until guide validation requirements are met.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                         {/* QR Stats */}
-                        <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
+                        <div className={`rounded-2xl border bg-white dark:bg-[#0F2A1D] shadow-sm p-6 ${
+                            isBlocked 
+                                ? 'opacity-50 border-[#AEC3B0]/20 dark:border-[#375534]/20' 
+                                : 'border-[#AEC3B0]/40 dark:border-[#375534]/40'
+                        }`}>
                             <h2 className="text-lg font-semibold text-[#0F2A1D] dark:text-[#E3EED4] mb-4 flex items-center gap-2">
                                 <QrCode className="w-5 h-5" />
                                 QR Code Status
@@ -253,7 +380,11 @@ export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats }: 
                         </div>
 
                         {/* QR Codes List */}
-                        <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
+                        <div className={`rounded-2xl border bg-white dark:bg-[#0F2A1D] shadow-sm p-6 ${
+                            isBlocked 
+                                ? 'opacity-50 border-[#AEC3B0]/20 dark:border-[#375534]/20' 
+                                : 'border-[#AEC3B0]/40 dark:border-[#375534]/40'
+                        }`}>
                             <h2 className="text-lg font-semibold text-[#0F2A1D] dark:text-[#E3EED4] mb-4">
                                 QR Codes ({qrCodes.length})
                             </h2>
@@ -262,7 +393,11 @@ export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats }: 
                                 {qrCodes.map((qr, index) => (
                                     <div
                                         key={qr.id}
-                                        className={`p-3 rounded-lg border flex items-center justify-between ${getStatusColor(qr.status)}`}
+                                        className={`p-3 rounded-lg border flex items-center justify-between ${
+                                            isBlocked 
+                                                ? 'cursor-not-allowed bg-gray-100 dark:bg-gray-900/20 border-gray-300 dark:border-gray-700' 
+                                                : getStatusColor(qr.status)
+                                        }`}
                                     >
                                         <div className="flex items-center gap-2 flex-1">
                                             {getStatusIcon(qr.status)}
@@ -276,8 +411,13 @@ export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats }: 
                                             </div>
                                         </div>
                                         <button
-                                            onClick={() => setShowQRModal(qr.token)}
-                                            className="p-2 hover:bg-white/50 dark:hover:bg-black/20 rounded transition-colors"
+                                            onClick={() => !isBlocked && setShowQRModal(qr.token)}
+                                            disabled={isBlocked}
+                                            className={`p-2 rounded transition-colors ${
+                                                isBlocked
+                                                    ? 'cursor-not-allowed opacity-50'
+                                                    : 'hover:bg-white/50 dark:hover:bg-black/20'
+                                            }`}
                                         >
                                             <Eye className="w-4 h-4 text-[#375534] dark:text-[#E3EED4]" />
                                         </button>

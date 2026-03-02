@@ -76,6 +76,11 @@ export function AppSidebar() {
             href: '/accommodations',
             icon: Building2,
         },
+        {
+            title: 'Guide Management',
+            href: '/guides',
+            icon: Users,
+        },
     ];
 
     // items for external operator accounts
@@ -125,6 +130,11 @@ export function AppSidebar() {
             href: '/operator/guest-submission',
             icon: ClipboardList,
             disabled: !isApproved,
+        },
+        {
+            title: 'Alerts',
+            href: '/operator/alerts',
+            icon: Bell,
         },
         {
             title: 'Notifications',

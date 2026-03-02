@@ -19,6 +19,9 @@ use App\Http\Controllers\Operator\ProfileController;
 use App\Http\Controllers\Operator\DocumentController;
 use App\Http\Controllers\Operator\ServiceController;
 use App\Http\Controllers\Operator\GuestSubmissionController;
+use App\Http\Controllers\Operator\AlertController;
+use App\Http\Controllers\Admin\GuideManagementController;
+use App\Http\Controllers\GuideController;
 use App\Http\Controllers\Dashboard\TouristDashboardController;
 use App\Http\Controllers\Tourist\ExploreActivityController;
 use App\Http\Controllers\Tourist\ExploreAttractionController;
@@ -153,6 +156,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('operator.guest-submission.destroy');
 });
 
+// Operator Alerts Routes
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('operator/alerts', [AlertController::class, 'index'])
+        ->name('operator.alerts.index');
+
+    Route::get('operator/alerts/api', [AlertController::class, 'getAlerts'])
+        ->name('operator.alerts.api');
+
+    Route::get('operator/alerts/{alert}', [AlertController::class, 'show'])
+        ->name('operator.alerts.show');
+
+    Route::post('operator/alerts/{alert}/acknowledge', [AlertController::class, 'acknowledge'])
+        ->name('operator.alerts.acknowledge');
+
+    Route::post('operator/alerts/{alert}/resolve', [AlertController::class, 'resolve'])
+        ->name('operator.alerts.resolve');
+
+    Route::post('operator/alerts', [AlertController::class, 'store'])
+        ->name('operator.alerts.store');
+});
+
 Route::get('lgu-dot-dashboard', function () {
     return Inertia::render('dashboards/lgu-dot-dashboard');
 })->middleware(['auth', 'verified'])->name('lgu-dot.dashboard');
@@ -198,6 +222,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('services/{service}/approve', [AdminServiceController::class, 'approve'])->name('services.approve');
     Route::post('services/{service}/reject', [AdminServiceController::class, 'reject'])->name('services.reject');
     Route::post('services/{service}/request-revision', [AdminServiceController::class, 'requestRevision'])->name('services.request-revision');
+});
+
+// Guide Registration Routes (Public) - MUST come before admin routes to avoid parameter catching
+Route::get('guides/register', [GuideController::class, 'create'])->name('guides.register');
+Route::post('guides/register', [GuideController::class, 'store'])->name('guides.store');
+Route::get('guides/registration-success/{guide}', [GuideController::class, 'registrationSuccess'])->name('guides.registration-success');
+
+// Guide Management Routes (Admin) - MUST come after public routes
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('guides/create', [GuideManagementController::class, 'create'])->name('guides.create');
+    Route::get('guides', [GuideManagementController::class, 'index'])->name('guides.index');
+    Route::get('guides/{guide}', [GuideManagementController::class, 'show'])->name('guides.show');
+    Route::post('guides/{guide}/approve', [GuideManagementController::class, 'approve'])->name('guides.approve');
+    Route::post('guides/{guide}/reject', [GuideManagementController::class, 'reject'])->name('guides.reject');
+    Route::get('guides/export/csv', [GuideManagementController::class, 'export'])->name('guides.export');
 });
 
 require __DIR__.'/settings.php';
