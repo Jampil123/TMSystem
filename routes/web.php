@@ -21,6 +21,7 @@ use App\Http\Controllers\Operator\ServiceController;
 use App\Http\Controllers\Operator\GuestSubmissionController;
 use App\Http\Controllers\Operator\AlertController;
 use App\Http\Controllers\Admin\GuideManagementController;
+use App\Http\Controllers\Admin\GuideAvailabilityController;
 use App\Http\Controllers\GuideController;
 use App\Http\Controllers\Dashboard\TouristDashboardController;
 use App\Http\Controllers\Tourist\ExploreActivityController;
@@ -232,6 +233,10 @@ Route::get('guides/registration-success/{guide}', [GuideController::class, 'regi
 // Guide Management Routes (Admin) - MUST come after public routes
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('guides/create', [GuideManagementController::class, 'create'])->name('guides.create');
+    Route::get('guides/availability', [GuideAvailabilityController::class, 'index'])->name('guides.availability');
+    Route::post('guides/availability', [GuideAvailabilityController::class, 'store'])->name('guides.availability.store');
+    Route::put('guides/availability/{availability}', [GuideAvailabilityController::class, 'update'])->name('guides.availability.update');
+    Route::delete('guides/availability/{availability}', [GuideAvailabilityController::class, 'destroy'])->name('guides.availability.destroy');
     Route::get('guides', [GuideManagementController::class, 'index'])->name('guides.index');
     Route::get('guides/{guide}', [GuideManagementController::class, 'show'])->name('guides.show');
     Route::post('guides/{guide}/approve', [GuideManagementController::class, 'approve'])->name('guides.approve');

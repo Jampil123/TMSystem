@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Users, Compass, Zap, Building2, Home, User, FileText, Bell, Settings, ClipboardList, CheckCircle, Package, Plus, List, CheckCheck } from 'lucide-react';
+import { LayoutGrid, Users, Compass, Zap, Building2, Home, User, FileText, Bell, Settings, ClipboardList, CheckCircle, Package, Plus, List, CheckCheck, Calendar } from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -78,8 +78,19 @@ export function AppSidebar() {
         },
         {
             title: 'Guide Management',
-            href: '/guides',
             icon: Users,
+            items: [
+                {
+                    title: 'All Guides',
+                    href: '/guides',
+                    icon: List,
+                },
+                {
+                    title: 'Availability Tracking',
+                    href: '/guides/availability',
+                    icon: Calendar,
+                },
+            ],
         },
     ];
 

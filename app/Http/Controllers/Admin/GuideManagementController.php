@@ -31,6 +31,7 @@ class GuideManagementController extends Controller
         ]);
     }
 
+
     public function index(Request $request)
     {
         $query = Guide::query();

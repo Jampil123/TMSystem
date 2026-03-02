@@ -338,6 +338,38 @@ $table->enum('status', ['Pending', 'Approved', 'Rejected', 'Suspended'])->defaul
 
 ### Guide Registration Endpoint
 
+## Guide Availability
+
+Admins can manage guide availability which is used by assignment workflows. Key fields include:
+
+- **guide_id** (foreign key)
+- **start_date** / **end_date** (date-time range)
+- **full_day** (boolean)
+- **status** (Available / Unavailable / On Leave)
+- **notes** (optional)
+
+System logic prevents overlapping entries for the same guide and highlights conflicts when assignments are made. The availability data is stored in the `guide_availabilities` table.
+
+**Endpoints:**
+
+```php
+// list with filters
+GET /guides/availability?guide_id=&status=&date=
+
+// create
+POST /guides/availability
+
+// update
+PUT /guides/availability/{availability}
+
+// delete
+DELETE /guides/availability/{availability}
+```
+
+---
+
+### Guide Registration Endpoint
+
 **POST /guides/register**
 
 Request:

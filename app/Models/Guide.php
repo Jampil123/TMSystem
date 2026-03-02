@@ -37,6 +37,14 @@ class Guide extends Model
     }
 
     /**
+     * Guide availability records (for admin scheduling).
+     */
+    public function availabilities()
+    {
+        return $this->hasMany(\App\Models\GuideAvailability::class);
+    }
+
+    /**
      * Get the admin who reviewed this guide.
      */
     public function reviewer()
