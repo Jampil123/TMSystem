@@ -38,6 +38,17 @@ export default function AssignmentConfirmModal({
     const [notes, setNotes] = useState('');
     const [agreedToWarnings, setAgreedToWarnings] = useState(false);
 
+    React.useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isOpen]);
+
     if (!isOpen || !guide) return null;
 
     const hasExpiringCerts = (guide.expiring_soon_certifications || []).length > 0;
@@ -89,8 +100,8 @@ export default function AssignmentConfirmModal({
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 overflow-hidden">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-screen overflow-y-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b">
                     <h2 className="text-xl font-semibold text-gray-900">Confirm Assignment</h2>

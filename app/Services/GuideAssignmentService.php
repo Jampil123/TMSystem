@@ -41,6 +41,7 @@ class GuideAssignmentService
      * - Already assigned at same time
      * - Marked unavailable
      * - Compliance status = Flagged
+     * - Already assigned to this guest list
      */
     private function isGuideEligible(Guide $guide, GuestList $guestList, array $filters): bool
     {
@@ -51,6 +52,11 @@ class GuideAssignmentService
 
         // Rule 2: Check for expired certifications
         if ($this->hasExpiredCertification($guide)) {
+            return false;
+        }
+
+        // Rule 2.5: Check if guide is already assigned to this guest list
+        if ($this->isAlreadyAssignedToGuestList($guide, $guestList)) {
             return false;
         }
 
@@ -96,6 +102,17 @@ class GuideAssignmentService
             ->count();
 
         return $expiredCerts > 0;
+    }
+
+    /**
+     * Check if guide is already assigned to this guest list.
+     */
+    private function isAlreadyAssignedToGuestList(Guide $guide, GuestList $guestList): bool
+    {
+        return GuideAssignment::where('guide_id', $guide->id)
+            ->where('guest_list_id', $guestList->id)
+            ->active()
+            ->exists();
     }
 
     /**
@@ -192,6 +209,21 @@ class GuideAssignmentService
             throw new \Exception('Guide is not eligible for assignment due to conflicts or compliance issues.');
         }
 
+        // Enforce 1:1 safety ratio: check if we already have enough guides
+        $alreadyAssigned = $guestList->assignments()->active()->count();
+        if ($alreadyAssigned >= $guestList->total_guests) {
+            throw new \Exception('All required guides have already been assigned for this guest list (1:1 safety ratio met).');
+        }
+
+        // Check if this guide is already assigned to this guest list
+        $guidedAlreadyAssigned = $guestList->assignments()
+            ->where('guide_id', $guide->id)
+            ->active()
+            ->exists();
+        if ($guidedAlreadyAssigned) {
+            throw new \Exception('This guide is already assigned to this guest list.');
+        }
+
         // Check for warnings
         $certificationWarning = $this->hasCertificationExpiringSoon($guide);
         $availabilityConflict = $this->willCauseConflict($guide, $guestList);
@@ -282,9 +314,14 @@ class GuideAssignmentService
         }
 
         if (!empty($alerts)) {
+            // Generate tourist group name from service or guest list
+            $serviceName = $guestList->service?->service_name ?? 'Guest Group';
+            $touristGroupName = "{$serviceName} - {$guestList->total_guests} guests";
+
             OperatorAlert::create([
                 'operator_id' => $guestList->operator_id,
                 'alert_type' => 'Assignment Warning',
+                'tourist_group_name' => $touristGroupName,
                 'subject' => "Assignment Alert: {$guide->full_name}",
                 'message' => implode(', ', $alerts),
                 'reference_type' => 'GuideAssignment',

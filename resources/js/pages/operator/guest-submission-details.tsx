@@ -194,22 +194,31 @@ export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats, as
 
                                                 const data = await response.json();
 
-                                                if (!response.ok) {
-                                                    let errorMsg = data.message || 'Unknown error';
-                                                    
-                                                    // User-friendly error messages
-                                                    if (data.code === 'DUPLICATE_ASSIGNMENT') {
-                                                        errorMsg = '❌ ' + errorMsg;
-                                                    } else if (errorMsg.includes('No eligible')) {
-                                                        errorMsg = '⚠️ No eligible guides available. Check guide status, certifications, and availability.';
-                                                    }
-                                                    
-                                                    alert(errorMsg);
+                                                // Handle success case
+                                                if (data.success) {
+                                                    alert(`✅ ${data.message}`);
+                                                    router.reload();
                                                     return;
                                                 }
 
-                                                alert(`✅ ${data.message}`);
-                                                router.reload();
+                                                // Handle special case: all guides already assigned
+                                                if (data.code === 'SAFETY_RATIO_MET') {
+                                                    alert(data.message);
+                                                    router.reload();
+                                                    return;
+                                                }
+
+                                                // Handle error cases
+                                                let errorMsg = data.message || 'Unknown error';
+                                                if (data.code === 'DUPLICATE_ASSIGNMENT') {
+                                                    errorMsg = '❌ ' + errorMsg;
+                                                } else if (errorMsg.includes('No eligible')) {
+                                                    errorMsg = '⚠️ No eligible guides available. Check guide status, certifications, and availability.';
+                                                } else if (errorMsg.includes('already assigned')) {
+                                                    errorMsg = '❌ This guide is already assigned to this guest list.';
+                                                }
+                                                
+                                                alert(errorMsg);
                                             } catch (e: any) {
                                                 alert(`❌ Error: ${e.message}`);
                                             } finally {

@@ -321,18 +321,35 @@ class GuideController extends Controller
             if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'One or more guides are already assigned to this guest list. Please select different guides.',
+                    'message' => 'One or more guides are already assigned to this guest list.',
                     'code' => 'DUPLICATE_ASSIGNMENT',
                 ], 400);
             }
             return response()->json([
                 'success' => false,
-                'message' => 'Database error: ' . $e->getMessage(),
+                'message' => 'Database error occurred',
             ], 400);
         } catch (\Exception $e) {
+            $message = $e->getMessage();
+            
+            // Return user-friendly messages for common cases
+            if (strpos($message, 'already been assigned') !== false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '✅ All required guides have been assigned! The 1:1 safety ratio is met.',
+                    'code' => 'SAFETY_RATIO_MET',
+                ], 200);
+            } elseif (strpos($message, 'already assigned to this guest list') !== false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This guide is already assigned to this guest list.',
+                    'code' => 'GUIDE_DUPLICATE',
+                ], 400);
+            }
+            
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => $message,
             ], 400);
         }
     }
