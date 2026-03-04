@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Notifiable;
 
 class Guide extends Model
 {
+    use Notifiable;
+
     protected $fillable = [
         'full_name',
         'contact_number',
@@ -42,6 +45,14 @@ class Guide extends Model
     public function availabilities()
     {
         return $this->hasMany(\App\Models\GuideAvailability::class);
+    }
+
+    /**
+     * Get guide assignments.
+     */
+    public function assignments()
+    {
+        return $this->hasMany(\App\Models\GuideAssignment::class);
     }
 
     /**

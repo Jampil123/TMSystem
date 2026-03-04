@@ -4,9 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Guide;
 use App\Models\GuideCertification;
+use App\Models\GuestList;
+use App\Models\GuideAssignment;
+use App\Services\GuideAssignmentService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 class GuideController extends Controller
 {
@@ -179,4 +183,343 @@ class GuideController extends Controller
             })->toArray(),
         ];
     }
-}
+
+    /**
+     * Get eligible guides for assignment to a guest list.
+     * Step 2: System Filters Eligible Guides
+     */
+    public function getEligibleGuides(Request $request, GuestList $guestList)
+    {
+        $service = new GuideAssignmentService();
+
+        $filters = $request->validate([
+            'service_type' => 'nullable|string',
+            'required_certification' => 'nullable|string',
+        ]);
+
+        try {
+            $eligibleGuides = $service->getEligibleGuides($guestList, $filters);
+
+            $guidesData = $eligibleGuides->map(function (Guide $guide) use ($service, $guestList) {
+                $details = $service->getGuideAvailabilityDetails($guide, $guestList->visit_date);
+                return [
+                    'id' => $guide->id,
+                    'full_name' => $guide->full_name ?? 'Unknown Guide',
+                    'email' => $guide->email ?? 'No email',
+                    'contact_number' => $guide->contact_number ?? 'No number',
+                    'years_of_experience' => $guide->years_of_experience ?? 0,
+                    'specialty_areas' => is_array($guide->specialty_areas) ? $guide->specialty_areas : [],
+                    'is_available' => $details['is_available'],
+                    'expiry_status' => $details['expiry_status'],
+                    'assignment_summary' => $details['assignment_summary'],
+                    'expired_certifications' => $details['expired_certifications'],
+                    'expiring_soon_certifications' => $details['expiring_soon_certifications'],
+                ];
+            })->toArray();
+
+            return response()->json([
+                'success' => true,
+                'data' => $guidesData,
+                'count' => count($guidesData),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Assign a guide to a guest list.
+     * Step 3 & 4: Guide Selection and Assignment Confirmation
+     */
+    public function assignGuide(Request $request, GuestList $guestList)
+    {
+        $validated = $request->validate([
+            'guide_id' => 'required|exists:guides,id',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i|after:start_time',
+            'service_type' => 'nullable|string',
+            'notes' => 'nullable|string',
+        ]);
+
+        $service = new GuideAssignmentService();
+        $guide = Guide::findOrFail($validated['guide_id']);
+
+        try {
+            // Check if assignment is allowed
+            $assignment = $service->assignGuide(
+                $guestList,
+                $guide,
+                [
+                    'start_time' => now()->setHour(intval(explode(':', $validated['start_time'])[0]))->setMinute(intval(explode(':', $validated['start_time'])[1])),
+                    'end_time' => now()->setHour(intval(explode(':', $validated['end_time'])[0]))->setMinute(intval(explode(':', $validated['end_time'])[1])),
+                    'service_type' => $validated['service_type'],
+                    'notes' => $validated['notes'],
+                ],
+                Auth::user()
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => "Guide {$guide->full_name} has been assigned successfully!",
+                'data' => [
+                    'assignment_id' => $assignment->id,
+                    'status' => $assignment->assignment_status,
+                    'compliance_status' => $assignment->compliance_status,
+                    'has_warnings' => $assignment->has_certification_warning || $assignment->has_availability_conflict,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Auto-assign a guide based on best fit.
+     * Option B from Step 3: Auto-Assignment
+     */
+    public function autoAssignGuide(Request $request, GuestList $guestList)
+    {
+        $validated = $request->validate([
+            'service_type' => 'nullable|string',
+            'required_certification' => 'nullable|string',
+        ]);
+
+        $service = new GuideAssignmentService();
+
+        try {
+            // Auto-assign multiple guides based on guest count
+            $assignments = $service->autoAssignMultipleGuides(
+                $guestList,
+                $validated,
+                Auth::user()
+            );
+
+            if (empty($assignments)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No eligible guides available for this assignment.',
+                ], 400);
+            }
+
+            $guideNames = implode(', ', collect($assignments)->map(fn($a) => $a->guide->full_name)->toArray());
+
+            return response()->json([
+                'success' => true,
+                'message' => count($assignments) . " guide(s) auto-assigned: {$guideNames}",
+                'data' => [
+                    'assignments_count' => count($assignments),
+                    'guides_assigned' => collect($assignments)->pluck('guide.full_name')->toArray(),
+                ],
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'One or more guides are already assigned to this guest list. Please select different guides.',
+                    'code' => 'DUPLICATE_ASSIGNMENT',
+                ], 400);
+            }
+            return response()->json([
+                'success' => false,
+                'message' => 'Database error: ' . $e->getMessage(),
+            ], 400);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Confirm an assignment (change from Pending to Confirmed).
+     */
+    public function confirmAssignment(GuideAssignment $assignment)
+    {
+        try {
+            $assignment->confirm();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Assignment confirmed successfully!',
+                'data' => [
+                    'assignment_id' => $assignment->id,
+                    'status' => $assignment->assignment_status,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Complete an assignment.
+     */
+    public function completeAssignment(GuideAssignment $assignment)
+    {
+        try {
+            $assignment->complete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Assignment marked as completed!',
+                'data' => [
+                    'assignment_id' => $assignment->id,
+                    'status' => $assignment->assignment_status,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Cancel an assignment.
+     */
+    public function cancelAssignment(GuideAssignment $assignment, Request $request)
+    {
+        $validated = $request->validate([
+            'reason' => 'nullable|string',
+        ]);
+
+        try {
+            $assignment->cancel($validated['reason']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Assignment cancelled successfully!',
+                'data' => [
+                    'assignment_id' => $assignment->id,
+                    'status' => $assignment->assignment_status,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Get assignment details with full information.
+     */
+    public function getAssignmentDetails(GuideAssignment $assignment)
+    {
+        $service = new GuideAssignmentService();
+        $guide = $assignment->guide;
+        $guestList = $assignment->guestList;
+
+        $assignmentData = [
+            'id' => $assignment->id,
+            'guest_list_id' => $assignment->guest_list_id,
+            'guide' => [
+                'id' => $guide->id,
+                'full_name' => $guide->full_name,
+                'email' => $guide->email,
+                'contact_number' => $guide->contact_number,
+                'specialty_areas' => $guide->specialty_areas,
+                'years_of_experience' => $guide->years_of_experience,
+            ],
+            'guest_list' => [
+                'id' => $guestList->id,
+                'visit_date' => $guestList->visit_date->format('Y-m-d'),
+                'total_guests' => $guestList->total_guests,
+                'status' => $guestList->status,
+            ],
+            'assignment_date' => $assignment->assignment_date->format('Y-m-d'),
+            'start_time' => $assignment->start_time->format('H:i'),
+            'end_time' => $assignment->end_time->format('H:i'),
+            'guest_count' => $assignment->guest_count,
+            'status' => $assignment->assignment_status,
+            'compliance_status' => $assignment->compliance_status,
+            'compliance_notes' => $assignment->compliance_notes,
+            'has_certification_warning' => $assignment->has_certification_warning,
+            'has_availability_conflict' => $assignment->has_availability_conflict,
+            'available_details' => $service->getGuideAvailabilityDetails($guide, $guestList->visit_date->format('Y-m-d')),
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => $assignmentData,
+        ]);
+    }
+
+    /**
+     * Debug endpoint: Show why guides are/aren't eligible
+     */
+    public function debugEligibleGuides(Request $request, GuestList $guestList)
+    {
+        $service = new GuideAssignmentService();
+        $allGuides = Guide::all();
+
+        $debugData = $allGuides->map(function (Guide $guide) use ($service, $guestList) {
+            $reasons = [];
+
+            // Check each eligibility rule
+            if ($guide->status !== 'Approved') {
+                $reasons[] = "Status is '{$guide->status}' (not Approved)";
+            }
+
+            $expiredCerts = $guide->certifications()
+                ->where('expiry_date', '<', now())
+                ->count();
+            if ($expiredCerts > 0) {
+                $reasons[] = "Has {$expiredCerts} expired certification(s)";
+            }
+
+            $timeConflict = \App\Models\GuideAssignment::where('guide_id', $guide->id)
+                ->where('assignment_date', $guestList->visit_date)
+                ->active()
+                ->count();
+            if ($timeConflict > 0) {
+                $reasons[] = "Has {$timeConflict} existing assignment(s) on {$guestList->visit_date}";
+            }
+
+            $unavailable = $guide->availabilities()
+                ->where('status', '!=', 'Available')
+                ->where(function ($q) use ($guestList) {
+                    $q->whereDate('start_date', '<=', $guestList->visit_date)
+                        ->whereDate('end_date', '>=', $guestList->visit_date);
+                })
+                ->count();
+            if ($unavailable > 0) {
+                $reasons[] = "Marked unavailable on {$guestList->visit_date}";
+            }
+
+            $specialties = $guide->specialty_areas ?? [];
+            if (!empty($specialties) && !in_array($guestList->service->service_type ?? null, $specialties, true)) {
+                $reasons[] = "Specialty areas (" . implode(', ', $specialties) . ") don't match service type '{$guestList->service->service_type}'";
+            }
+
+            return [
+                'guide_id' => $guide->id,
+                'full_name' => $guide->full_name ?? 'Unknown',
+                'status' => $guide->status,
+                'specialties' => $specialties,
+                'certifications_count' => $guide->certifications()->count(),
+                'eligible' => empty($reasons),
+                'filter_reasons' => $reasons,
+            ];
+        });
+
+        return response()->json([
+            'guest_list_id' => $guestList->id,
+            'visit_date' => $guestList->visit_date,
+            'service_type' => $guestList->service->service_type ?? null,
+            'all_guides' => $debugData,
+            'eligible_count' => $debugData->filter(fn($g) => $g['eligible'])->count(),
+        ]);
+    }}

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { ArrowLeft, Users, Calendar, MapPin, QrCode, Eye, Download, Trash2, Info, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import EligibleGuides from '@/components/admin/guides/EligibleGuides';
+import AssignmentConfirmModal from '@/components/admin/guides/AssignmentConfirmModal';
 import type { BreadcrumbItem } from '@/types';
 
 interface QRCode {
@@ -56,16 +58,24 @@ export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats, as
     const [showQRModal, setShowQRModal] = useState<string | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [showEligibleModal, setShowEligibleModal] = useState(false);
+    const [selectedGuide, setSelectedGuide] = useState<any | null>(null);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [isAutoAssigning, setIsAutoAssigning] = useState(false);
 
     // Guide validation logic
     const isCanyoneering = guestList.serviceType === 'Canyoneering' || guestList.serviceName?.toLowerCase().includes('canyoneering') || guestList.serviceName?.toLowerCase().includes('badian');
-    const showGuideValidation = true; // Temporarily enabled for all services for demo
-    const requiredGuides = isCanyoneering ? guestList.totalGuests : 0;
-    const validationStatus = isCanyoneering 
-        ? availableGuides >= requiredGuides 
-            ? 'CONFIRMED' 
-            : 'BLOCKED'
-        : null;
+    const showGuideValidation = true; // Enabled for all services for demo
+    
+    // 1:1 safety ratio: 1 guide per guest minimum
+    const requiredGuides = guestList.totalGuests;
+    
+    // Total guides = already assigned + available for assignment
+    const totalAvailableGuides = assignedGuides.length + availableGuides;
+    
+    const validationStatus = totalAvailableGuides >= requiredGuides 
+        ? 'CONFIRMED' 
+        : 'BLOCKED';
     const isBlocked = validationStatus === 'BLOCKED';
 
     const handleDelete = () => {
@@ -107,7 +117,7 @@ export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats, as
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Guest List Details" />
-            <div className="flex h-full flex-1 flex-col gap-6 p-6 bg-[#E3EED4] dark:bg-[#0F2A1D]">
+            <div className="flex h-full flex-1 flex-col gap-6 p-6 bg-[#E3EED4] dark:bg-[#0F2A1D] overflow-y-auto">
                 {/* Header with Back Button */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -158,6 +168,59 @@ export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats, as
                                     <p className="text-lg font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
                                         {guestList.serviceName}
                                     </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setShowEligibleModal(true)}
+                                        className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                                    >
+                                        View Eligible Guides
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            if (!confirm('Auto-assign best matching guide now?')) return;
+                                            setIsAutoAssigning(true);
+                                            try {
+                                                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                                                
+                                                const response = await fetch(`/guest-lists/${guestList.id}/auto-assign-guide`, {
+                                                    method: 'POST',
+                                                    headers: { 
+                                                        'Content-Type': 'application/json',
+                                                        'X-CSRF-TOKEN': csrfToken,
+                                                    },
+                                                    body: JSON.stringify({ service_type: guestList.serviceType }),
+                                                });
+
+                                                const data = await response.json();
+
+                                                if (!response.ok) {
+                                                    let errorMsg = data.message || 'Unknown error';
+                                                    
+                                                    // User-friendly error messages
+                                                    if (data.code === 'DUPLICATE_ASSIGNMENT') {
+                                                        errorMsg = '❌ ' + errorMsg;
+                                                    } else if (errorMsg.includes('No eligible')) {
+                                                        errorMsg = '⚠️ No eligible guides available. Check guide status, certifications, and availability.';
+                                                    }
+                                                    
+                                                    alert(errorMsg);
+                                                    return;
+                                                }
+
+                                                alert(`✅ ${data.message}`);
+                                                router.reload();
+                                            } catch (e: any) {
+                                                alert(`❌ Error: ${e.message}`);
+                                            } finally {
+                                                setIsAutoAssigning(false);
+                                            }
+                                        }}
+                                        disabled={isAutoAssigning}
+                                        className="px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50"
+                                    >
+                                        {isAutoAssigning ? 'Assigning...' : 'Auto-Assign'}
+                                    </button>
                                 </div>
                                 <div>
                                     <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mb-1">Service Type</p>
@@ -242,10 +305,10 @@ export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats, as
                                                 {guestList.totalGuests}
                                             </p>
                                         </div>
-                                        <div className="p-4 rounded-lg bg-[#F8FAFB] dark:bg-[#1a3a2e] border border-[#AEC3B0]/20 dark:border-[#375534]/20">
-                                            <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mb-2">Required Guides</p>
-                                            <p className="text-2xl font-bold text-[#375534] dark:text-[#AEC3B0]">
-                                                {requiredGuides}
+                                        <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30">
+                                            <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mb-2">Guides Assigned</p>
+                                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                                {assignedGuides.length}
                                             </p>
                                         </div>
                                         <div className={`p-4 rounded-lg border ${
@@ -253,13 +316,13 @@ export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats, as
                                                 ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/30'
                                                 : 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-900/30'
                                         }`}>
-                                            <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mb-2">Available Guides</p>
+                                            <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mb-2">Still Needed</p>
                                             <p className={`text-2xl font-bold ${
                                                 isBlocked
                                                     ? 'text-red-600 dark:text-red-400'
                                                     : 'text-green-600 dark:text-green-400'
                                             }`}>
-                                                {availableGuides}
+                                                {Math.max(0, requiredGuides - assignedGuides.length)}
                                             </p>
                                         </div>
                                     </div>
@@ -428,10 +491,51 @@ export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats, as
                     </div>
                 </div>
 
+                {/* Eligible Guides Modal */}
+                {showEligibleModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white dark:bg-[#0F2A1D] rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] flex flex-col">
+                            <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                                <h3 className="text-lg font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">Eligible Guides</h3>
+                                <button onClick={() => setShowEligibleModal(false)} className="text-gray-500 hover:text-gray-700">✕</button>
+                            </div>
+                            <div className="overflow-y-auto flex-1 min-h-0">
+                                <EligibleGuides
+                                    guestListId={guestList.id}
+                                    visitDate={guestList.visitDate}
+                                    totalGuests={guestList.totalGuests}
+                                    serviceType={guestList.serviceType}
+                                    onGuideSelected={(guide) => {
+                                        setSelectedGuide(guide);
+                                        setShowEligibleModal(false);
+                                        setShowConfirmModal(true);
+                                    }}
+                                    onAutoAssign={() => {
+                                        // handled separately via Auto-Assign button
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Assignment Confirm Modal */}
+                {showConfirmModal && selectedGuide && (
+                    <AssignmentConfirmModal
+                        guestListId={guestList.id}
+                        guide={selectedGuide}
+                        visitDate={guestList.visitDate}
+                        totalGuests={guestList.totalGuests}
+                        isOpen={showConfirmModal}
+                        onClose={() => { setShowConfirmModal(false); setSelectedGuide(null); }}
+                        onSuccess={() => router.reload()}
+                    />
+                )}
+
                 {/* Delete Confirmation Modal */}
                 {showDeleteConfirm && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                        <div className="bg-white dark:bg-[#0F2A1D] rounded-2xl p-6 max-w-sm mx-4">
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white dark:bg-[#0F2A1D] rounded-2xl p-6 max-w-sm mx-auto w-full">
                             <h3 className="text-lg font-semibold text-[#0F2A1D] dark:text-[#E3EED4] mb-2">
                                 Delete Guest List?
                             </h3>
@@ -460,8 +564,8 @@ export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats, as
 
                 {/* QR Code Modal */}
                 {showQRModal && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                        <div className="bg-white dark:bg-[#0F2A1D] rounded-2xl p-6 max-w-sm mx-4">
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white dark:bg-[#0F2A1D] rounded-2xl p-6 max-w-sm mx-auto w-full">
                             <h3 className="text-lg font-semibold text-[#0F2A1D] dark:text-[#E3EED4] mb-4">
                                 QR Code Details
                             </h3>

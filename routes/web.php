@@ -242,6 +242,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('guides/{guide}/approve', [GuideManagementController::class, 'approve'])->name('guides.approve');
     Route::post('guides/{guide}/reject', [GuideManagementController::class, 'reject'])->name('guides.reject');
     Route::get('guides/export/csv', [GuideManagementController::class, 'export'])->name('guides.export');
+
+    // Guide Assignment Routes (5.3 Implementation) - also available to non-admin users
+    Route::get('guest-lists/{guestList}/eligible-guides', [GuideController::class, 'getEligibleGuides'])->name('guide-assignments.eligible');
+    Route::post('guest-lists/{guestList}/assign-guide', [GuideController::class, 'assignGuide'])->name('guide-assignments.store');
+    Route::post('guest-lists/{guestList}/auto-assign-guide', [GuideController::class, 'autoAssignGuide'])->name('guide-assignments.auto');
+    Route::post('guide-assignments/{assignment}/confirm', [GuideController::class, 'confirmAssignment'])->name('guide-assignments.confirm');
+    Route::post('guide-assignments/{assignment}/complete', [GuideController::class, 'completeAssignment'])->name('guide-assignments.complete');
+    Route::post('guide-assignments/{assignment}/cancel', [GuideController::class, 'cancelAssignment'])->name('guide-assignments.cancel');
+    Route::get('guide-assignments/{assignment}', [GuideController::class, 'getAssignmentDetails'])->name('guide-assignments.show');
+});
+
+// Duplicate assignment endpoints for operators/general users
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('guest-lists/{guestList}/eligible-guides', [GuideController::class, 'getEligibleGuides']);
+    Route::get('guest-lists/{guestList}/debug-eligible-guides', [GuideController::class, 'debugEligibleGuides']);
+    Route::post('guest-lists/{guestList}/assign-guide', [GuideController::class, 'assignGuide']);
+    Route::post('guest-lists/{guestList}/auto-assign-guide', [GuideController::class, 'autoAssignGuide']);
 });
 
 require __DIR__.'/settings.php';

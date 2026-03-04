@@ -60,4 +60,29 @@ class GuideCertification extends Model
         }
         return $this->expiry_date->diffInDays(now(), false);
     }
-}
+
+    /**
+     * Scope to get expired certifications.
+     */
+    public function scopeExpired($query)
+    {
+        return $query->where('expiry_date', '<', now());
+    }
+
+    /**
+     * Scope to get non-expired certifications.
+     */
+    public function scopeNotExpired($query)
+    {
+        return $query->where('expiry_date', '>=', now());
+    }
+
+    /**
+     * Scope to get certifications expiring soon.
+     */
+    public function scopeExpiringSoon($query)
+    {
+        return $query->where('expiry_date', '<=', now()->addDays(30))
+            ->where('expiry_date', '>=', now());
+    }
+}  

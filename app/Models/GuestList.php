@@ -48,4 +48,14 @@ class GuestList extends Model
     {
         return $this->hasMany(GuestListQRCode::class, 'guest_list_id');
     }
+
+    /**
+     * Get the guide assignment(s) for this guest list.
+     *
+     * Multiple guides may be assigned for different segments or roll‑overs.
+     */
+    public function assignments()
+    {
+        return $this->hasMany(\App\Models\GuideAssignment::class, 'guest_list_id');
+    }
 }

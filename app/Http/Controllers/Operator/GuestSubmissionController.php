@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\GuestList;
 use App\Models\GuestListQRCode;
+use App\Models\Guide;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -157,6 +158,29 @@ class GuestSubmissionController extends Controller
             'expired' => $guestList->qrCodes->where('status', 'Expired')->count(),
         ];
 
+        // build guide information from DB
+        $assignedGuides = $guestList->assignments()
+            ->with('guide')
+            ->active()
+            ->get()
+            ->map(fn($assign) => [
+                'id' => $assign->guide->id,
+                'name' => $assign->guide->full_name ?? $assign->guide->name ?? 'Unknown',
+            ])->toArray();
+
+        // compute available/eligible guide count using service helper
+        $availableGuides = 0;
+        try {
+            $service = app(\App\Services\GuideAssignmentService::class);
+            $eligible = $service->getEligibleGuides($guestList, [
+                'service_type' => $guestList->service->service_type ?? null,
+            ]);
+            $availableGuides = $eligible->count();
+        } catch (\Throwable $e) {
+            // fail gracefully if service not bound or other error
+            $availableGuides = Guide::approved()->count();
+        }
+
         return Inertia::render('operator/guest-submission-details', [
             'guestList' => [
                 'id' => $guestList->id,
@@ -173,12 +197,8 @@ class GuestSubmissionController extends Controller
             ],
             'qrCodes' => $qrCodes,
             'qrStats' => $qrStats,
-            // Temporary mock data for guides - replace with real data when guide system is implemented
-            'assignedGuides' => [
-                ['id' => 1, 'name' => 'Juan Dela Cruz'],
-                ['id' => 2, 'name' => 'Maria Santos'],
-            ],
-            'availableGuides' => 3, // Replace with actual count from database
+            'assignedGuides' => $assignedGuides,
+            'availableGuides' => $availableGuides,
         ]);
     }
 
