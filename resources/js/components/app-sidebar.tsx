@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Users, Compass, Zap, Building2, Home, User, FileText, Bell, Settings, ClipboardList, CheckCircle, Package, Plus, List, CheckCheck, Calendar } from 'lucide-react';
+import { LayoutGrid, Users, Compass, Zap, Building2, Home, User, FileText, Bell, Settings, ClipboardList, CheckCircle, Package, Plus, List, CheckCheck, Calendar, QrCode, LogIn, Eye, Users2, TrendingUp, BarChart3 } from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -19,6 +19,7 @@ export function AppSidebar() {
     const { auth } = usePage().props as any;
     const isAdmin = auth?.user?.role?.name === 'Admin';
     const isOperator = auth?.user?.role?.name === 'External Operator';
+    const isStaff = auth?.user?.role?.name === 'Tourism Staff';
     // Determine whether the operator has all documents approved
     // Services and Guest Submission are only enabled when all documents are approved and uploaded
     const isApproved = auth?.documentsApproved === true;
@@ -159,7 +160,56 @@ export function AppSidebar() {
         },
     ];
 
-    const mainNavItems: NavItem[] = isOperator ? operatorNavItems : defaultNavItems;
+    // items for entrance staff accounts
+    const staffNavItems: NavItem[] = [
+        {
+            title: 'Dashboard',
+            href: '/staff-dashboard',
+            icon: Home,
+        },
+        {
+            title: 'QR Code Scanner',
+            href: '/staff/qr-scanner',
+            icon: QrCode,
+        },
+        {
+            title: 'Arrival Monitoring',
+            href: '/staff/arrivals',
+            icon: LogIn,
+        },
+        {
+            title: 'Guide Verification',
+            href: '/staff/guide-verification',
+            icon: Eye,
+        },
+        {
+            title: 'Real-Time Visitor Counter',
+            href: '/staff/visitor-counter',
+            icon: Users2,
+        },
+        {
+            title: 'Entry Logs',
+            href: '/staff/entry-logs',
+            icon: ClipboardList,
+        },
+        {
+            title: 'Capacity Monitoring',
+            href: '/staff/capacity',
+            icon: TrendingUp,
+        },
+        {
+            title: 'Notifications',
+            href: '/staff/notifications',
+            icon: Bell,
+        },
+        {
+            title: 'Reports',
+            href: '/staff/reports',
+            icon: BarChart3,
+        },
+    ];
+
+    const mainNavItems: NavItem[] = isStaff ? staffNavItems : (isOperator ? operatorNavItems : defaultNavItems);
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -176,7 +226,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} label={isOperator ? 'Operator' : 'Platform'} />
+                <NavMain items={mainNavItems} label={isStaff ? 'Entrance Staff' : (isOperator ? 'Operator' : 'Platform')} />
             </SidebarContent>
 
             <SidebarFooter>

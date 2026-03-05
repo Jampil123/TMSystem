@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { LogIn, Users, Clock, AlertCircle } from 'lucide-react';
+import { LogIn, Users, Clock, AlertCircle, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { BreadcrumbItem } from '@/types';
 
@@ -21,6 +21,12 @@ const staffStatus = [
     { id: 3, name: 'Gate C', currentStaff: 2, capacity: 2, status: 'Full' },
 ];
 
+const alerts = [
+    { id: 1, type: 'capacity', severity: 'warning', message: 'Gate A at full capacity', time: '10 min ago' },
+    { id: 2, type: 'guide', severity: 'info', message: 'Guide Maria Garcia - Certificate expires in 5 days', time: '25 min ago' },
+    { id: 3, type: 'capacity', severity: 'critical', message: 'Overall site approaching max capacity (89%)', time: '2 min ago' },
+];
+
 export default function StaffDashboard() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -35,7 +41,7 @@ export default function StaffDashboard() {
                     <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-1">Today's Arrivals</p>
+                                <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-1">Total Visitors Today</p>
                                 <p className="text-2xl font-bold text-[#0F2A1D] dark:text-white">856</p>
                             </div>
                             <LogIn className="w-8 h-8 text-[#6B8071]" />
@@ -45,8 +51,8 @@ export default function StaffDashboard() {
                     <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-1">Current Staff</p>
-                                <p className="text-2xl font-bold text-[#0F2A1D] dark:text-white">5</p>
+                                <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-1">Current Visitors Inside</p>
+                                <p className="text-2xl font-bold text-[#0F2A1D] dark:text-white">234</p>
                             </div>
                             <Users className="w-8 h-8 text-[#6B8071]" />
                         </div>
@@ -55,17 +61,19 @@ export default function StaffDashboard() {
                     <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-1">Avg. Processing</p>
-                                <p className="text-2xl font-bold text-[#0F2A1D] dark:text-white">2.3 min</p>
+                                <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-1">Capacity Usage</p>
+                                <p className="text-2xl font-bold text-[#0F2A1D] dark:text-white">68%</p>
                             </div>
-                            <Clock className="w-8 h-8 text-[#6B8071]" />
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
+                                <CheckCircle className="w-5 h-5 text-white" />
+                            </div>
                         </div>
                     </div>
 
                     <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-1">Unverified</p>
+                                <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-1">Unverified Guides</p>
                                 <p className="text-2xl font-bold text-[#0F2A1D] dark:text-white">1</p>
                             </div>
                             <AlertCircle className="w-8 h-8 text-orange-500" />
@@ -138,6 +146,48 @@ export default function StaffDashboard() {
                                 </div>
                             ))}
                         </div>
+                    </div>
+                </div>
+
+                <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm overflow-hidden">
+                    <div className="p-6 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20">
+                        <h2 className="text-lg font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">Alerts</h2>
+                        <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mt-1">Capacity and guide-related notifications</p>
+                    </div>
+                    <div className="divide-y divide-[#AEC3B0]/20 dark:divide-[#375534]/20">
+                        {alerts.length === 0 ? (
+                            <div className="p-6 text-center text-[#6B8071] dark:text-[#AEC3B0]">
+                                <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                                <p>All systems operating normally</p>
+                            </div>
+                        ) : (
+                            alerts.map((alert) => (
+                                <div key={alert.id} className="p-4 hover:bg-[#E3EED4]/50 dark:hover:bg-[#375534]/20 transition-colors flex items-start gap-4">
+                                    <div className="flex-shrink-0 pt-0.5">
+                                        {alert.severity === 'critical' && <AlertTriangle className="w-5 h-5 text-red-500" />}
+                                        {alert.severity === 'warning' && <AlertCircle className="w-5 h-5 text-orange-500" />}
+                                        {alert.severity === 'info' && <AlertCircle className="w-5 h-5 text-blue-500" />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="text-sm font-semibold text-[#0F2A1D] dark:text-white">{alert.message}</p>
+                                            <Badge 
+                                                className={
+                                                    alert.severity === 'critical'
+                                                        ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0'
+                                                        : alert.severity === 'warning'
+                                                        ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 flex-shrink-0'
+                                                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 flex-shrink-0'
+                                                }
+                                            >
+                                                {alert.type === 'capacity' ? 'Capacity' : 'Guide'}
+                                            </Badge>
+                                        </div>
+                                        <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mt-1">{alert.time}</p>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>
