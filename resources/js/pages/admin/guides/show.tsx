@@ -41,6 +41,7 @@ interface Props {
 
 export default function GuideShow({ guide }: Props) {
     const [isApproving, setIsApproving] = useState(false);
+    const [approveModal, setApproveModal] = useState(false);
     const [rejectModal, setRejectModal] = useState({ show: false, reason: '' });
     const [isRejecting, setIsRejecting] = useState(false);
 
@@ -51,12 +52,17 @@ export default function GuideShow({ guide }: Props) {
     ];
 
     const handleApprove = () => {
-        if (window.confirm('Approve this guide application?')) {
-            setIsApproving(true);
-            router.post(`/guides/${guide.id}/approve`, {}, {
-                onFinish: () => setIsApproving(false),
-            });
-        }
+        setApproveModal(true);
+    };
+
+    const handleConfirmApprove = () => {
+        setIsApproving(true);
+        router.post(`/guides/${guide.id}/approve`, {}, {
+            onFinish: () => {
+                setIsApproving(false);
+                setApproveModal(false);
+            },
+        });
     };
 
     const handleReject = () => {
@@ -362,6 +368,53 @@ export default function GuideShow({ guide }: Props) {
                     </div>
                 </div>
 
+                {/* Approve Confirmation Modal */}
+                {approveModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white dark:bg-[#0F2A1D] rounded-2xl p-6 max-w-sm mx-4">
+                            <div className="text-center mb-6">
+                                <div className="flex justify-center mb-4">
+                                    <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-full">
+                                        <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
+                                    </div>
+                                </div>
+                                <h3 className="text-lg font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                    Approve Guide?
+                                </h3>
+                                <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mt-2">
+                                    Are you sure you want to approve <strong>{guide.full_name}</strong> as a guide?
+                                </p>
+                            </div>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setApproveModal(false)}
+                                    disabled={isApproving}
+                                    className="flex-1 px-4 py-2 border border-[#AEC3B0]/40 dark:border-[#375534]/40 rounded-lg text-[#0F2A1D] dark:text-[#E3EED4] hover:bg-[#F8FAFB] dark:hover:bg-[#1a3a2e] transition-colors disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleConfirmApprove}
+                                    disabled={isApproving}
+                                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {isApproving ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                            Approving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Check className="w-4 h-4" />
+                                            Approve
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Reject Modal */}
                 {rejectModal.show && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -381,16 +434,27 @@ export default function GuideShow({ guide }: Props) {
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setRejectModal({ show: false, reason: '' })}
-                                    className="flex-1 px-4 py-2 border border-[#AEC3B0]/40 dark:border-[#375534]/40 rounded-lg text-[#0F2A1D] dark:text-[#E3EED4] hover:bg-[#F8FAFB] dark:hover:bg-[#1a3a2e] transition-colors"
+                                    disabled={isRejecting}
+                                    className="flex-1 px-4 py-2 border border-[#AEC3B0]/40 dark:border-[#375534]/40 rounded-lg text-[#0F2A1D] dark:text-[#E3EED4] hover:bg-[#F8FAFB] dark:hover:bg-[#1a3a2e] transition-colors disabled:opacity-50"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleReject}
                                     disabled={isRejecting}
-                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
-                                    {isRejecting ? 'Rejecting...' : 'Reject'}
+                                    {isRejecting ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                            Rejecting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <X className="w-4 h-4" />
+                                            Reject
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>

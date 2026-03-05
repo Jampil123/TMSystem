@@ -28,6 +28,7 @@ interface EligibleGuidesProps {
     onGuideSelected?: (guide: Guide) => void;
     onAutoAssign?: () => void;
     isLoading?: boolean;
+    isOpen?: boolean;
 }
 
 export default function EligibleGuides({
@@ -38,6 +39,7 @@ export default function EligibleGuides({
     onGuideSelected,
     onAutoAssign,
     isLoading = false,
+    isOpen = true,
 }: EligibleGuidesProps) {
     const [guides, setGuides] = useState<Guide[]>([]);
     const [loading, setLoading] = useState(false);
@@ -46,8 +48,10 @@ export default function EligibleGuides({
     const [filterHasWarnings, setFilterHasWarnings] = useState(false);
 
     useEffect(() => {
-        fetchEligibleGuides();
-    }, [guestListId]);
+        if (isOpen) {
+            fetchEligibleGuides();
+        }
+    }, [guestListId, isOpen]);
 
     const fetchEligibleGuides = async () => {
         setLoading(true);

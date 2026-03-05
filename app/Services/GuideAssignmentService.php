@@ -322,10 +322,11 @@ class GuideAssignmentService
                 'operator_id' => $guestList->operator_id,
                 'alert_type' => 'Assignment Warning',
                 'tourist_group_name' => $touristGroupName,
-                'subject' => "Assignment Alert: {$guide->full_name}",
-                'message' => implode(', ', $alerts),
-                'reference_type' => 'GuideAssignment',
-                'reference_id' => $assignment->id,
+                'number_of_tourists' => $guestList->total_guests,
+                'assigned_guide_name' => $guide->full_name,
+                'activity_service_name' => $serviceName,
+                'activity_date_time' => $assignment->start_time,
+                'description' => implode(', ', $alerts),
                 'status' => 'Unread',
             ]);
         }
@@ -482,7 +483,7 @@ class GuideAssignmentService
                 return [
                     'name' => $cert->certification_name,
                     'expiry_date' => $cert->expiry_date->format('Y-m-d'),
-                    'days_until_expiry' => $cert->expiry_date->diffInDays(now(), false),
+                    'days_until_expiry' => $cert->expiry_date->diffInDays(now()),
                 ];
             })->toArray(),
         ];

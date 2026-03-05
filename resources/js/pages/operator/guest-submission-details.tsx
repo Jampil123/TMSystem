@@ -514,6 +514,7 @@ export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats, as
                                     visitDate={guestList.visitDate}
                                     totalGuests={guestList.totalGuests}
                                     serviceType={guestList.serviceType}
+                                    isOpen={showEligibleModal}
                                     onGuideSelected={(guide) => {
                                         setSelectedGuide(guide);
                                         setShowEligibleModal(false);

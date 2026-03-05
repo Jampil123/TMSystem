@@ -40,67 +40,74 @@ class GuideController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'full_name' => 'required|string|max:255',
-            'contact_number' => 'required|string|max:20',
-            'email' => 'required|email|unique:guides,email',
-            'id_type' => 'required|string',
-            'id_number' => 'required|string|unique:guides,id_number',
-            'id_image' => 'nullable|image|max:5120', // 5MB
-            'years_of_experience' => 'required|integer|min:0|max:70',
-            'specialty_areas' => 'required|array|min:1',
-            'specialty_areas.*' => 'string',
-            'certifications' => 'nullable|array',
-            'certifications.*.certification_name' => 'nullable|string|max:255',
-            'certifications.*.issued_by' => 'nullable|string|max:255',
-            'certifications.*.issued_date' => 'nullable|date',
-            'certifications.*.expiry_date' => 'nullable|date|after:certifications.*.issued_date',
-            'certifications.*.certificate_file' => 'nullable|file|max:5120', // 5MB
-        ]);
+        try {
+            $validated = $request->validate([
+                'full_name' => 'required|string|max:255',
+                'contact_number' => 'required|string|max:20',
+                'email' => 'required|email|unique:guides,email',
+                'id_type' => 'required|string',
+                'id_number' => 'required|string|unique:guides,id_number',
+                'id_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB
+                'years_of_experience' => 'required|integer|min:0|max:70',
+                'specialty_areas' => 'required|array|min:1',
+                'specialty_areas.*' => 'string',
+                'certifications' => 'nullable|array',
+                'certifications.*.certification_name' => 'nullable|string|max:255',
+                'certifications.*.issued_by' => 'nullable|string|max:255',
+                'certifications.*.issued_date' => 'nullable|date',
+                'certifications.*.expiry_date' => 'nullable|date|after_or_equal:certifications.*.issued_date',
+                'certifications.*.certificate_file' => 'nullable|file|mimes:pdf,jpeg,png,jpg,gif|max:5120', // 5MB
+            ]);
 
-        // Handle ID image upload
-        $idImagePath = null;
-        if ($request->hasFile('id_image')) {
-            $idImagePath = $request->file('id_image')->store('guides/id-images', 'public');
-        }
+            // Handle ID image upload
+            $idImagePath = null;
+            if ($request->hasFile('id_image')) {
+                $idImagePath = $request->file('id_image')->store('guides/id-images', 'public');
+            }
 
-        // Create guide
-        $guide = Guide::create([
-            'full_name' => $validated['full_name'],
-            'contact_number' => $validated['contact_number'],
-            'email' => $validated['email'],
-            'id_type' => $validated['id_type'],
-            'id_number' => $validated['id_number'],
-            'id_image_path' => $idImagePath,
-            'years_of_experience' => $validated['years_of_experience'],
-            'specialty_areas' => $validated['specialty_areas'],
-            'status' => 'Pending',
-        ]);
+            // Create guide
+            $guide = Guide::create([
+                'full_name' => $validated['full_name'],
+                'contact_number' => $validated['contact_number'],
+                'email' => $validated['email'],
+                'id_type' => $validated['id_type'],
+                'id_number' => $validated['id_number'],
+                'id_image_path' => $idImagePath,
+                'years_of_experience' => $validated['years_of_experience'],
+                'specialty_areas' => $validated['specialty_areas'],
+                'status' => 'Pending',
+            ]);
 
-        // Store certifications
-        if ($validated['certifications'] ?? false) {
-            foreach ($validated['certifications'] as $cert) {
-                if ($cert['certification_name'] ?? false) {
-                    $certPath = null;
-                    if (isset($cert['certificate_file'])) {
-                        $certPath = $cert['certificate_file']->store('guides/certifications', 'public');
+            // Store certifications
+            if ($validated['certifications'] ?? false) {
+                foreach ($validated['certifications'] as $cert) {
+                    if ($cert['certification_name'] ?? false) {
+                        $certPath = null;
+                        if (isset($cert['certificate_file'])) {
+                            $certPath = $cert['certificate_file']->store('guides/certifications', 'public');
+                        }
+
+                        GuideCertification::create([
+                            'guide_id' => $guide->id,
+                            'certification_name' => $cert['certification_name'],
+                            'issued_by' => $cert['issued_by'] ?? null,
+                            'issued_date' => $cert['issued_date'] ?? null,
+                            'expiry_date' => $cert['expiry_date'] ?? null,
+                            'certificate_file_path' => $certPath,
+                            'status' => $this->getCertificationStatus($cert['expiry_date'] ?? null),
+                        ]);
                     }
-
-                    GuideCertification::create([
-                        'guide_id' => $guide->id,
-                        'certification_name' => $cert['certification_name'],
-                        'issued_by' => $cert['issued_by'],
-                        'issued_date' => $cert['issued_date'],
-                        'expiry_date' => $cert['expiry_date'],
-                        'certificate_file_path' => $certPath,
-                        'status' => $this->getCertificationStatus($cert['expiry_date'] ?? null),
-                    ]);
                 }
             }
-        }
 
-        return redirect()->route('guides.registration-success', ['guide' => $guide->id])
-            ->with('success', 'Guide registration submitted successfully!');
+            return redirect()->route('guides.registration-success', ['guide' => $guide->id])
+                ->with('success', 'Guide registration submitted successfully!');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            \Log::error('Guide registration error: ' . $e->getMessage());
+            return redirect()->back()->withErrors(['error' => 'An error occurred: ' . $e->getMessage()])->withInput();
+        }
     }
 
     /**

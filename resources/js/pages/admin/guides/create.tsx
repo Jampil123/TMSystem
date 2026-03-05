@@ -35,6 +35,7 @@ export default function GuideCreate({ specialtyOptions = [] }: Props) {
     });
     const [certifications, setCertifications] = useState<Certification[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [generalError, setGeneralError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const defaultSpecialties = specialtyOptions.length > 0 ? specialtyOptions : [
@@ -122,7 +123,27 @@ export default function GuideCreate({ specialtyOptions = [] }: Props) {
 
     const handleRegisterSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setErrors({});
+        setGeneralError(null);
         setIsSubmitting(true);
+
+        // Client-side validation
+        const clientErrors: Record<string, string> = {};
+        
+        if (!formData.full_name.trim()) clientErrors.full_name = 'Full name is required';
+        if (!formData.contact_number.trim()) clientErrors.contact_number = 'Contact number is required';
+        if (!formData.email.trim()) clientErrors.email = 'Email is required';
+        if (!formData.id_number.trim()) clientErrors.id_number = 'ID number is required';
+        if (formData.specialty_areas.length === 0) clientErrors.specialty_areas = 'Please select at least one specialty';
+        if (formData.years_of_experience < 0 || formData.years_of_experience > 70) {
+            clientErrors.years_of_experience = 'Years of experience must be between 0 and 70';
+        }
+
+        if (Object.keys(clientErrors).length > 0) {
+            setErrors(clientErrors);
+            setIsSubmitting(false);
+            return;
+        }
 
         const formDataToSend = new FormData();
         
@@ -154,8 +175,13 @@ export default function GuideCreate({ specialtyOptions = [] }: Props) {
         });
 
         router.post('/guides/register', formDataToSend, {
-            onError: (error) => {
-                setErrors(error);
+            onError: (errors) => {
+                // Handle field validation errors
+                if (typeof errors === 'object' && errors !== null) {
+                    setErrors(errors as Record<string, string>);
+                } else {
+                    setGeneralError('An error occurred while submitting the form. Please try again.');
+                }
                 setIsSubmitting(false);
             },
             onSuccess: () => {
@@ -188,6 +214,13 @@ export default function GuideCreate({ specialtyOptions = [] }: Props) {
 
                 <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-8">
                     <form onSubmit={handleRegisterSubmit} className="space-y-8">
+                        {/* General Error Message */}
+                        {generalError && (
+                            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                <p className="text-red-800 dark:text-red-300 text-sm">{generalError}</p>
+                            </div>
+                        )}
+
                         {/* Personal Details */}
                         <div>
                             <h3 className="text-lg font-semibold text-[#0F2A1D] dark:text-[#E3EED4] mb-4">

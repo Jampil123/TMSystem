@@ -113,17 +113,12 @@ class GuideManagementController extends Controller
     public function approve(Request $request, Guide $guide)
     {
         if ($guide->status !== 'Pending') {
-            return response()->json([
-                'message' => 'Only pending guides can be approved.',
-            ], 422);
+            return redirect()->back()->withErrors('Only pending guides can be approved.');
         }
 
         $guide->approve(auth()->user());
 
-        return response()->json([
-            'message' => 'Guide approved successfully',
-            'status' => $guide->status,
-        ]);
+        return redirect()->back()->with('success', 'Guide approved successfully');
     }
 
     /**
@@ -136,17 +131,12 @@ class GuideManagementController extends Controller
         ]);
 
         if ($guide->status !== 'Pending') {
-            return response()->json([
-                'message' => 'Only pending guides can be rejected.',
-            ], 422);
+            return redirect()->back()->withErrors('Only pending guides can be rejected.');
         }
 
         $guide->reject(auth()->user(), $validated['rejection_reason']);
 
-        return response()->json([
-            'message' => 'Guide rejected successfully',
-            'status' => $guide->status,
-        ]);
+        return redirect()->back()->with('success', 'Guide rejected successfully');
     }
 
     /**

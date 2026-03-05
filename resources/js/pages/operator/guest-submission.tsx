@@ -40,6 +40,7 @@ export default function GuestSubmission({ services, guestSubmissions }: Props) {
     const [guestNames, setGuestNames] = useState<string[]>([]);
     const [notes, setNotes] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     // Computed properties
     const total = parseInt(totalGuests) || 0;
@@ -87,6 +88,24 @@ export default function GuestSubmission({ services, guestSubmissions }: Props) {
                 guest_names: guestNames.filter(name => name.trim() !== ''),
                 notes: notes,
             }, {
+                onSuccess: () => {
+                    // Show success modal
+                    setShowSuccessModal(true);
+                    // Reset form fields on successful submission
+                    setSelectedService(null);
+                    setVisitDate('');
+                    setTotalGuests('');
+                    setLocalTourists('');
+                    setForeignTourists('');
+                    setGuestNames([]);
+                    setNotes('');
+                    setIsSubmitting(false);
+                    
+                    // Reload page after 2 seconds
+                    setTimeout(() => {
+                        router.get('/operator/guest-submission');
+                    }, 2000);
+                },
                 onFinish: () => {
                     setIsSubmitting(false);
                 },
@@ -364,6 +383,31 @@ export default function GuestSubmission({ services, guestSubmissions }: Props) {
                         )}
                     </div>
                 </div>
+
+                {/* Success Modal */}
+                {showSuccessModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white dark:bg-[#0F2A1D] rounded-2xl p-8 max-w-sm mx-4 text-center shadow-2xl">
+                            <div className="flex justify-center mb-4">
+                                <div className="p-4 bg-green-100 dark:bg-green-900/20 rounded-full">
+                                    <svg className="w-12 h-12 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <h3 className="text-2xl font-bold text-[#0F2A1D] dark:text-[#E3EED4] mb-2">
+                                Success!
+                            </h3>
+                            <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-6">
+                                Guest list submitted successfully. The page will refresh automatically in a moment.
+                            </p>
+                            <div className="flex items-center justify-center gap-2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 dark:border-green-400"></div>
+                                <span className="text-sm text-[#6B8071] dark:text-[#AEC3B0]">Refreshing...</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </AppLayout>
     );
