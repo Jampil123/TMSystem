@@ -110,11 +110,31 @@ class GuestSubmissionController extends Controller
             'guest_names' => $guestNames,
         ]);
 
-        // Generate QR codes
+        // Generate QR codes with custom format
+        $prefix = 'TR'; // static or configurable
+        $locationCode = 'BDN'; // static or from service/location
+        $year = date('Y', strtotime($validated['visit_date']));
+        
+        // Get the highest serial number for this prefix/location/year combination
+        $maxToken = GuestListQRCode::where('token', 'like', "$prefix-$locationCode-$year-%")
+            ->latest('id')
+            ->first();
+        
+        $nextSerial = 1;
+        if ($maxToken) {
+            // Extract the serial number from the last token (last 4 digits)
+            preg_match('/(\d{4})$/', $maxToken->token, $matches);
+            if ($matches) {
+                $nextSerial = (int)$matches[1] + 1;
+            }
+        }
+        
         for ($i = 0; $i < $validated['total_guests']; $i++) {
+            $serial = str_pad($nextSerial + $i, 4, '0', STR_PAD_LEFT);
+            $codeName = "$prefix-$locationCode-$year-$serial";
             GuestListQRCode::create([
                 'guest_list_id' => $guestList->id,
-                'token' => (string) Str::uuid(),
+                'token' => $codeName,
                 'status' => 'Unused',
                 'expiration_date' => $validated['visit_date'],
             ]);

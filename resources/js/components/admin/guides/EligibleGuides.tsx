@@ -48,6 +48,7 @@ export default function EligibleGuides({
     const [filterHasWarnings, setFilterHasWarnings] = useState(false);
 
     useEffect(() => {
+        console.log('EligibleGuides component mounted/updated. isOpen:', isOpen, 'guestListId:', guestListId);
         if (isOpen) {
             fetchEligibleGuides();
         }
@@ -57,16 +58,30 @@ export default function EligibleGuides({
         setLoading(true);
         setError(null);
         try {
+            console.log('Fetching eligible guides for guest list:', guestListId);
             const response = await axios.get(
                 `/guest-lists/${guestListId}/eligible-guides`,
                 {
                     params: serviceType ? { service_type: serviceType } : {},
                 }
             );
-            const guidesData = Array.isArray(response.data.data) ? response.data.data : [];
+            
+            console.log('Eligible guides response:', response.data);
+            
+            // Handle both response.data.data and response.data formats
+            let guidesData = [];
+            if (response.data && response.data.data && Array.isArray(response.data.data)) {
+                guidesData = response.data.data;
+            } else if (Array.isArray(response.data)) {
+                guidesData = response.data;
+            }
+            
+            console.log('Processed guides data:', guidesData);
             setGuides(guidesData);
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to load eligible guides');
+            console.error('Error fetching eligible guides:', err);
+            const errorMsg = err.response?.data?.message || err.message || 'Failed to load eligible guides';
+            setError(errorMsg);
             setGuides([]);
         } finally {
             setLoading(false);

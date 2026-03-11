@@ -168,44 +168,24 @@ export function AppSidebar() {
             icon: Home,
         },
         {
-            title: 'QR Code Scanner',
+            title: 'Scan QR',
             href: '/staff/qr-scanner',
             icon: QrCode,
         },
         {
-            title: 'Arrival Monitoring',
+            title: 'Arrival Logs',
             href: '/staff/arrivals',
             icon: LogIn,
         },
         {
-            title: 'Guide Verification',
-            href: '/staff/guide-verification',
-            icon: Eye,
-        },
-        {
-            title: 'Real-Time Visitor Counter',
+            title: 'Visitor Monitoring',
             href: '/staff/visitor-counter',
             icon: Users2,
-        },
-        {
-            title: 'Entry Logs',
-            href: '/staff/entry-logs',
-            icon: ClipboardList,
-        },
-        {
-            title: 'Capacity Monitoring',
-            href: '/staff/capacity',
-            icon: TrendingUp,
         },
         {
             title: 'Notifications',
             href: '/staff/notifications',
             icon: Bell,
-        },
-        {
-            title: 'Reports',
-            href: '/staff/reports',
-            icon: BarChart3,
         },
     ];
 

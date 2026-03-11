@@ -49,6 +49,22 @@ export default function GuestSubmission({ services, guestSubmissions }: Props) {
     const isBalanced = total > 0 && local + foreign === total;
     const hasError = total > 0 && local + foreign !== total;
 
+    // QR Code Name Generator
+    // Example: TR-BDN-2026-0001
+    // TR: Prefix (e.g., Tourist)
+    // BDN: Location code (example static)
+    // 2026: Year
+    // 0001: Serial number (padded)
+    const generateQRCodeName = (prefix: string, locationCode: string, year: number, serial: number) => {
+        return `${prefix}-${locationCode}-${year}-${serial.toString().padStart(4, '0')}`;
+    };
+
+    // Example usage: Generate QR code names for each guest
+    const qrPrefix = "TR"; // static or from config
+    const qrLocation = "BDN"; // static or from service/location
+    const qrYear = new Date().getFullYear();
+    const qrCodeNames = guestNames.map((_, idx) => generateQRCodeName(qrPrefix, qrLocation, qrYear, idx + 1));
+
     // Update guest names array when total guests changes
     const handleTotalGuestsChange = (value: string) => {
         setTotalGuests(value);
@@ -282,7 +298,7 @@ export default function GuestSubmission({ services, guestSubmissions }: Props) {
                                             {guestNames.map((name, index) => (
                                                 <div key={index}>
                                                     <label className="block text-xs font-medium text-[#6B8071] dark:text-[#AEC3B0] mb-1">
-                                                        Guest {index + 1}
+                                                        Guest {index + 1} <span className="ml-2 text-green-700 dark:text-green-300">QR: {qrCodeNames[index]}</span>
                                                     </label>
                                                     <input
                                                         type="text"

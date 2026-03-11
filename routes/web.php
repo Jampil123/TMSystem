@@ -28,6 +28,7 @@ use App\Http\Controllers\Tourist\ExploreActivityController;
 use App\Http\Controllers\Tourist\ExploreAttractionController;
 use App\Http\Controllers\Tourist\ExploreAccommodationController;
 use App\Http\Controllers\Tourist\OperatorListingController;
+use App\Http\Controllers\StaffArrivalidateController;
 
 Route::redirect('/', '/login')->name('home');
 
@@ -186,6 +187,47 @@ Route::get('staff-dashboard', function () {
     return Inertia::render('dashboards/staff-dashboard');
 })->middleware(['auth', 'verified'])->name('staff.dashboard');
 
+// Staff Features Routes
+Route::middleware(['auth', 'verified'])->prefix('staff')->name('staff.')->group(function () {
+    Route::get('qr-scanner', function () {
+        return Inertia::render('staff/qr-scanner');
+    })->name('qr-scanner');
+
+    Route::get('arrivals', function () {
+        return Inertia::render('staff/arrivals');
+    })->name('arrivals');
+
+    Route::get('guide-verification', function () {
+        return Inertia::render('staff/guide-verification');
+    })->name('guide-verification');
+
+    Route::get('visitor-counter', function () {
+        return Inertia::render('staff/visitor-counter');
+    })->name('visitor-counter');
+
+    Route::get('entry-logs', function () {
+        return Inertia::render('staff/entry-logs');
+    })->name('entry-logs');
+
+    Route::get('capacity', function () {
+        return Inertia::render('staff/capacity');
+    })->name('capacity');
+
+    Route::get('notifications', function () {
+        return Inertia::render('staff/notifications');
+    })->name('notifications');
+
+    Route::get('reports', function () {
+        return Inertia::render('staff/reports');
+    })->name('reports');
+
+    // Staff API Endpoints for arrival logging
+    Route::post('api/validate-booking', [StaffArrivalidateController::class, 'validateBooking'])->name('api.validate-booking');
+    Route::post('api/log-arrival', [StaffArrivalidateController::class, 'logArrival'])->name('api.log-arrival');
+    Route::post('api/deny-arrival', [StaffArrivalidateController::class, 'denyArrival'])->name('api.deny-arrival');
+    Route::get('api/arrivals-today', [StaffArrivalidateController::class, 'getTodayArrivals'])->name('api.arrivals-today');
+});
+
 // Admin-only user and attraction management routes
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('users', [UserController::class, 'index'])->name('users.index');
@@ -259,6 +301,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('guest-lists/{guestList}/debug-eligible-guides', [GuideController::class, 'debugEligibleGuides']);
     Route::post('guest-lists/{guestList}/assign-guide', [GuideController::class, 'assignGuide']);
     Route::post('guest-lists/{guestList}/auto-assign-guide', [GuideController::class, 'autoAssignGuide']);
+});
+
+// QR Code Arrival Logging Routes - for entrance staff
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/staff/api/qr-arrival', [\App\Http\Controllers\QRCodeArrivalController::class, 'processQRCode'])->name('qr-arrival.process');
+    Route::get('/staff/api/arrival-stats', [\App\Http\Controllers\QRCodeArrivalController::class, 'getTodayStats'])->name('qr-arrival.stats');
+    Route::get('/staff/api/recent-arrivals', [\App\Http\Controllers\QRCodeArrivalController::class, 'getRecentArrivals'])->name('qr-arrival.recent');
 });
 
 require __DIR__.'/settings.php';

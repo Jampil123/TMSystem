@@ -60,8 +60,8 @@ class GuideAssignmentService
             return false;
         }
 
-        // Rule 3: Check for existing conflicts at same time
-        if ($this->hasTimeConflict($guide, $guestList->visit_date)) {
+        // Rule 3: Check for existing conflicts at same time (but allow same guest list)
+        if ($this->hasTimeConflict($guide, $guestList->visit_date, $guestList)) {
             return false;
         }
 
@@ -128,15 +128,25 @@ class GuideAssignmentService
 
     /**
      * Check if guide has time conflict with existing assignments.
+     * 
+     * A guide can be assigned multiple times to the SAME guest list (1:1 ratio),
+     * but cannot be double-booked on DIFFERENT guest lists at the same time.
      */
-    private function hasTimeConflict(Guide $guide, Carbon|string $visitDate): bool
+    private function hasTimeConflict(Guide $guide, Carbon|string $visitDate, ?GuestList $guestList = null): bool
     {
         $visitDate = is_string($visitDate) ? Carbon::parse($visitDate) : $visitDate;
 
-        return GuideAssignment::where('guide_id', $guide->id)
+        $query = GuideAssignment::where('guide_id', $guide->id)
             ->where('assignment_date', $visitDate)
-            ->active()
-            ->exists();
+            ->active();
+        
+        // If checking for a specific guest list, exclude it from the conflict check
+        // This allows multiple guides to be assigned to the same guest list
+        if ($guestList) {
+            $query->where('guest_list_id', '!=', $guestList->id);
+        }
+
+        return $query->exists();
     }
 
     /**
@@ -237,7 +247,7 @@ class GuideAssignmentService
             'end_time' => $data['end_time'] ?? now()->setHour(17)->setMinute(0),
             'guest_count' => $guestList->total_guests,
             'service_type' => $data['service_type'] ?? null,
-            'assignment_status' => 'Pending',
+            'assignment_status' => 'Confirmed',
             'assigned_by' => $assignedBy?->id,
             'assigned_at' => now(),
             'has_certification_warning' => $certificationWarning,
