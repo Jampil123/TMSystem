@@ -415,4 +415,53 @@ class QRCodeArrivalController extends Controller
             ], 200);
         }
     }
+
+    /**
+     * Get hourly capacity history for today
+     * Returns cumulative visitor counts for each hour
+     */
+    public function getCapacityHistory()
+    {
+        try {
+            $today = Carbon::today();
+            $maximumCapacity = (int) env('SITE_MAXIMUM_CAPACITY', 350);
+            
+            // Get all arrivals for today, ordered by time
+            $arrivals = ArrivalLog::whereDate('arrival_date', $today)
+                ->where('status', 'arrived')
+                ->get();
+
+            // Build hourly history
+            $hourlyData = [];
+            $cumulativeCount = 0;
+
+            // Process each hour from 6 AM to 10 PM
+            for ($hour = 6; $hour < 22; $hour++) {
+                $hourFormatted = sprintf('%02d', $hour);
+                $timeStr = $hourFormatted . ':00';
+
+                // Count arrivals up to this hour
+                $arrivalsUpToThisHour = $arrivals->filter(function ($arrival) use ($hour) {
+                    $arrivalHour = (int) explode(':', $arrival->arrival_time)[0];
+                    return $arrivalHour <= $hour && $arrival->arrival_date === Carbon::today()->format('Y-m-d');
+                })->count();
+
+                $hourlyData[] = [
+                    'time' => $timeStr,
+                    'count' => max(0, $arrivalsUpToThisHour),
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $hourlyData,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching capacity history: ' . $e->getMessage());
+            return response()->json([
+                'success' => true,
+                'data' => [],
+            ], 200); // Return empty array gracefully
+        }
+    }
 }

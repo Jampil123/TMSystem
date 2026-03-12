@@ -310,6 +310,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/staff/api/arrival-stats', [\App\Http\Controllers\QRCodeArrivalController::class, 'getTodayStats'])->name('qr-arrival.stats');
     Route::get('/staff/api/recent-arrivals', [\App\Http\Controllers\QRCodeArrivalController::class, 'getRecentArrivals'])->name('qr-arrival.recent');
     Route::get('/staff/api/visitor-count', [\App\Http\Controllers\QRCodeArrivalController::class, 'getVisitorCount'])->name('qr-arrival.visitor-count');
+    Route::get('/staff/api/capacity-history', [\App\Http\Controllers\QRCodeArrivalController::class, 'getCapacityHistory'])->name('qr-arrival.capacity-history');
 });
 
 // Notification API Routes
