@@ -1,8 +1,8 @@
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { Bell, AlertTriangle, XCircle, AlertCircle, Users, Zap, Clock, X as XIcon } from 'lucide-react';
+import { Bell, AlertTriangle, XCircle, AlertCircle, Users, Zap, Clock, X as XIcon, CheckCircle, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -10,125 +10,140 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Notifications & Alerts', href: '/staff/notifications' },
 ];
 
-interface Alert {
-    id: string;
-    type: 'invalid_qr' | 'guest_mismatch' | 'missing_guide' | 'capacity_warning';
-    severity: 'critical' | 'warning' | 'info';
+interface Notification {
+    id: number;
+    type: string;
+    notification_type: 'success' | 'warning' | 'error' | 'info';
     title: string;
     message: string;
-    timestamp: string;
-    bookingCode?: string;
     details?: string;
-    dismissed: boolean;
+    is_read: boolean;
+    time_ago: string;
+    created_at: string;
 }
 
 export default function NotificationsPage() {
-    const [alerts, setAlerts] = useState<Alert[]>([
-        {
-            id: '1',
-            type: 'invalid_qr',
-            severity: 'critical',
-            title: 'Invalid QR Code',
-            message: 'Unrecognized booking code scanned',
-            timestamp: '11:15 AM',
-            bookingCode: 'BK-INVALID-999',
-            details: 'The scanned QR code does not match any booking in the system.',
-            dismissed: false,
-        },
-        {
-            id: '2',
-            type: 'guest_mismatch',
-            severity: 'warning',
-            title: 'Guest Count Mismatch',
-            message: 'Actual guests do not match booking record',
-            timestamp: '11:08 AM',
-            bookingCode: 'BK-002-2026',
-            details: 'Booking shows 12 guests but only 10 guests arrived. Discrepancy: 2 guests.',
-            dismissed: false,
-        },
-        {
-            id: '3',
-            type: 'missing_guide',
-            severity: 'critical',
-            title: 'Missing Guide Alert',
-            message: 'Required guide not present for group',
-            timestamp: '11:02 AM',
-            bookingCode: 'BK-005-2026',
-            details: 'Guide "Carlos Mendoza" is assigned but not present with the group. Group cannot proceed.',
-            dismissed: false,
-        },
-        {
-            id: '4',
-            type: 'capacity_warning',
-            severity: 'warning',
-            title: 'Capacity Warning',
-            message: 'Site capacity approaching maximum',
-            timestamp: '10:55 AM',
-            details: 'Current visitors: 320/350 (91.4%). Site is at 91% capacity. Only 30 slots remaining.',
-            dismissed: false,
-        },
-        {
-            id: '5',
-            type: 'invalid_qr',
-            severity: 'warning',
-            title: 'Expired QR Code',
-            message: 'QR code visit date has passed',
-            timestamp: '10:42 AM',
-            bookingCode: 'BK-003-2026',
-            details: 'The booking is for 2026-03-04, but today is 2026-03-05.',
-            dismissed: false,
-        },
-        {
-            id: '6',
-            type: 'guest_mismatch',
-            severity: 'info',
-            title: 'Extra Guests Detected',
-            message: 'More guests than expected',
-            timestamp: '10:28 AM',
-            bookingCode: 'BK-001-2026',
-            details: 'Booking shows 8 guests but 10 showed up. Staff approval recommended.',
-            dismissed: false,
-        },
-    ]);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState<'all' | 'unread' | 'success' | 'warning' | 'error'>('all');
 
-    const dismissAlert = (id: string) => {
-        setAlerts(alerts.map(alert => alert.id === id ? { ...alert, dismissed: true } : alert));
+    // Fetch notifications from API
+    useEffect(() => {
+        fetchNotifications();
+        // Refresh every 10 seconds
+        const interval = setInterval(fetchNotifications, 10000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const fetchNotifications = async () => {
+        try {
+            const response = await fetch('/staff/api/notifications');
+            const data = await response.json();
+            
+            if (data.success) {
+                setNotifications(data.data || []);
+            }
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const clearAll = () => {
-        setAlerts(alerts.map(alert => ({ ...alert, dismissed: true })));
+    const markAsRead = async (id: number) => {
+        try {
+            await fetch(`/staff/api/notifications/${id}/mark-read`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            fetchNotifications();
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
     };
 
-    const activeAlerts = alerts.filter(a => !a.dismissed);
-    const criticalCount = activeAlerts.filter(a => a.severity === 'critical').length;
-    const warningCount = activeAlerts.filter(a => a.severity === 'warning').length;
-    const infoCount = activeAlerts.filter(a => a.severity === 'info').length;
+    const deleteNotification = async (id: number) => {
+        try {
+            await fetch(`/staff/api/notifications/${id}`, {
+                method: 'DELETE',
+            });
+            fetchNotifications();
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+        }
+    };
 
-    const getAlertIcon = (type: Alert['type']) => {
-        switch (type) {
-            case 'invalid_qr':
+    const markAllAsRead = async () => {
+        try {
+            await fetch('/staff/api/notifications/mark-all-read', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            fetchNotifications();
+        } catch (error) {
+            console.error('Error marking all as read:', error);
+        }
+    };
+
+    // Filter notifications
+    const filteredNotifications = notifications.filter(n => {
+        if (filter === 'unread') return !n.is_read;
+        if (filter === 'success') return n.notification_type === 'success';
+        if (filter === 'warning') return n.notification_type === 'warning';
+        if (filter === 'error') return n.notification_type === 'error';
+        return true;
+    });
+
+    const unreadCount = notifications.filter(n => !n.is_read).length;
+    const successCount = notifications.filter(n => n.notification_type === 'success').length;
+    const warningCount = notifications.filter(n => n.notification_type === 'warning').length;
+    const errorCount = notifications.filter(n => n.notification_type === 'error').length;
+
+    const getNotificationIcon = (notificationType: string) => {
+        switch (notificationType) {
+            case 'success':
+                return <CheckCircle className="h-5 w-5" />;
+            case 'error':
                 return <XCircle className="h-5 w-5" />;
-            case 'guest_mismatch':
-                return <Users className="h-5 w-5" />;
-            case 'missing_guide':
+            case 'warning':
                 return <AlertTriangle className="h-5 w-5" />;
-            case 'capacity_warning':
-                return <Zap className="h-5 w-5" />;
             default:
                 return <AlertCircle className="h-5 w-5" />;
         }
     };
 
-    const getAlertColors = (severity: Alert['severity']) => {
-        switch (severity) {
-            case 'critical':
-                return { bg: 'bg-red-50', border: 'border-red-200', icon: 'text-red-500', badge: 'bg-red-100 text-red-800' };
+    const getNotificationColors = (notificationType: string, isRead: boolean) => {
+        const baseOpacity = isRead ? 'opacity-60' : '';
+        
+        switch (notificationType) {
+            case 'success':
+                return {
+                    bg: `bg-green-50 ${baseOpacity}`,
+                    border: 'border-green-200',
+                    icon: 'text-green-600 dark:text-green-400',
+                    badge: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                };
+            case 'error':
+                return {
+                    bg: `bg-red-50 ${baseOpacity}`,
+                    border: 'border-red-200',
+                    icon: 'text-red-600 dark:text-red-400',
+                    badge: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+                };
             case 'warning':
-                return { bg: 'bg-yellow-50', border: 'border-yellow-200', icon: 'text-yellow-500', badge: 'bg-yellow-100 text-yellow-800' };
-            case 'info':
-                return { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'text-blue-500', badge: 'bg-blue-100 text-blue-800' };
+                return {
+                    bg: `bg-yellow-50 ${baseOpacity}`,
+                    border: 'border-yellow-200',
+                    icon: 'text-yellow-600 dark:text-yellow-400',
+                    badge: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+                };
             default:
-                return { bg: 'bg-gray-50', border: 'border-gray-200', icon: 'text-gray-500', badge: 'bg-gray-100 text-gray-800' };
+                return {
+                    bg: `bg-blue-50 ${baseOpacity}`,
+                    border: 'border-blue-200',
+                    icon: 'text-blue-600 dark:text-blue-400',
+                    badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+                };
         }
     };
 
@@ -136,23 +151,36 @@ export default function NotificationsPage() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Notifications & Alerts" />
             <div className="space-y-6 p-8 bg-[#E3EED4] dark:bg-[#0F2A1D] min-h-screen">
+                {/* Header */}
                 <div className="flex items-center justify-between bg-gradient-to-r from-[#375534] to-[#0F2A1D] rounded-lg p-6 text-white">
                     <div>
                         <h1 className="text-3xl font-bold">Notifications & Alerts</h1>
-                        <p className="mt-1 text-sm text-[#E3EED4]">Real-time system alerts for invalid QR codes, guest mismatches, and missing guides</p>
+                        <p className="mt-1 text-sm text-[#E3EED4]">Real-time system alerts for entrance monitoring and capacity status</p>
                     </div>
                     <Bell className="h-12 w-12 text-[#E3EED4]" />
                 </div>
 
-                {/* Alert Statistics */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Statistics Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Critical</p>
-                                <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-1">{criticalCount}</p>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Unread</p>
+                                <p className={`text-3xl font-bold mt-1 ${unreadCount > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600'}`}>
+                                    {unreadCount}
+                                </p>
                             </div>
-                            <AlertTriangle className="h-8 w-8 text-red-500" />
+                            <Bell className={`h-8 w-8 ${unreadCount > 0 ? 'text-blue-500' : 'text-gray-500'}`} />
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Success</p>
+                                <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{successCount}</p>
+                            </div>
+                            <CheckCircle className="h-8 w-8 text-green-500" />
                         </div>
                     </div>
 
@@ -162,129 +190,132 @@ export default function NotificationsPage() {
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Warnings</p>
                                 <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{warningCount}</p>
                             </div>
-                            <AlertCircle className="h-8 w-8 text-yellow-500" />
+                            <AlertTriangle className="h-8 w-8 text-yellow-500" />
                         </div>
                     </div>
 
                     <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Information</p>
-                                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">{infoCount}</p>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Errors</p>
+                                <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-1">{errorCount}</p>
                             </div>
-                            <Bell className="h-8 w-8 text-blue-500" />
+                            <XCircle className="h-8 w-8 text-red-500" />
                         </div>
                     </div>
 
                     <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Active</p>
-                                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{activeAlerts.length}</p>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total</p>
+                                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{notifications.length}</p>
                             </div>
                             <Clock className="h-8 w-8 text-gray-500" />
                         </div>
                     </div>
                 </div>
 
-                {/* Alert Filters */}
-                <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-4 flex items-center justify-between">
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Showing {activeAlerts.length} active alert(s)</p>
-                    {activeAlerts.length > 0 && (
+                {/* Filter Controls */}
+                <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-4 flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex gap-2 flex-wrap">
+                        {['all', 'unread', 'success', 'warning', 'error'].map(f => (
+                            <button
+                                key={f}
+                                onClick={() => setFilter(f as any)}
+                                className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
+                                    filter === f
+                                        ? 'bg-[#375534] text-white'
+                                        : 'bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300'
+                                }`}
+                            >
+                                {f.charAt(0).toUpperCase() + f.slice(1)}
+                            </button>
+                        ))}
+                    </div>
+                    {unreadCount > 0 && (
                         <button
-                            onClick={clearAll}
-                            className="text-sm px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-medium"
+                            onClick={markAllAsRead}
+                            className="text-sm px-4 py-2 rounded bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-medium"
                         >
-                            Clear All
+                            Mark All as Read
                         </button>
                     )}
                 </div>
 
-                {/* Alert List */}
-                {activeAlerts.length === 0 ? (
-                    <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-12 text-center">
-                        <Bell className="h-12 w-12 text-gray-300 dark:text-slate-600 mx-auto mb-4" />
-                        <p className="text-lg font-semibold text-gray-900 dark:text-white">No Active Alerts</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">All alerts have been dismissed. Keep monitoring for new alerts.</p>
-                    </div>
-                ) : (
-                    <div className="space-y-3">
-                        {activeAlerts.map((alert) => {
-                            const colors = getAlertColors(alert.severity);
+                {/* Notifications List */}
+                <div className="space-y-3">
+                    {loading ? (
+                        <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-8 text-center">
+                            <p className="text-gray-600 dark:text-gray-400">Loading notifications...</p>
+                        </div>
+                    ) : filteredNotifications.length > 0 ? (
+                        filteredNotifications.map(notification => {
+                            const colors = getNotificationColors(notification.notification_type, notification.is_read);
                             return (
-                                <div key={alert.id} className={`bg-white dark:bg-slate-900 rounded-lg border ${colors.border} p-6 ${colors.bg} dark:bg-slate-900`}>
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-start gap-4 flex-1">
-                                            <div className={`${colors.icon} mt-1`}>{getAlertIcon(alert.type)}</div>
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <h3 className="text-base font-semibold text-gray-900 dark:text-white">{alert.title}</h3>
-                                                    <Badge className={`text-xs ${colors.badge}`}>
-                                                        {alert.severity.toUpperCase()}
+                                <div
+                                    key={notification.id}
+                                    className={`${colors.bg} border-l-4 ${colors.border} bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-4 transition hover:shadow-md`}
+                                >
+                                    <div className="flex items-start gap-4">
+                                        <div className={`${colors.icon} flex-shrink-0 mt-1`}>
+                                            {getNotificationIcon(notification.notification_type)}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div>
+                                                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                                                        {notification.title}
+                                                        {!notification.is_read && (
+                                                            <span className="ml-2 inline-block w-2 h-2 rounded-full bg-blue-500"></span>
+                                                        )}
+                                                    </h3>
+                                                    <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                                                        {notification.message}
+                                                    </p>
+                                                    {notification.details && (
+                                                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                                                            {notification.details}
+                                                        </p>
+                                                    )}
+                                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                                                        {notification.time_ago}
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                    <Badge className={colors.badge}>
+                                                        {notification.notification_type.charAt(0).toUpperCase() + notification.notification_type.slice(1)}
                                                     </Badge>
                                                 </div>
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">{alert.message}</p>
-                                                {alert.bookingCode && (
-                                                    <p className="text-xs font-mono text-gray-600 dark:text-gray-400 mb-2">Booking: {alert.bookingCode}</p>
+                                            </div>
+
+                                            {/* Button Actions */}
+                                            <div className="flex gap-2 mt-3">
+                                                {!notification.is_read && (
+                                                    <button
+                                                        onClick={() => markAsRead(notification.id)}
+                                                        className="text-xs px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-medium"
+                                                    >
+                                                        Mark as Read
+                                                    </button>
                                                 )}
-                                                {alert.details && (
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400 bg-white dark:bg-slate-800 p-2 rounded mt-2 border-l-2 border-gray-300 dark:border-slate-600">
-                                                        {alert.details}
-                                                    </p>
-                                                )}
-                                                <p className="text-xs text-gray-500 dark:text-gray-500 mt-2 flex items-center gap-1">
-                                                    <Clock className="h-3 w-3" />
-                                                    {alert.timestamp}
-                                                </p>
+                                                <button
+                                                    onClick={() => deleteNotification(notification.id)}
+                                                    className="text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-medium"
+                                                >
+                                                    Delete
+                                                </button>
                                             </div>
                                         </div>
-                                        <button
-                                            onClick={() => dismissAlert(alert.id)}
-                                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors ml-4"
-                                            title="Dismiss alert"
-                                        >
-                                            <XIcon className="h-5 w-5" />
-                                        </button>
                                     </div>
                                 </div>
                             );
-                        })}
-                    </div>
-                )}
-
-                {/* Alert Types Legend */}
-                <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Alert Type Reference</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex gap-3">
-                            <XCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                            <div>
-                                <p className="font-medium text-gray-900 dark:text-white">Invalid QR Code</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Scanned code doesn't match any booking or visit date has passed</p>
-                            </div>
+                        })
+                    ) : (
+                        <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-8 text-center">
+                            <Bell className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                            <p className="text-gray-600 dark:text-gray-400">No notifications for this filter</p>
                         </div>
-                        <div className="flex gap-3">
-                            <Users className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-                            <div>
-                                <p className="font-medium text-gray-900 dark:text-white">Guest Count Mismatch</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Actual guest count differs from booking record</p>
-                            </div>
-                        </div>
-                        <div className="flex gap-3">
-                            <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                            <div>
-                                <p className="font-medium text-gray-900 dark:text-white">Missing Guide</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Required guide is not present with the group</p>
-                            </div>
-                        </div>
-                        <div className="flex gap-3">
-                            <Zap className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-                            <div>
-                                <p className="font-medium text-gray-900 dark:text-white">Capacity Warning</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Site is approaching or exceeding maximum capacity</p>
-                            </div>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </AppLayout>

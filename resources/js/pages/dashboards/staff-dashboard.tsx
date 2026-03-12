@@ -85,6 +85,7 @@ export default function StaffDashboard() {
     const [capacityStatus, setCapacityStatus] = useState('SAFE');
     const [remainingCapacity, setRemainingCapacity] = useState(350);
     const [isAtCapacity, setIsAtCapacity] = useState(false);
+    const [previousCapacityStatus, setPreviousCapacityStatus] = useState<string | null>(null);
     
     // Real-time statistics state
     const [totalVisitorsToday, setTotalVisitorsToday] = useState(0);
@@ -116,16 +117,57 @@ export default function StaffDashboard() {
                 
                 // Determine capacity status based on percentage
                 // 0-80%: Normal, 81-99%: Warning, 100%: Full
+                let newStatus = 'SAFE';
                 if (visitorData.capacity_percentage >= 100) {
+                    newStatus = 'FULL';
                     setCapacityStatus('FULL');
                     setIsAtCapacity(true);
+                    
+                    // Notify only if status changed to FULL
+                    if (previousCapacityStatus !== 'FULL') {
+                        try {
+                            await fetch('/staff/api/create-notification', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    type: 'capacity_critical',
+                                    current_visitors: visitorData.current_visitors,
+                                    maximum_capacity: visitorData.maximum_capacity,
+                                })
+                            });
+                        } catch (err) {
+                            console.error('Error creating capacity critical notification:', err);
+                        }
+                    }
                 } else if (visitorData.capacity_percentage > 80) {
+                    newStatus = 'WARNING';
                     setCapacityStatus('WARNING');
                     setIsAtCapacity(false);
+                    
+                    // Notify only if status changed to WARNING (and wasn't FULL before)
+                    if (previousCapacityStatus === 'SAFE' || previousCapacityStatus === null) {
+                        try {
+                            await fetch('/staff/api/create-notification', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    type: 'capacity_warning',
+                                    current_visitors: visitorData.current_visitors,
+                                    maximum_capacity: visitorData.maximum_capacity,
+                                    capacity_percentage: visitorData.capacity_percentage,
+                                })
+                            });
+                        } catch (err) {
+                            console.error('Error creating capacity warning notification:', err);
+                        }
+                    }
                 } else {
-                    setCapacityStatus('NORMAL');
+                    newStatus = 'SAFE';
+                    setCapacityStatus('SAFE');
                     setIsAtCapacity(false);
                 }
+                
+                setPreviousCapacityStatus(newStatus);
             }
         } catch (error) {
             console.error('Error fetching capacity status:', error);

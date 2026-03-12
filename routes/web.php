@@ -312,4 +312,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/staff/api/visitor-count', [\App\Http\Controllers\QRCodeArrivalController::class, 'getVisitorCount'])->name('qr-arrival.visitor-count');
 });
 
+// Notification API Routes
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/staff/api/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/staff/api/notifications/unread-count', [\App\Http\Controllers\NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::get('/staff/api/notifications/recent', [\App\Http\Controllers\NotificationController::class, 'recent'])->name('notifications.recent');
+    Route::post('/staff/api/notifications/{id}/mark-read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+    Route::post('/staff/api/notifications/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::delete('/staff/api/notifications/{id}', [\App\Http\Controllers\NotificationController::class, 'delete'])->name('notifications.delete');
+    Route::post('/staff/api/create-notification', [\App\Http\Controllers\NotificationController::class, 'createNotification'])->name('notifications.create');
+});
+
 require __DIR__.'/settings.php';

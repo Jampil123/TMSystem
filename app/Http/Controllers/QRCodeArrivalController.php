@@ -6,6 +6,7 @@ use App\Models\ArrivalLog;
 use App\Models\GuestList;
 use App\Models\GuestListQRCode;
 use App\Models\GuideAssignment;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -61,6 +62,7 @@ class QRCodeArrivalController extends Controller
             $guideAssignment = $this->verifyGuidePresence($guestList->id);
 
             if (!$guideAssignment) {
+                NotificationService::guideVerificationFailed($guestList->id, 'Guide not confirmed or not present');
                 return response()->json([
                     'success' => false,
                     'message' => 'Entry denied. No confirmed guide assigned for this guest group.',
@@ -117,6 +119,7 @@ class QRCodeArrivalController extends Controller
                 $qrCode = GuestListQRCode::where('token', $token)->first();
 
                 if (!$qrCode) {
+                    NotificationService::invalidQR($token);
                     return response()->json([
                         'success' => false,
                         'message' => '❌ QR code not found in system',
@@ -126,6 +129,7 @@ class QRCodeArrivalController extends Controller
 
                 // Step 3: Verify QR code status
                 if (strtolower($qrCode->status) === 'used') {
+                    NotificationService::qrAlreadyUsed($token);
                     return response()->json([
                         'success' => false,
                         'message' => '⚠️ This QR code has already been used. Duplicate entry blocked.',
@@ -134,6 +138,7 @@ class QRCodeArrivalController extends Controller
                 }
 
                 if (strtolower($qrCode->status) === 'expired') {
+                    NotificationService::qrExpired($token);
                     return response()->json([
                         'success' => false,
                         'message' => '❌ This QR code has expired',
@@ -146,6 +151,7 @@ class QRCodeArrivalController extends Controller
                     $qrCode->status = 'Expired';
                     $qrCode->save();
 
+                    NotificationService::qrExpired($token);
                     return response()->json([
                         'success' => false,
                         'message' => '❌ This QR code has expired',
@@ -176,6 +182,7 @@ class QRCodeArrivalController extends Controller
                         'reason' => 'Guide presence verification failed',
                     ]);
 
+                    NotificationService::guideVerificationFailed($token, 'Guide not confirmed or not present');
                     return response()->json([
                         'success' => false,
                         'message' => 'Entry denied. No confirmed guide assigned for this guest group.',
@@ -193,6 +200,14 @@ class QRCodeArrivalController extends Controller
                     'arrival_date' => now()->toDateString(),
                     'status' => 'arrived',
                 ]);
+
+                // Create notification for successful arrival
+                NotificationService::arrivalLogged(
+                    $guestList->guest_names[0] ?? 'Guest Group',
+                    $guestList->total_guests,
+                    $guideAssignment->guide->full_name ?? 'Unknown Guide',
+                    $arrivalLog->id
+                );
 
                 // Step 6: Update QR code status to "used"
                 $qrCode->status = 'Used';

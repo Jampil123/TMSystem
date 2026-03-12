@@ -1,10 +1,87 @@
-import { useNotifications } from '@/contexts/NotificationContext';
-import { Bell, X, Check } from 'lucide-react';
-import { useState } from 'react';
+import { Bell, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link } from '@inertiajs/react';
+
+interface Notification {
+    id: number;
+    type: string;
+    notification_type: 'success' | 'warning' | 'error' | 'info';
+    title: string;
+    message: string;
+    details?: string;
+    is_read: boolean;
+    time_ago?: string;
+    created_at: string;
+}
 
 export function NotificationBell() {
-    const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification } = useNotifications();
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    const fetchNotifications = async () => {
+        setLoading(true);
+        try {
+            const response = await fetch('/staff/api/notifications/recent');
+            const data = await response.json();
+            if (data.success) {
+                setNotifications(data.data || []);
+                setUnreadCount(data.unread_count || 0);
+            }
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const markAsRead = async (id: number) => {
+        try {
+            await fetch(`/staff/api/notifications/${id}/mark-read`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            fetchNotifications();
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
+    };
+
+    const markAllAsRead = async () => {
+        try {
+            await fetch('/staff/api/notifications/mark-all-read', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            fetchNotifications();
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+        }
+    };
+
+    const removeNotification = async (id: number) => {
+        try {
+            await fetch(`/staff/api/notifications/${id}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            fetchNotifications();
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+        }
+    };
+
+    // Initial fetch
+    useEffect(() => {
+        fetchNotifications();
+    }, []);
+
+    // Set up refresh interval
+    useEffect(() => {
+        const interval = setInterval(fetchNotifications, 15000);
+        return () => clearInterval(interval);
+    }, []);
 
     const getTypeColor = (type: string) => {
         switch (type) {
@@ -71,20 +148,24 @@ export function NotificationBell() {
 
                     {/* Notifications List */}
                     <div className="max-h-96 overflow-y-auto">
-                        {notifications.length > 0 ? (
+                        {loading ? (
+                            <div className="p-4 text-center text-xs text-[#6B8071] dark:text-[#AEC3B0]">
+                                Loading...
+                            </div>
+                        ) : notifications.length > 0 ? (
                             notifications.map((notification) => (
                                 <div
                                     key={notification.id}
                                     className={`p-4 border-b border-[#AEC3B0]/10 dark:border-[#375534]/20 hover:bg-[#F5F5F5] dark:hover:bg-[#1A3A2A] transition-colors ${
-                                        !notification.read ? 'bg-[#F9F9F9] dark:bg-[#162319]' : ''
+                                        !notification.is_read ? 'bg-[#F9F9F9] dark:bg-[#162319]' : ''
                                     }`}
                                 >
                                     <div className="flex gap-3">
                                         {/* Icon */}
                                         <div
-                                            className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${getTypeColor(notification.type)}`}
+                                            className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${getTypeColor(notification.notification_type)}`}
                                         >
-                                            {getTypeIcon(notification.type)}
+                                            {getTypeIcon(notification.notification_type)}
                                         </div>
 
                                         {/* Content */}
@@ -105,12 +186,9 @@ export function NotificationBell() {
                                             </p>
                                             <div className="flex items-center justify-between mt-2">
                                                 <p className="text-xs text-[#6B8071] dark:text-[#8BA98F]">
-                                                    {notification.timestamp.toLocaleTimeString([], {
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                    })}
+                                                    {notification.time_ago}
                                                 </p>
-                                                {!notification.read && (
+                                                {!notification.is_read && (
                                                     <button
                                                         onClick={() => markAsRead(notification.id)}
                                                         className="text-xs text-[#C84B59] hover:text-[#B03A47] dark:text-[#E89BA3] dark:hover:text-[#C84B59]"
@@ -129,6 +207,16 @@ export function NotificationBell() {
                                 <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0]">No notifications yet</p>
                             </div>
                         )}
+                    </div>
+                    
+                    {/* Footer - Link to full notifications page */}
+                    <div className="border-t border-[#AEC3B0]/20 dark:border-[#375534]/40 p-3">
+                        <Link
+                            href="/staff/notifications"
+                            className="block w-full text-center text-xs font-medium text-[#C84B59] hover:text-[#B03A47] dark:text-[#E89BA3] dark:hover:text-[#C84B59] py-2 rounded hover:bg-[#E3EED4] dark:hover:bg-[#375534]/30 transition"
+                        >
+                            View All
+                        </Link>
                     </div>
                 </div>
             )}
