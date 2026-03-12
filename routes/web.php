@@ -22,6 +22,9 @@ use App\Http\Controllers\Operator\GuestSubmissionController;
 use App\Http\Controllers\Operator\AlertController;
 use App\Http\Controllers\Admin\GuideManagementController;
 use App\Http\Controllers\Admin\GuideAvailabilityController;
+use App\Http\Controllers\Admin\CapacityRuleController;
+use App\Http\Controllers\Admin\SafetyAlertController;
+use App\Http\Controllers\Admin\EmergencyAlertController;
 use App\Http\Controllers\GuideController;
 use App\Http\Controllers\Dashboard\TouristDashboardController;
 use App\Http\Controllers\Tourist\ExploreActivityController;
@@ -265,6 +268,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('services/{service}/approve', [AdminServiceController::class, 'approve'])->name('services.approve');
     Route::post('services/{service}/reject', [AdminServiceController::class, 'reject'])->name('services.reject');
     Route::post('services/{service}/request-revision', [AdminServiceController::class, 'requestRevision'])->name('services.request-revision');
+
+    // Capacity Rules Configuration Page
+    Route::get('settings/capacity-rules', function () {
+        return Inertia::render('admin/capacity-rules');
+    })->name('admin.capacity-rules');
+
+    // Safety Alerts Configuration Page
+    Route::get('settings/safety-alerts', function () {
+        return Inertia::render('admin/safety-alerts');
+    })->name('admin.safety-alerts');
+
+    // Emergency Alerts Management Page
+    Route::get('settings/emergency-alerts', function () {
+        return Inertia::render('admin/emergency-alerts');
+    })->name('admin.emergency-alerts');
+
+    // Notifications Page
+    Route::get('notifications', function () {
+        return Inertia::render('notifications');
+    })->name('notifications');
 });
 
 // Guide Registration Routes (Public) - MUST come before admin routes to avoid parameter catching
@@ -317,11 +340,43 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/staff/api/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/staff/api/notifications/unread-count', [\App\Http\Controllers\NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::get('/staff/api/notifications/unread-by-severity', [\App\Http\Controllers\NotificationController::class, 'getUnreadBySeverity'])->name('notifications.unread-by-severity');
+    Route::get('/staff/api/notifications/critical', [\App\Http\Controllers\NotificationController::class, 'getCritical'])->name('notifications.critical');
+    Route::get('/staff/api/notifications/by-severity', [\App\Http\Controllers\NotificationController::class, 'getBySeverity'])->name('notifications.by-severity');
     Route::get('/staff/api/notifications/recent', [\App\Http\Controllers\NotificationController::class, 'recent'])->name('notifications.recent');
     Route::post('/staff/api/notifications/{id}/mark-read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
     Route::post('/staff/api/notifications/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
     Route::delete('/staff/api/notifications/{id}', [\App\Http\Controllers\NotificationController::class, 'delete'])->name('notifications.delete');
     Route::post('/staff/api/create-notification', [\App\Http\Controllers\NotificationController::class, 'createNotification'])->name('notifications.create');
+});
+
+// Capacity Rules API Routes (Admin)
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/admin/api/capacity-rules', [CapacityRuleController::class, 'index'])->name('capacity-rules.index');
+    Route::post('/admin/api/capacity-rules', [CapacityRuleController::class, 'update'])->name('capacity-rules.update');
+    Route::get('/admin/api/capacity-rules/history', [CapacityRuleController::class, 'history'])->name('capacity-rules.history');
+    Route::post('/admin/api/capacity-rules/reset', [CapacityRuleController::class, 'reset'])->name('capacity-rules.reset');
+
+    // Safety Alert API Routes
+    Route::get('/admin/api/safety-alerts', [SafetyAlertController::class, 'getActiveAlerts'])->name('safety-alerts.active');
+    Route::get('/admin/api/safety-alerts/recent', [SafetyAlertController::class, 'getRecent'])->name('safety-alerts.recent');
+    Route::get('/admin/api/safety-alerts/summary', [SafetyAlertController::class, 'getSummary'])->name('safety-alerts.summary');
+    Route::get('/admin/api/safety-alerts/critical', [SafetyAlertController::class, 'hasActiveCritical'])->name('safety-alerts.critical');
+    Route::get('/admin/api/safety-alerts/by-type', [SafetyAlertController::class, 'getByType'])->name('safety-alerts.by-type');
+    Route::get('/admin/api/safety-alerts/by-severity', [SafetyAlertController::class, 'getBySeverity'])->name('safety-alerts.by-severity');
+    Route::post('/admin/api/safety-alerts/{alert}/resolve', [SafetyAlertController::class, 'resolve'])->name('safety-alerts.resolve');
+    Route::post('/admin/api/safety-alerts/resolve-multiple', [SafetyAlertController::class, 'resolveMultiple'])->name('safety-alerts.resolve-multiple');
+    Route::post('/admin/api/safety-alerts/check', [SafetyAlertController::class, 'runSafetyCheck'])->name('safety-alerts.check');
+    Route::delete('/admin/api/safety-alerts/cleanup', [SafetyAlertController::class, 'cleanup'])->name('safety-alerts.cleanup');
+
+    // Emergency Alert API Routes
+    Route::get('/admin/api/emergency-alerts', [EmergencyAlertController::class, 'getActive'])->name('emergency-alerts.active');
+    Route::get('/admin/api/emergency-alerts/status', [EmergencyAlertController::class, 'getStatus'])->name('emergency-alerts.status');
+    Route::get('/admin/api/emergency-alerts/history', [EmergencyAlertController::class, 'getHistory'])->name('emergency-alerts.history');
+    Route::get('/admin/api/emergency-alerts/entry-block', [EmergencyAlertController::class, 'getEntryBlockStatus'])->name('emergency-alerts.entry-block');
+    Route::get('/admin/api/emergency-alerts/in-progress', [EmergencyAlertController::class, 'checkCondition'])->name('emergency-alerts.check-condition');
+    Route::post('/admin/api/emergency-alerts/{emergency}/resolve', [EmergencyAlertController::class, 'resolve'])->name('emergency-alerts.resolve');
+    Route::post('/admin/api/emergency-alerts/trigger', [EmergencyAlertController::class, 'trigger'])->name('emergency-alerts.trigger');
 });
 
 require __DIR__.'/settings.php';

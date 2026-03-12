@@ -308,4 +308,139 @@ class NotificationController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get notifications by severity for logged-in user
+     */
+    public function getBySeverity(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $severity = $request->query('severity', 'all');
+            $limit = $request->query('limit', 20);
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated',
+                ], 401);
+            }
+
+            $query = Notification::where('user_id', $user->id);
+
+            if ($severity !== 'all') {
+                $query->where('severity', $severity);
+            }
+
+            $notifications = $query->orderBy('created_at', 'desc')
+                ->limit($limit)
+                ->get()
+                ->map(function ($notification) {
+                    return [
+                        'id' => $notification->id,
+                        'type' => $notification->type,
+                        'title' => $notification->title,
+                        'message' => $notification->message,
+                        'severity' => $notification->severity ?? $notification->notification_type,
+                        'is_read' => $notification->is_read,
+                        'created_at' => $notification->created_at->toIso8601String(),
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $notifications,
+                'count' => $notifications->count(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching notifications by severity: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching notifications',
+            ], 500);
+        }
+    }
+
+    /**
+     * Get critical unread notifications
+     */
+    public function getCritical(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $limit = $request->query('limit', 10);
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated',
+                ], 401);
+            }
+
+            $notifications = Notification::where('user_id', $user->id)
+                ->where('severity', 'critical')
+                ->where('is_read', false)
+                ->orderBy('created_at', 'desc')
+                ->limit($limit)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $notifications,
+                'count' => $notifications->count(),
+                'has_critical' => $notifications->count() > 0,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching critical notifications: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching critical notifications',
+                'has_critical' => false,
+            ], 500);
+        }
+    }
+
+    /**
+     * Get unread notifications count by severity
+     */
+    public function getUnreadBySeverity()
+    {
+        try {
+            $user = Auth::user();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated',
+                ], 401);
+            }
+
+            $severities = ['critical', 'high', 'medium', 'low', 'warning', 'info', 'success'];
+            $counts = [];
+            $total = 0;
+
+            foreach ($severities as $severity) {
+                $count = Notification::where('user_id', $user->id)
+                    ->where('severity', $severity)
+                    ->where('is_read', false)
+                    ->count();
+                $counts[$severity] = $count;
+                $total += $count;
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $counts,
+                'total' => $total,
+                'has_critical' => $counts['critical'] > 0,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching unread counts by severity: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching unread counts',
+            ], 500);
+        }
+    }
 }
+

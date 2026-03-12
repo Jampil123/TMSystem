@@ -7,6 +7,7 @@ use App\Models\GuideCertification;
 use App\Models\GuestList;
 use App\Models\GuideAssignment;
 use App\Services\GuideAssignmentService;
+use App\Services\SafetyAlertEngine;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
@@ -268,6 +269,10 @@ class GuideController extends Controller
                 Auth::user()
             );
 
+            // Run safety checks after assignment
+            $alertEngine = new SafetyAlertEngine();
+            $alertEngine->checkAllConditions();
+
             return response()->json([
                 'success' => true,
                 'message' => "Guide {$guide->full_name} has been assigned successfully!",
@@ -313,6 +318,10 @@ class GuideController extends Controller
                     'message' => 'No eligible guides available for this assignment.',
                 ], 400);
             }
+
+            // Run safety checks after auto-assignment
+            $alertEngine = new SafetyAlertEngine();
+            $alertEngine->checkAllConditions();
 
             $guideNames = implode(', ', collect($assignments)->map(fn($a) => $a->guide->full_name)->toArray());
 

@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Users, Compass, Zap, Building2, Home, User, FileText, Bell, Settings, ClipboardList, CheckCircle, Package, Plus, List, CheckCheck, Calendar, QrCode, LogIn, Eye, Users2, TrendingUp, BarChart3 } from 'lucide-react';
+import { LayoutGrid, Users, Compass, Zap, Building2, Home, User, FileText, Bell, Settings, ClipboardList, CheckCircle, Package, Plus, List, CheckCheck, Calendar, QrCode, LogIn, Eye, Users2, TrendingUp, BarChart3, Gauge, AlertTriangle } from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -90,6 +90,32 @@ export function AppSidebar() {
                     title: 'Availability Tracking',
                     href: '/guides/availability',
                     icon: Calendar,
+                },
+            ],
+        },
+        {
+            title: 'System Settings',
+            icon: Settings,
+            items: [
+                {
+                    title: 'Capacity Rules',
+                    href: '/settings/capacity-rules',
+                    icon: Gauge,
+                },
+                {
+                    title: 'Safety Alerts',
+                    href: '/settings/safety-alerts',
+                    icon: AlertTriangle,
+                },
+                {
+                    title: 'Emergency Alerts',
+                    href: '/settings/emergency-alerts',
+                    icon: AlertTriangle,
+                },
+                {
+                    title: 'Notifications',
+                    href: '/settings/notifications',
+                    icon: Bell,
                 },
             ],
         },

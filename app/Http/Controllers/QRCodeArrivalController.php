@@ -7,6 +7,8 @@ use App\Models\GuestList;
 use App\Models\GuestListQRCode;
 use App\Models\GuideAssignment;
 use App\Services\NotificationService;
+use App\Services\SafetyAlertEngine;
+use App\Services\EmergencyAlertService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -191,6 +193,29 @@ class QRCodeArrivalController extends Controller
                     ], 403);
                 }
 
+                // Step 4.5: EMERGENCY CHECK - Block entry if emergency active
+                // Check if any emergency is preventing new entries
+                $emergencyService = new EmergencyAlertService();
+                if ($emergencyService->shouldBlockNewEntry()) {
+                    \Log::warning('Entry Denied - Emergency Active', [
+                        'qr_token' => $token,
+                        'guest_list_id' => $guestList->id,
+                        'timestamp' => now(),
+                        'reason' => 'Emergency condition preventing new entries',
+                    ]);
+
+                    NotificationService::entryBlocked(
+                        $guestList->guest_names[0] ?? 'Guest Group',
+                        'An emergency situation is preventing new guest entries. Please contact the administrator.'
+                    );
+                    return response()->json([
+                        'success' => false,
+                        'message' => '🚨 Entry blocked: Emergency situation in progress. Contact administrator.',
+                        'code' => 'EMERGENCY_BLOCK',
+                        'guide_verified' => false,
+                    ], 403);
+                }
+
                 // Step 5: Create arrival log
                 $arrivalLog = ArrivalLog::create([
                     'guest_list_id' => $guestList->id,
@@ -208,6 +233,15 @@ class QRCodeArrivalController extends Controller
                     $guideAssignment->guide->full_name ?? 'Unknown Guide',
                     $arrivalLog->id
                 );
+
+                // Run safety checks for this arrival
+                $alertEngine = new SafetyAlertEngine();
+                $alertEngine->checkAllConditions();
+
+                // Run emergency checks after successful arrival
+                $emergencyService = new EmergencyAlertService();
+                $emergencyService->checkCapacityEmergency();
+                $emergencyService->checkMissingGuideEmergency($guestList);
 
                 // Step 6: Update QR code status to "used"
                 $qrCode->status = 'Used';
