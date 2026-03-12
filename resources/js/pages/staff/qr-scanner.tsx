@@ -213,6 +213,10 @@ export default function QRCodeScanner() {
                     issues: [],
                 });
 
+                // Refresh stats immediately after successful scan
+                fetchTodayStats();
+                fetchRecentArrivals();
+
                 // Auto-clear after 3 seconds
                 setTimeout(() => {
                     setScanResult(null);
@@ -285,12 +289,24 @@ export default function QRCodeScanner() {
         setIsLoadingStats(true);
         try {
             const response = await fetch('/staff/api/arrival-stats');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
             const data = await response.json();
             if (data.success) {
                 setTodayStats(data.data);
+            } else {
+                console.warn('Stats API returned non-success:', data.message);
             }
         } catch (error) {
             console.error('Error fetching stats:', error);
+            // Set default values on error to prevent UI breaking
+            setTodayStats({
+                total_arrivals: 0,
+                verified_arrivals: 0,
+                denied_arrivals: 0,
+                total_guests: 0,
+            });
         } finally {
             setIsLoadingStats(false);
         }
@@ -301,12 +317,20 @@ export default function QRCodeScanner() {
         setIsLoadingRecents(true);
         try {
             const response = await fetch('/staff/api/recent-arrivals');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
             const data = await response.json();
             if (data.success) {
                 setRecentArrivals(data.data);
+            } else {
+                console.warn('Recent arrivals API returned non-success:', data.message);
+                setRecentArrivals([]);
             }
         } catch (error) {
             console.error('Error fetching recent arrivals:', error);
+            // Set empty array on error
+            setRecentArrivals([]);
         } finally {
             setIsLoadingRecents(false);
         }
@@ -317,11 +341,11 @@ export default function QRCodeScanner() {
         fetchTodayStats();
         fetchRecentArrivals();
         
-        // Refresh stats every 5 seconds to show real-time updates
+        // Refresh stats every 30 seconds to show real-time updates (less frequent to avoid constant loading)
         const statsInterval = setInterval(() => {
             fetchTodayStats();
             fetchRecentArrivals();
-        }, 5000);
+        }, 30000);
 
         return () => clearInterval(statsInterval);
     }, []);

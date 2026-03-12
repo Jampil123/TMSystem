@@ -13,16 +13,95 @@ use Illuminate\Support\Facades\DB;
 class QRCodeArrivalController extends Controller
 {
     /**
+     * Verify guide presence and assignment status
+     * 
+     * @param int $guestListId
+     * @return array|null Returns guide assignment if valid, null if not
+     */
+    private function verifyGuidePresence($guestListId)
+    {
+        $guideAssignment = GuideAssignment::where('guest_list_id', $guestListId)
+            ->with('guide')
+            ->first();
+
+        // Check if guide assignment exists
+        if (!$guideAssignment) {
+            return null;
+        }
+
+        // Check if assignment is confirmed
+        if ($guideAssignment->assignment_status !== 'Confirmed') {
+            return null;
+        }
+
+        return $guideAssignment;
+    }
+
+    /**
+     * Check guide assignment status before QR scan
+     * Allows entrance staff to verify guide presence before scanning
+     */
+    public function checkGuidePresence(Request $request)
+    {
+        $validated = $request->validate([
+            'guest_list_id' => 'required|integer|exists:guest_lists,id',
+        ]);
+
+        try {
+            $guestList = GuestList::find($validated['guest_list_id']);
+            
+            if (!$guestList) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Guest list not found',
+                    'code' => 'GUEST_LIST_NOT_FOUND',
+                ], 404);
+            }
+
+            $guideAssignment = $this->verifyGuidePresence($guestList->id);
+
+            if (!$guideAssignment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Entry denied. No confirmed guide assigned for this guest group.',
+                    'code' => 'GUIDE_NOT_CONFIRMED',
+                    'guide_present' => false,
+                ], 403);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => '✅ Confirmed guide is assigned for this group',
+                'code' => 'GUIDE_VERIFIED',
+                'guide_present' => true,
+                'data' => [
+                    'guest_list_id' => $guestList->id,
+                    'guest_count' => $guestList->total_guests,
+                    'guide_name' => $guideAssignment->guide->full_name,
+                    'guide_id' => $guideAssignment->guide->id,
+                    'assignment_status' => $guideAssignment->assignment_status,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error checking guide presence: ' . $e->getMessage(),
+                'code' => 'ERROR',
+            ], 500);
+        }
+    }
+
+    /**
      * Process QR code scan and log arrival
      * 
      * Flow:
      * 1. Validate QR token from guest_lists_qr_codes table
      * 2. Get guest_list_id from QR code record
      * 3. Verify QR code is active/not expired/not already used
-     * 4. Get assigned guide from guide_assignments table
-     * 5. Check if assignment is confirmed
-     * 6. Insert arrival log
-     * 7. Update QR code status to "used"
+     * 4. Verify guide presence (GUIDE PRESENCE VERIFICATION STEP)
+     * 5. Create arrival log
+     * 6. Update QR code status to "used"
+     * 7. Update guide assignment status if all guests have arrived
      */
     public function processQRCode(Request $request)
     {
@@ -84,29 +163,28 @@ class QRCodeArrivalController extends Controller
                     ], 404);
                 }
 
-                // Step 4: Get assigned guide
-                $guideAssignment = GuideAssignment::where('guest_list_id', $guestList->id)
-                    ->with('guide')
-                    ->first();
+                // Step 4: GUIDE PRESENCE VERIFICATION
+                // Verify that a confirmed guide is assigned before allowing entry
+                $guideAssignment = $this->verifyGuidePresence($guestList->id);
 
                 if (!$guideAssignment) {
+                    // Log denied entry for audit purposes
+                    \Log::warning('Entry Denied - No Confirmed Guide', [
+                        'qr_token' => $token,
+                        'guest_list_id' => $guestList->id,
+                        'timestamp' => now(),
+                        'reason' => 'Guide presence verification failed',
+                    ]);
+
                     return response()->json([
                         'success' => false,
-                        'message' => '⚠️ No guide assigned to this guest list yet',
-                        'code' => 'NO_GUIDE_ASSIGNED',
-                    ], 422);
+                        'message' => 'Entry denied. No confirmed guide assigned for this guest group.',
+                        'code' => 'GUIDE_NOT_CONFIRMED',
+                        'guide_verified' => false,
+                    ], 403);
                 }
 
-                // Step 5: Check if assignment is confirmed
-                if ($guideAssignment->assignment_status !== 'Confirmed') {
-                    return response()->json([
-                        'success' => false,
-                        'message' => '⚠️ Guide assignment is not confirmed. Status: ' . $guideAssignment->assignment_status,
-                        'code' => 'ASSIGNMENT_NOT_CONFIRMED',
-                    ], 422);
-                }
-
-                // Step 6: Create arrival log
+                // Step 5: Create arrival log
                 $arrivalLog = ArrivalLog::create([
                     'guest_list_id' => $guestList->id,
                     'guest_name' => $guestList->guest_names[0] ?? 'Guest Group',
@@ -116,12 +194,12 @@ class QRCodeArrivalController extends Controller
                     'status' => 'arrived',
                 ]);
 
-                // Step 7: Update QR code status to "used"
+                // Step 6: Update QR code status to "used"
                 $qrCode->status = 'Used';
                 $qrCode->used_at = now();
                 $qrCode->save();
 
-                // Step 8: Update guide assignment status when all guests arrive
+                // Step 7: Update guide assignment status when all guests arrive
                 // Count how many QRs are still unused after marking this one as used
                 $unusedCount = GuestListQRCode::where('guest_list_id', $guestList->id)
                     ->whereNotIn('status', ['Used', 'Expired'])
@@ -141,11 +219,13 @@ class QRCodeArrivalController extends Controller
                     'success' => true,
                     'message' => '✅ Arrival logged successfully!',
                     'code' => 'SUCCESS',
+                    'guide_verified' => true,
                     'data' => [
                         'arrival_log_id' => $arrivalLog->id,
                         'guest_list_id' => $guestList->id,
                         'guest_name' => $arrivalLog->guest_name,
                         'guide_name' => $guideAssignment->guide->full_name ?? 'Unknown Guide',
+                        'guide_verified' => true,
                         'arrival_time' => $arrivalLog->arrival_time,
                         'arrival_date' => $arrivalLog->arrival_date,
                         'total_guests' => $guestList->total_guests,
@@ -178,10 +258,20 @@ class QRCodeArrivalController extends Controller
                 ->where('status', 'denied')
                 ->count();
 
-            $totalGuests = ArrivalLog::whereDate('arrival_date', $today)
-                ->where('status', 'arrived')
-                ->join('guest_lists', 'arrival_logs.guest_list_id', '=', 'guest_lists.id')
-                ->sum('guest_lists.total_guests');
+            // Get total guests with safer query
+            $totalGuests = 0;
+            try {
+                $totalGuests = ArrivalLog::whereDate('arrival_date', $today)
+                    ->where('status', 'arrived')
+                    ->with('guestList')
+                    ->get()
+                    ->sum(function ($arrival) {
+                        return $arrival->guestList?->total_guests ?? 0;
+                    });
+            } catch (\Exception $е) {
+                \Log::warning('Error calculating total guests: ' . $е->getMessage());
+                $totalGuests = 0;
+            }
 
             return response()->json([
                 'success' => true,
@@ -189,14 +279,21 @@ class QRCodeArrivalController extends Controller
                     'total_arrivals' => $totalArrivals,
                     'verified_arrivals' => $verifiedArrivals,
                     'denied_arrivals' => $deniedArrivals,
-                    'total_guests' => $totalGuests ?? 0,
+                    'total_guests' => $totalGuests,
                 ],
             ]);
         } catch (\Exception $e) {
+            \Log::error('Error fetching statistics: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error fetching statistics: ' . $e->getMessage(),
-            ], 500);
+                'message' => 'Error fetching statistics',
+                'data' => [
+                    'total_arrivals' => 0,
+                    'verified_arrivals' => 0,
+                    'denied_arrivals' => 0,
+                    'total_guests' => 0,
+                ],
+            ], 200); // Return 200 to prevent page reload; error handled gracefully
         }
     }
 
@@ -214,14 +311,17 @@ class QRCodeArrivalController extends Controller
                 ->limit(20)
                 ->get()
                 ->map(function ($arrival) {
+                    $arrivalTime = $arrival->arrival_time;
+                    $arrivalDate = $arrival->arrival_date;
+                    
                     return [
                         'id' => $arrival->log_id,
                         'guest_list_id' => $arrival->guest_list_id,
-                        'guest_name' => $arrival->guest_name,
+                        'guest_name' => $arrival->guest_name ?? 'Unknown',
                         'guide_name' => $arrival->guide?->full_name ?? 'N/A',
-                        'arrival_time' => $arrival->arrival_time->format('H:i'),
-                        'arrival_date' => $arrival->arrival_date->format('Y-m-d'),
-                        'status' => $arrival->status,
+                        'arrival_time' => $arrivalTime ? $arrivalTime->format('H:i') : 'N/A',
+                        'arrival_date' => $arrivalDate ? $arrivalDate->format('Y-m-d') : 'N/A',
+                        'status' => $arrival->status ?? 'pending',
                         'total_guests' => $arrival->guestList?->total_guests ?? 0,
                         'service_name' => $arrival->guestList?->service?->service_name ?? 'Unknown Service',
                     ];
@@ -232,10 +332,72 @@ class QRCodeArrivalController extends Controller
                 'data' => $arrivals,
             ]);
         } catch (\Exception $e) {
+            \Log::error('Error fetching recent arrivals: ' . $e->getMessage());
+            return response()->json([
+                'success' => true,
+                'data' => [],
+                'message' => 'Unable to fetch recent arrivals at this time',
+            ], 200); // Return 200 with empty data to prevent errors
+        }
+    }
+
+    /**
+     * Get real-time visitor count and capacity status
+     * Returns the current number of visitors inside the site based on arrival_logs
+     */
+    public function getVisitorCount()
+    {
+        try {
+            $today = Carbon::today();
+
+            // Get current visitor count from arrival_logs
+            // Query: SELECT COUNT(*) FROM arrival_logs WHERE status = 'Arrived' AND arrival_date = CURRENT_DATE
+            $currentVisitors = ArrivalLog::whereDate('arrival_date', $today)
+                ->where('status', 'arrived')
+                ->count();
+
+            // Get maximum capacity from configuration
+            // Can be set via env variable or hardcoded default
+            $maximumCapacity = (int) env('SITE_MAXIMUM_CAPACITY', 350);
+
+            // Calculate capacity percentage
+            $capacityPercentage = $maximumCapacity > 0 ? ($currentVisitors / $maximumCapacity) * 100 : 0;
+
+            // Determine capacity status
+            $capacityStatus = 'SAFE'; // Default
+            if ($capacityPercentage > 90) {
+                $capacityStatus = 'CRITICAL';
+            } elseif ($capacityPercentage > 70) {
+                $capacityStatus = 'WARNING';
+            }
+
+            // Calculate remaining capacity
+            $remainingCapacity = max(0, $maximumCapacity - $currentVisitors);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'current_visitors' => $currentVisitors,
+                    'maximum_capacity' => $maximumCapacity,
+                    'remaining_capacity' => $remainingCapacity,
+                    'capacity_percentage' => round($capacityPercentage, 2),
+                    'capacity_status' => $capacityStatus, // SAFE, WARNING, CRITICAL
+                    'timestamp' => now()->format('H:i:s'),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching visitor count: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error fetching arrivals: ' . $e->getMessage(),
-            ], 500);
+                'message' => 'Error fetching visitor count',
+                'data' => [
+                    'current_visitors' => 0,
+                    'maximum_capacity' => 350,
+                    'remaining_capacity' => 350,
+                    'capacity_percentage' => 0,
+                    'capacity_status' => 'SAFE',
+                ],
+            ], 200);
         }
     }
 }

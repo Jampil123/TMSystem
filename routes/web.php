@@ -306,8 +306,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // QR Code Arrival Logging Routes - for entrance staff
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/staff/api/qr-arrival', [\App\Http\Controllers\QRCodeArrivalController::class, 'processQRCode'])->name('qr-arrival.process');
+    Route::post('/staff/api/check-guide', [\App\Http\Controllers\QRCodeArrivalController::class, 'checkGuidePresence'])->name('qr-arrival.verify-guide');
     Route::get('/staff/api/arrival-stats', [\App\Http\Controllers\QRCodeArrivalController::class, 'getTodayStats'])->name('qr-arrival.stats');
     Route::get('/staff/api/recent-arrivals', [\App\Http\Controllers\QRCodeArrivalController::class, 'getRecentArrivals'])->name('qr-arrival.recent');
+    Route::get('/staff/api/visitor-count', [\App\Http\Controllers\QRCodeArrivalController::class, 'getVisitorCount'])->name('qr-arrival.visitor-count');
 });
 
 require __DIR__.'/settings.php';

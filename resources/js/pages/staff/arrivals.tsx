@@ -79,52 +79,89 @@ const mockArrivals: ArrivalLog[] = [
 ];
 
 export default function Arrivals() {
-    const maximumCapacity = 350;
+    const [maximumCapacity, setMaximumCapacity] = useState(350);
     const [arrivals, setArrivals] = useState<ArrivalLog[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'verified' | 'pending' | 'rejected'>('all');
-    const [currentVisitors, setCurrentVisitors] = useState(36);
+    const [currentVisitors, setCurrentVisitors] = useState(0);
+    const [capacityStatus, setCapacityStatus] = useState<'SAFE' | 'WARNING' | 'CRITICAL'>('SAFE');
+    const [capacityPercentage, setCapacityPercentage] = useState(0);
+    const [remainingCapacity, setRemainingCapacity] = useState(0);
     const [loading, setLoading] = useState(true);
 
-    // Fetch today's arrivals from API
+    // Fetch visitor count from API
+    const fetchVisitorCount = async () => {
+        try {
+            const response = await fetch('/staff/api/visitor-count');
+            const data = await response.json();
+            
+            if (data.success) {
+                const visitorData = data.data;
+                setCurrentVisitors(visitorData.current_visitors);
+                setMaximumCapacity(visitorData.maximum_capacity);
+                setCapacityPercentage(visitorData.capacity_percentage);
+                setCapacityStatus(visitorData.capacity_status);
+                setRemainingCapacity(visitorData.remaining_capacity);
+            }
+        } catch (error) {
+            console.error('Error fetching visitor count:', error);
+        }
+    };
+
+    // Fetch today's arrivals and visitor count from API
     useEffect(() => {
-        const fetchArrivals = async () => {
+        const fetchData = async () => {
+            setLoading(true);
             try {
+                // Fetch arrivals
                 console.log('Fetching today arrivals...');
                 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                console.log('CSRF Token present:', !!csrfToken);
                 
-                const response = await fetch('/staff/api/arrivals-today', {
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken || '',
-                    },
-                });
+                const [arrivalsResponse, visitorResponse] = await Promise.all([
+                    fetch('/staff/api/arrivals-today', {
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken || '',
+                        },
+                    }),
+                    fetch('/staff/api/visitor-count')
+                ]);
                 
-                console.log('Arrivals API response status:', response.status);
+                // Process arrivals
+                if (arrivalsResponse.ok) {
+                    const responseText = await arrivalsResponse.text();
+                    const data = JSON.parse(responseText);
+                    
+                    if (data.success) {
+                        const transformedArrivals = data.data.map((arrival: any) => ({
+                            id: String(arrival.id),
+                            bookingCode: `BK-${arrival.guest_list_id}`,
+                            guestCount: arrival.guest_count,
+                            guideName: arrival.guide_name,
+                            arrivalTime: arrival.arrival_time,
+                            scannedTime: arrival.arrival_time,
+                            serviceType: 'Service',
+                            guideVerified: arrival.status === 'arrived',
+                            qrValidated: true,
+                            status: arrival.status === 'arrived' ? 'verified' : arrival.status === 'denied' ? 'rejected' : 'pending',
+                        }));
+                        setArrivals(transformedArrivals);
+                    }
+                }
                 
-                const responseText = await response.text();
-                console.log('Arrivals API response:', responseText);
-                
-                const data = JSON.parse(responseText);
-                
-                if (data.success) {
-                    // Transform API data to match ArrivalLog interface
-                    const transformedArrivals = data.data.map((arrival: any) => ({
-                        id: String(arrival.id),
-                        bookingCode: `BK-${arrival.guest_list_id}`,
-                        guestCount: arrival.guest_count,
-                        guideName: arrival.guide_name,
-                        arrivalTime: arrival.arrival_time,
-                        scannedTime: arrival.arrival_time,
-                        serviceType: 'Service',
-                        guideVerified: arrival.status === 'arrived',
-                        qrValidated: true,
-                        status: arrival.status === 'arrived' ? 'verified' : arrival.status === 'denied' ? 'rejected' : 'pending',
-                    }));
-                    setArrivals(transformedArrivals);
+                // Process visitor count
+                if (visitorResponse.ok) {
+                    const visitorData = await visitorResponse.json();
+                    if (visitorData.success) {
+                        const data = visitorData.data;
+                        setCurrentVisitors(data.current_visitors);
+                        setMaximumCapacity(data.maximum_capacity);
+                        setCapacityPercentage(data.capacity_percentage);
+                        setCapacityStatus(data.capacity_status);
+                        setRemainingCapacity(data.remaining_capacity);
+                    }
                 }
             } catch (error) {
-                console.error('Error fetching arrivals:', error);
+                console.error('Error fetching data:', error);
                 // Fall back to mock data if API fails
                 setArrivals(mockArrivals);
             } finally {
@@ -132,9 +169,9 @@ export default function Arrivals() {
             }
         };
 
-        fetchArrivals();
-        // Refresh every 30 seconds
-        const interval = setInterval(fetchArrivals, 30000);
+        fetchData();
+        // Refresh every 10 seconds for real-time updates
+        const interval = setInterval(fetchData, 10000);
         return () => clearInterval(interval);
     }, []);
 
@@ -144,22 +181,10 @@ export default function Arrivals() {
     const pendingArrivals = arrivals.filter(a => a.status === 'pending').length;
     const rejectedArrivals = arrivals.filter(a => a.status === 'rejected').length;
     const totalGuests = arrivals.filter(a => a.status === 'verified').reduce((sum, a) => sum + a.guestCount, 0);
-    const capacityPercentage = (currentVisitors / maximumCapacity) * 100;
-
-    // Simulate real-time visitor updates
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentVisitors(prev => {
-                const change = Math.floor(Math.random() * 5) - 2;
-                return Math.max(0, Math.min(maximumCapacity, prev + change));
-            });
-        }, 8000);
-        return () => clearInterval(interval);
-    }, []);
 
     const getCapacityStatus = () => {
-        if (capacityPercentage > 90) return { text: 'CRITICAL', color: 'bg-red-500', bgColor: 'bg-red-50', textColor: 'text-red-700' };
-        if (capacityPercentage > 70) return { text: 'WARNING', color: 'bg-yellow-500', bgColor: 'bg-yellow-50', textColor: 'text-yellow-700' };
+        if (capacityStatus === 'CRITICAL') return { text: 'CRITICAL', color: 'bg-red-500', bgColor: 'bg-red-50', textColor: 'text-red-700' };
+        if (capacityStatus === 'WARNING') return { text: 'WARNING', color: 'bg-yellow-500', bgColor: 'bg-yellow-50', textColor: 'text-yellow-700' };
         return { text: 'SAFE', color: 'bg-green-500', bgColor: 'bg-green-50', textColor: 'text-green-700' };
     };
 
@@ -206,7 +231,7 @@ export default function Arrivals() {
         return matchesSearch && matchesFilter;
     });
 
-    const capacityStatus = getCapacityStatus();
+    const capacityStatusDisplay = getCapacityStatus();
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -275,13 +300,13 @@ export default function Arrivals() {
                 </div>
 
                 {/* Capacity Status */}
-                <div className={`rounded-lg p-6 border-2 ${capacityStatus.bgColor} border-${capacityStatus.color.split('-')[1]}-200`}>
+                <div className={`rounded-lg p-6 border-2 ${capacityStatusDisplay.bgColor} border-${capacityStatusDisplay.color.split('-')[1]}-200`}>
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className={`text-sm font-medium ${capacityStatus.textColor}`}>Current Capacity Status</p>
+                            <p className={`text-sm font-medium ${capacityStatusDisplay.textColor}`}>Current Capacity Status</p>
                             <div className="flex items-center gap-3 mt-2">
-                                <p className={`text-2xl font-bold ${capacityStatus.textColor}`}>{currentVisitors} / {maximumCapacity}</p>
-                                <Badge className={`${capacityStatus.color} text-white`}>{capacityStatus.text}</Badge>
+                                <p className={`text-2xl font-bold ${capacityStatusDisplay.textColor}`}>{currentVisitors} / {maximumCapacity}</p>
+                                <Badge className={`${capacityStatusDisplay.color} text-white`}>{capacityStatusDisplay.text}</Badge>
                             </div>
                         </div>
                         <div className="w-32 h-32 relative">
@@ -295,11 +320,11 @@ export default function Arrivals() {
                                     stroke="currentColor"
                                     strokeWidth="8"
                                     strokeDasharray={`${(capacityPercentage / 100) * 314} 314`}
-                                    className={capacityStatus.textColor}
+                                    className={capacityStatusDisplay.textColor}
                                 />
                             </svg>
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <span className={`text-xl font-bold ${capacityStatus.textColor}`}>{Math.round(capacityPercentage)}%</span>
+                                <span className={`text-xl font-bold ${capacityStatusDisplay.textColor}`}>{Math.round(capacityPercentage)}%</span>
                             </div>
                         </div>
                     </div>
