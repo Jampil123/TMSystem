@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Users, Compass, Zap, Building2, Home, User, FileText, Bell, Settings, ClipboardList, CheckCircle, Package, Plus, List, CheckCheck, Calendar, QrCode, LogIn, Eye, Users2, TrendingUp, BarChart3, Gauge, AlertTriangle } from 'lucide-react';
+import { LayoutGrid, Users, Compass, Home, User, FileText, Bell, Settings, ClipboardList, CheckCircle, Package, Plus, List, CheckCheck, Calendar, QrCode, LogIn, Eye, Users2, TrendingUp, BarChart3, Gauge, AlertTriangle } from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -26,23 +26,40 @@ export function AppSidebar() {
 
     // default items for admin only
     const defaultNavItems: NavItem[] = [
+        // System Overview
         {
+            section: 'System Overview',
             title: 'Dashboard',
             href: dashboard(),
             icon: LayoutGrid,
         },
+        // Management
         {
-            title: 'User Management',
-            href: '/users',
-            icon: Users,
-        },
-        {
-            title: 'Operator Management',
+            section: 'Management',
+            title: 'Operators',
             href: '/operators',
             icon: CheckCircle,
         },
         {
-            title: 'Service Management',
+            section: 'Management',
+            title: 'Guides',
+            icon: Users,
+            items: [
+                {
+                    title: 'All Guides',
+                    href: '/guides',
+                    icon: List,
+                },
+                {
+                    title: 'Availability Tracking',
+                    href: '/guides/availability',
+                    icon: Calendar,
+                },
+            ],
+        },
+        {
+            section: 'Management',
+            title: 'Services',
             icon: Package,
             items: [
                 {
@@ -63,38 +80,28 @@ export function AppSidebar() {
             ],
         },
         {
-            title: 'Attraction Management',
+            section: 'Management',
+            title: 'Attractions',
             href: '/attractions',
             icon: Compass,
         },
+        // Communication
         {
-            title: 'Activity Management',
-            href: '/activities',
-            icon: Zap,
+            section: 'Communication',
+            title: 'Notifications',
+            href: '/settings/notifications',
+            icon: Bell,
         },
+        // System
         {
-            title: 'Accommodation Management',
-            href: '/accommodations',
-            icon: Building2,
-        },
-        {
-            title: 'Guide Management',
+            section: 'System',
+            title: 'Users',
+            href: '/users',
             icon: Users,
-            items: [
-                {
-                    title: 'All Guides',
-                    href: '/guides',
-                    icon: List,
-                },
-                {
-                    title: 'Availability Tracking',
-                    href: '/guides/availability',
-                    icon: Calendar,
-                },
-            ],
         },
         {
-            title: 'System Settings',
+            section: 'System',
+            title: 'Settings',
             icon: Settings,
             items: [
                 {
@@ -112,12 +119,13 @@ export function AppSidebar() {
                     href: '/settings/emergency-alerts',
                     icon: AlertTriangle,
                 },
-                {
-                    title: 'Notifications',
-                    href: '/settings/notifications',
-                    icon: Bell,
-                },
             ],
+        },
+        {
+            section: 'System',
+            title: 'Audit Logs',
+            href: '/audit-logs',
+            icon: ClipboardList,
         },
     ];
 

@@ -5,8 +5,6 @@ namespace App\Http\Controllers\Operator;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\Attraction;
-use App\Models\ActivityService;
-use App\Models\AccommodationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Validation\Rule;
@@ -22,7 +20,7 @@ class ServiceController extends Controller
         $user = auth()->user();
         
         $services = Service::where('operator_id', $user->id)
-            ->with(['touristSpot', 'activity', 'accommodation'])
+            ->with(['touristSpot'])
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($service) {
@@ -39,24 +37,9 @@ class ServiceController extends Controller
                     'remarks' => $service->remarks,
                 ];
 
-                // Include activity details if it exists
-                if ($service->activity) {
-                    $mapped['activity'] = [
-                        'price_per_person' => $service->activity->price_per_person,
-                        'duration_minutes' => $service->activity->duration_minutes,
-                        'max_participants' => $service->activity->max_participants,
-                    ];
-                }
-
-                // Include accommodation details if it exists
-                if ($service->accommodation) {
-                    $mapped['accommodation'] = [
-                        'room_type' => $service->accommodation->room_type,
-                        'capacity' => $service->accommodation->capacity,
-                        'price_per_night' => $service->accommodation->price_per_night,
-                        'total_rooms' => $service->accommodation->total_rooms,
-                    ];
-                }
+                // Activity and accommodation details are no longer available
+                // These relationships have been removed in recent updates
+                // If needed in the future, these can be re-implemented
 
                 return $mapped;
             });

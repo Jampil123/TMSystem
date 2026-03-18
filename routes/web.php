@@ -5,12 +5,9 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AttractionController;
-use App\Http\Controllers\Admin\ActivityController;
-use App\Http\Controllers\Admin\AccommodationController;
 use App\Http\Controllers\Admin\OperatorManagementController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Portal\HomeController;
-use App\Http\Controllers\Portal\ActivityDetailController;
 use App\Http\Controllers\Portal\AttractionDetailController;
 use App\Http\Controllers\Portal\ContactController;
 use App\Http\Controllers\Portal\AboutController;
@@ -27,9 +24,7 @@ use App\Http\Controllers\Admin\SafetyAlertController;
 use App\Http\Controllers\Admin\EmergencyAlertController;
 use App\Http\Controllers\GuideController;
 use App\Http\Controllers\Dashboard\TouristDashboardController;
-use App\Http\Controllers\Tourist\ExploreActivityController;
 use App\Http\Controllers\Tourist\ExploreAttractionController;
-use App\Http\Controllers\Tourist\ExploreAccommodationController;
 use App\Http\Controllers\Tourist\OperatorListingController;
 use App\Http\Controllers\StaffArrivalidateController;
 
@@ -39,7 +34,6 @@ Route::redirect('/', '/login')->name('home');
 Route::prefix('portal')->name('portal.')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('about', [AboutController::class, 'show'])->name('about');
-    Route::get('activity/{activity}', [ActivityDetailController::class, 'show'])->name('activity.show');
     Route::get('attraction/{attraction}', [AttractionDetailController::class, 'show'])->name('attraction.show');
     Route::get('operators', [OperatorController::class, 'index'])->name('operators');
     
@@ -50,10 +44,6 @@ Route::prefix('portal')->name('portal.')->group(function () {
     Route::get('attractions', function () {
         return Inertia::render('portal/attractions');
     })->name('attractions');
-    
-    Route::get('accommodations', function () {
-        return Inertia::render('portal/accommodations');
-    })->name('accommodations');
     
     Route::get('tours', function () {
         return Inertia::render('portal/tours');
@@ -86,9 +76,7 @@ Route::get('tourist-dashboard', [TouristDashboardController::class, 'index'])
 
 // Tourist Explore Routes
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('tourist/activities', [ExploreActivityController::class, 'index'])->name('tourist.activities');
     Route::get('tourist/attractions', [ExploreAttractionController::class, 'index'])->name('tourist.attractions');
-    Route::get('tourist/accommodations', [ExploreAccommodationController::class, 'index'])->name('tourist.accommodations');
     Route::get('tourist/operators', [OperatorListingController::class, 'index'])->name('tourist.operators');
 });
 
@@ -249,16 +237,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('attractions', [AttractionController::class, 'store'])->name('attractions.store');
     Route::put('attractions/{attraction}', [AttractionController::class, 'update'])->name('attractions.update');
     Route::delete('attractions/{attraction}', [AttractionController::class, 'destroy'])->name('attractions.destroy');
-
-    Route::get('activities', [ActivityController::class, 'index'])->name('activities.index');
-    Route::post('activities', [ActivityController::class, 'store'])->name('activities.store');
-    Route::put('activities/{activity}', [ActivityController::class, 'update'])->name('activities.update');
-
-    Route::get('accommodations', [AccommodationController::class, 'index'])->name('accommodations.index');
-    Route::post('accommodations', [AccommodationController::class, 'store'])->name('accommodations.store');
-    Route::put('accommodations/{accommodation}', [AccommodationController::class, 'update'])->name('accommodations.update');
-    Route::delete('accommodations/{accommodation}', [AccommodationController::class, 'destroy'])->name('accommodations.destroy');
-    Route::delete('activities/{activity}', [ActivityController::class, 'destroy'])->name('activities.destroy');
 
     // Admin Service Management Routes
     Route::get('services', [AdminServiceController::class, 'index'])->name('services.index');

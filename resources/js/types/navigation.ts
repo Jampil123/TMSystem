@@ -7,7 +7,7 @@ export type BreadcrumbItem = {
 };
 
 export type NavItem = {
-    title: string;
+    title?: string;
     href?: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon | null;
     /**
@@ -19,4 +19,8 @@ export type NavItem = {
      * Nested menu items for collapsible sections
      */
     items?: NavItem[];
+    /**
+     * Optional section header for grouping nav items
+     */
+    section?: string;
 };

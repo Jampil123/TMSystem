@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attraction;
-use App\Models\Accommodation;
 use App\Models\User;
 use Inertia\Inertia;
 
@@ -12,9 +11,15 @@ class TouristDashboardController extends Controller
 {
     public function index()
     {
-        $accommodation = Accommodation::where('status', 'active')
-            ->select('id', 'name', 'description', 'location', 'rating', 'image_url')
-            ->first();
+        // Mock accommodation data
+        $accommodation = (object) [
+            'id' => 1,
+            'name' => 'Badian Cove Beach Resort',
+            'description' => 'Experience the ultimate tropical paradise at Badian Cove Beach Resort. Nestled along pristine white sandy beaches with crystal-clear turquoise waters.',
+            'location' => 'Badian, Cebu',
+            'rating' => 4.8,
+            'image_url' => 'https://via.placeholder.com/600x400/375534/ffffff?text=Badian+Cove+Resort',
+        ];
 
         $attractions = Attraction::where('status', 'active')
             ->select('id', 'name', 'location', 'rating', 'entry_fee', 'image_url', 'latitude', 'longitude')
