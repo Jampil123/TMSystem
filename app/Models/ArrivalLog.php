@@ -21,7 +21,6 @@ class ArrivalLog extends Model
 
     protected $casts = [
         'arrival_date' => 'date',
-        'arrival_time' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

@@ -27,6 +27,7 @@ use App\Http\Controllers\Dashboard\TouristDashboardController;
 use App\Http\Controllers\Tourist\ExploreAttractionController;
 use App\Http\Controllers\Tourist\OperatorListingController;
 use App\Http\Controllers\StaffArrivalidateController;
+use App\Http\Controllers\Admin\DashboardController;
 
 Route::redirect('/', '/login')->name('home');
 
@@ -170,9 +171,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('operator.alerts.store');
 });
 
-Route::get('lgu-dot-dashboard', function () {
-    return Inertia::render('dashboards/lgu-dot-dashboard');
-})->middleware(['auth', 'verified'])->name('lgu-dot.dashboard');
+Route::get('lgu-dot-dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('lgu-dot.dashboard');
 
 Route::get('staff-dashboard', function () {
     return Inertia::render('dashboards/staff-dashboard');

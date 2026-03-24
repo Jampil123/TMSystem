@@ -18,6 +18,7 @@ class Attraction extends Model
         'status',
         'latitude',
         'longitude',
+        'capacity',
     ];
 
     protected $table = 'attractions';

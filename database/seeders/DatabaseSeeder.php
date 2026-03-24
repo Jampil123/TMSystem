@@ -18,6 +18,10 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesTableSeeder::class,
             UserStatusesSeeder::class,
+            // Demo seeders removed - using real system data only
+            // AttractionsSeeder::class,
+            // ArrivalLogsSeeder::class,
+            // SystemAlertsSeeder::class,
         ]);
 
         // Fetch the status IDs dynamically

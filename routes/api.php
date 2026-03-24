@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\StaffArrivalidateController;
+use App\Http\Controllers\Admin\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,6 +14,27 @@ use App\Http\Controllers\StaffArrivalidateController;
 | be assigned to the "api" middleware group.
 |
 */
+
+// LGU/DOT Dashboard API Routes
+Route::middleware(['auth', 'verified'])->prefix('dashboard')->name('dashboard.')->group(function () {
+    // Get real-time dashboard data
+    Route::get('data', [DashboardController::class, 'getData'])->name('data');
+    
+    // Get alerts
+    Route::get('alerts', [DashboardController::class, 'getAlerts'])->name('alerts');
+    
+    // Get arrival statistics
+    Route::get('arrivals/stats', [DashboardController::class, 'getArrivalStats'])->name('arrivals.stats');
+    
+    // Get guide deployment statistics
+    Route::get('guides/stats', [DashboardController::class, 'getGuideStats'])->name('guides.stats');
+    
+    // Get emergency logs
+    Route::get('emergencies', [DashboardController::class, 'getEmergencyLogs'])->name('emergencies');
+    
+    // Resolve alert
+    Route::post('alerts/{alert}/resolve', [DashboardController::class, 'resolveAlert'])->name('alerts.resolve');
+});
 
 Route::middleware(['auth', 'verified'])->prefix('staff')->name('staff.')->group(function () {
     // Validate booking code from QR scan
