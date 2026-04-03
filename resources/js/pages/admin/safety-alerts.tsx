@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { AlertCircle, CheckCircle, AlertTriangle, Zap, RefreshCw, Trash2, Filter } from 'lucide-react';
+import type { BreadcrumbItem } from '@/types';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'Settings', href: '#' },
+    { title: 'Safety Alerts', href: '#' },
+];
 
 interface SafetyAlert {
     id: number;
@@ -150,10 +157,10 @@ export default function SafetyAlerts() {
     };
 
     return (
-        <AppLayout>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Safety Alerts" />
 
-            <div className="max-w-6xl mx-auto py-6 sm:px-6 lg:px-8">
+            <div className="p-6 bg-[#E3EED4] dark:bg-[#0F2A1D] min-h-screen space-y-6">
                 {/* Header */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900">Safety Alert Engine</h1>

@@ -17,6 +17,10 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 export function NavMain({ items = [], label = 'Platform' }: { items: NavItem[]; label?: string }) {
     const { isCurrentUrl } = useCurrentUrl();
 
+    // Dashboard URLs to check across all roles
+    const dashboardUrls = ['/dashboard', '/lgu-dot-dashboard', '/operator-dashboard', '/staff-dashboard', '/tourist-dashboard'];
+    const isOnDashboard = dashboardUrls.includes(window.location.pathname);
+
     // Separate items by section
     const itemsBySection: Record<string, NavItem[]> = {};
     const defaultSection = '__default__';
@@ -42,6 +46,8 @@ export function NavMain({ items = [], label = 'Platform' }: { items: NavItem[]; 
                             // Check if this item has nested items
                             const hasNestedItems = item.items && item.items.length > 0;
                             const isActive = item.href ? isCurrentUrl(item.href) : false;
+                            // Special case: Dashboard should be active if we're on any dashboard URL
+                            const isDashboardActive = (item.title === 'Dashboard' && isOnDashboard) || isActive;
                             const childrenActive = item.items?.some(child => child.href && isCurrentUrl(child.href)) || false;
 
                             if (hasNestedItems) {
@@ -101,7 +107,7 @@ export function NavMain({ items = [], label = 'Platform' }: { items: NavItem[]; 
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton
                                         asChild
-                                        isActive={isActive}
+                                        isActive={isDashboardActive}
                                         tooltip={{
                                             children: item.disabled
                                                 ? `${item.title} (locked)`

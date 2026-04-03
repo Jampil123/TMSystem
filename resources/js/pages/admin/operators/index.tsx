@@ -67,51 +67,46 @@ export default function OperatorManagement({ operators, stats }: PageProps) {
             <Head title="Operator Management" />
 
             <div className="p-6 bg-[#E3EED4] dark:bg-[#0F2A1D] min-h-screen space-y-6">
-                {/* Header */}
-                <div className="rounded-2xl bg-gradient-to-r from-[#0F2A1D] to-[#375534] p-8 text-white shadow-lg">
-                    <h1 className="text-3xl font-bold mb-2">Operator Management</h1>
-                    <p className="text-[#E3EED4]">Manage and review operator applications and submissions</p>
-                </div>
 
                 {/* Stats Grid */}
                 <div className="grid gap-6 md:grid-cols-4">
-                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
+                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-gradient-to-r from-[#0F2A1D] to-[#375534] shadow-sm p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-1">Total Operators</p>
-                                <p className="text-2xl font-bold text-[#0F2A1D] dark:text-white">{stats.total_operators}</p>
+                                <p className="text-sm text-[#AEC3B0] mb-1">Total Operators</p>
+                                <p className="text-2xl font-bold text-white">{stats.total_operators}</p>
                             </div>
-                            <Info className="w-8 h-8 text-[#6B8071]" />
+                            <Info className="w-8 h-8 text-[#E3EED4]" />
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
+                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-gradient-to-r from-[#0F2A1D] to-[#375534] shadow-sm p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-1">Approved</p>
-                                <p className="text-2xl font-bold text-[#0F2A1D] dark:text-white">{stats.approved_operators}</p>
+                                <p className="text-sm text-[#AEC3B0] mb-1">Approved</p>
+                                <p className="text-2xl font-bold text-white">{stats.approved_operators}</p>
                             </div>
-                            <CheckCircle className="w-8 h-8 text-green-600" />
+                            <CheckCircle className="w-8 h-8 text-[#E3EED4]" />
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
+                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-gradient-to-r from-[#0F2A1D] to-[#375534] shadow-sm p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-1">Pending Review</p>
-                                <p className="text-2xl font-bold text-[#0F2A1D] dark:text-white">{stats.pending_operators}</p>
+                                <p className="text-sm text-[#AEC3B0] mb-1">Pending Review</p>
+                                <p className="text-2xl font-bold text-white">{stats.pending_operators}</p>
                             </div>
-                            <AlertCircle className="w-8 h-8 text-yellow-600" />
+                            <AlertCircle className="w-8 h-8 text-[#E3EED4]" />
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
+                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-gradient-to-r from-[#0F2A1D] to-[#375534] shadow-sm p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-1">Documents Submitted</p>
-                                <p className="text-2xl font-bold text-[#0F2A1D] dark:text-white">{stats.submitted_documents}</p>
+                                <p className="text-sm text-[#AEC3B0] mb-1">Documents Submitted</p>
+                                <p className="text-2xl font-bold text-white">{stats.submitted_documents}</p>
                             </div>
-                            <CheckCircle className="w-8 h-8 text-[#375534]" />
+                            <CheckCircle className="w-8 h-8 text-[#E3EED4]" />
                         </div>
                     </div>
                 </div>
@@ -143,33 +138,33 @@ export default function OperatorManagement({ operators, stats }: PageProps) {
                 {/* Operators Table */}
                 <div className="rounded-2xl bg-white dark:bg-[#0F2A1D] border border-[#AEC3B0]/40 dark:border-[#375534]/40 shadow-sm overflow-hidden">
                     <div className="p-6 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20">
-                        <h2 className="text-lg font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
-                            Operators ({filteredOperators.length})
+                        <h2 className="text-lg text-center font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                            Operators List
                         </h2>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="bg-[#E3EED4] dark:bg-[#0F2A1D]/50 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20">
-                                    <th className="text-left py-3 px-4 font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                <tr className="bg-[#6B9071] dark:bg-[#0F2A1D]/50 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20">
+                                    <th className="text-left py-3 px-4 font-semibold text-white dark:text-[#E3EED4]">
                                         Operator Name
                                     </th>
-                                    <th className="text-left py-3 px-4 font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                    <th className="text-left py-3 px-4 font-semibold text-white dark:text-[#E3EED4]">
                                         Business Name
                                     </th>
-                                    <th className="text-left py-3 px-4 font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                    <th className="text-left py-3 px-4 font-semibold text-white dark:text-[#E3EED4]">
                                         Documents
                                     </th>
-                                    <th className="text-left py-3 px-4 font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                    <th className="text-left py-3 px-4 font-semibold text-white dark:text-[#E3EED4]">
                                         Status
                                     </th>
-                                    <th className="text-left py-3 px-4 font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                    <th className="text-left py-3 px-4 font-semibold text-white dark:text-[#E3EED4]">
                                         Review Status
                                     </th>
-                                    <th className="text-left py-3 px-4 font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                    <th className="text-left py-3 px-4 font-semibold text-white dark:text-[#E3EED4]">
                                         Submission Date
                                     </th>
-                                    <th className="text-center py-3 px-4 font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                    <th className="text-center py-3 px-4 font-semibold text-white dark:text-[#E3EED4]">
                                         Actions
                                     </th>
                                 </tr>

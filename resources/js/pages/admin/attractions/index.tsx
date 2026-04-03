@@ -281,18 +281,56 @@ export default function AttractionManagement({ attractions = [], stats = { total
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Attraction Management" />
 
-            <div className="space-y-6 px-6 py-6">
+            <div className="space-y-6 px-6 bg-[#E3EED4] dark:bg-[#0F2A1D] min-h-screen">
                 {/* Header */}
                 <div className="flex justify-between items-start">
-                    <div>
-                        <h2 className="text-4xl font-bold text-[#0F2A1D] dark:text-white flex items-center gap-3">
-                            <div className="p-3 bg-gradient-to-br from-[#375534] to-[#0F2A1D] rounded-lg">
-                                <Compass className="w-8 h-8 text-white" />
+                    
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-gradient-to-r from-[#0F2A1D] to-[#375534] p-6 rounded-xl shadow-sm border border-[#375534]/30 hover:shadow-lg transition">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-gray-300 text-sm font-medium">Total Attractions</div>
+                                <div className="text-4xl font-bold text-[#AEC3B0] mt-2">{stats.total_attractions}</div>
                             </div>
-                            Attraction Management
-                        </h2>
-                        <p className="text-gray-600 dark:text-gray-400 mt-2">Manage all tourist attractions in Badian</p>
+                            <div className="p-3 bg-[#AEC3B0]/20 rounded-lg">
+                                <Compass className="w-8 h-8 text-[#AEC3B0]" />
+                            </div>
+                        </div>
                     </div>
+                    <div className="bg-gradient-to-r from-[#0F2A1D] to-[#375534] p-6 rounded-xl shadow-sm border border-[#375534]/30 hover:shadow-lg transition">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-gray-300 text-sm font-medium">Active</div>
+                                <div className="text-4xl font-bold text-[#7FD8BE] mt-2">{stats.active_attractions}</div>
+                            </div>
+                            <div className="p-3 bg-[#7FD8BE]/20 rounded-lg">
+                                <Star className="w-8 h-8 text-[#7FD8BE]" />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-gradient-to-r from-[#0F2A1D] to-[#375534] p-6 rounded-xl shadow-sm border border-[#375534]/30 hover:shadow-lg transition">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-gray-300 text-sm font-medium">Inactive</div>
+                                <div className="text-4xl font-bold text-[#FF6B6B] mt-2">{stats.inactive_attractions}</div>
+                            </div>
+                            <div className="p-3 bg-[#FF6B6B]/20 rounded-lg">
+                                <AlertTriangle className="w-8 h-8 text-[#FF6B6B]" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Table Header with Button */}
+                <div className="flex justify-between items-center mb-4 gap-4">
+                    <input
+                        type="text"
+                        placeholder="Search attractions..."
+                        className="flex-1 px-4 py-3 border-2 border-[#375534] rounded-lg focus:ring-2 focus:ring-[#375534] focus:border-transparent bg-white text-gray-900 transition shadow-sm"
+                    />
                     <button
                         onClick={handleAddClick}
                         className="px-8 py-3 bg-gradient-to-r from-[#375534] to-[#0F2A1D] hover:shadow-lg text-white font-semibold rounded-xl flex items-center gap-2 transition transform hover:scale-105"
@@ -302,48 +340,11 @@ export default function AttractionManagement({ attractions = [], stats = { total
                     </button>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-gradient-to-br from-white to-gray-50 dark:from-[#1F3A2F] dark:to-[#0F2A1D] p-6 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 hover:shadow-lg transition">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Attractions</div>
-                                <div className="text-4xl font-bold text-[#375534] dark:text-[#AEC3B0] mt-2">{stats.total_attractions}</div>
-                            </div>
-                            <div className="p-3 bg-[#375534]/10 dark:bg-[#375534]/20 rounded-lg">
-                                <Compass className="w-8 h-8 text-[#375534] dark:text-[#AEC3B0]" />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-gradient-to-br from-white to-gray-50 dark:from-[#1F3A2F] dark:to-[#0F2A1D] p-6 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 hover:shadow-lg transition">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Active</div>
-                                <div className="text-4xl font-bold text-green-600 mt-2">{stats.active_attractions}</div>
-                            </div>
-                            <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
-                                <Star className="w-8 h-8 text-green-600" />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-gradient-to-br from-white to-gray-50 dark:from-[#1F3A2F] dark:to-[#0F2A1D] p-6 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 hover:shadow-lg transition">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Inactive</div>
-                                <div className="text-4xl font-bold text-red-600 mt-2">{stats.inactive_attractions}</div>
-                            </div>
-                            <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-lg">
-                                <AlertTriangle className="w-8 h-8 text-red-600" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Attractions Table */}
                 <div className="bg-white dark:bg-[#1F3A2F] rounded-xl shadow-lg overflow-hidden border border-gray-100 dark:border-gray-700">
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto max-h-[26rem] overflow-y-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                         <table className="w-full">
-                            <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-[#0F2A1D] dark:to-[#1F3A2F] border-b-2 border-gray-200 dark:border-gray-700">
+                            <thead className="sticky top-0 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-[#0F2A1D] dark:to-[#1F3A2F] border-b-2 border-gray-200 dark:border-gray-700 z-10">
                                 <tr>
                                     <th className="px-6 py-4 text-left text-sm font-bold text-gray-900 dark:text-white">Name</th>
                                     <th className="px-6 py-4 text-left text-sm font-bold text-gray-900 dark:text-white">Location</th>
@@ -743,6 +744,13 @@ export default function AttractionManagement({ attractions = [], stats = { total
                     </div>
                 )}
             </div>
+
+            <style>{`
+                .scrollbar-hide::-webkit-scrollbar {
+                    display: none;
+                }
+            `}</style>
         </AppLayout>
+
     );
 }

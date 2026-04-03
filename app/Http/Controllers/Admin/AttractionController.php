@@ -9,6 +9,35 @@ use Inertia\Inertia;
 
 class AttractionController extends Controller
 {
+    /**
+     * Get all attractions as JSON API
+     */
+    public function apiIndex()
+    {
+        try {
+            $attractions = Attraction::all();
+            
+            return response()->json([
+                'success' => true,
+                'data' => $attractions->map(function ($attraction) {
+                    return [
+                        'id' => $attraction->id,
+                        'name' => $attraction->name,
+                        'location' => $attraction->location,
+                        'category' => $attraction->category,
+                        'image_url' => $attraction->image_url,
+                    ];
+                })->toArray(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching attractions: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching attractions',
+            ], 500);
+        }
+    }
+
     public function index()
     {
         $attractions = Attraction::all();

@@ -172,4 +172,103 @@ class CapacityRuleController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get all capacity rules with per-attraction support
+     */
+    public function allRules()
+    {
+        try {
+            $rules = CapacityRule::all();
+
+            return response()->json([
+                'success' => true,
+                'data' => $rules->map(function ($rule) {
+                    return [
+                        'id' => $rule->id,
+                        'attraction_id' => $rule->attraction_id,
+                        'max_visitors' => $rule->max_visitors,
+                        'warning_threshold_percent' => $rule->warning_threshold_percent,
+                        'critical_threshold_percent' => $rule->critical_threshold_percent,
+                        'max_guests_per_guide' => $rule->max_guests_per_guide,
+                        'max_daily_visitors' => $rule->max_daily_visitors,
+                        'created_at' => $rule->created_at->format('Y-m-d H:i:s'),
+                        'updated_at' => $rule->updated_at->format('Y-m-d H:i:s'),
+                    ];
+                })->toArray(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching all capacity rules: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching capacity rules',
+            ], 500);
+        }
+    }
+
+    /**
+     * Save or update capacity rules for a specific attraction
+     */
+    public function saveAttractionRules(Request $request, $attractionId)
+    {
+        try {
+            $validated = $request->validate([
+                'max_visitors' => 'required|integer|min:10|max:10000',
+                'warning_threshold_percent' => 'required|integer|min:1|max:99',
+                'critical_threshold_percent' => 'required|integer|min:1|max:100',
+                'max_guests_per_guide' => 'required|integer|min:1|max:100',
+                'max_daily_visitors' => 'required|integer|min:10|max:10000',
+            ]);
+
+            // Validate threshold logic
+            if ($validated['warning_threshold_percent'] >= $validated['critical_threshold_percent']) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Warning threshold must be less than critical threshold',
+                    'errors' => [
+                        'warning_threshold_percent' => ['Must be less than critical threshold'],
+                    ],
+                ], 422);
+            }
+
+            // Find or create capacity rule for this attraction
+            $rule = CapacityRule::firstOrNew(['attraction_id' => $attractionId]);
+            $rule->fill(array_merge($validated, ['attraction_id' => $attractionId]));
+            $rule->save();
+
+            \Log::info('Capacity rules updated for attraction', [
+                'user_id' => auth()->id(),
+                'attraction_id' => $attractionId,
+                'rules' => $validated,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Capacity rules updated successfully',
+                'data' => [
+                    'id' => $rule->id,
+                    'attraction_id' => $rule->attraction_id,
+                    'max_visitors' => $rule->max_visitors,
+                    'warning_threshold_percent' => $rule->warning_threshold_percent,
+                    'critical_threshold_percent' => $rule->critical_threshold_percent,
+                    'max_guests_per_guide' => $rule->max_guests_per_guide,
+                    'max_daily_visitors' => $rule->max_daily_visitors,
+                    'created_at' => $rule->created_at->format('Y-m-d H:i:s'),
+                    'updated_at' => $rule->updated_at->format('Y-m-d H:i:s'),
+                ],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Error saving capacity rules for attraction: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error saving capacity rules',
+            ], 500);
+        }
+    }
 }

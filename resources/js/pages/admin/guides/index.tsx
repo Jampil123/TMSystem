@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { Search, Filter, Download, AlertCircle, Check, X, Eye, AlertTriangle, Plus, Trash2 } from 'lucide-react';
+import { Search, Filter, Download, AlertCircle, Check, X, Eye, AlertTriangle, Plus, Trash2, Users } from 'lucide-react';
 import type { BreadcrumbItem } from '@/types';
 
 interface Guide {
@@ -116,51 +116,56 @@ export default function GuideIndex({ guides, pagination, counts, filters, specia
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Guide Management" />
             <div className="flex h-full flex-1 flex-col gap-6 p-6 bg-[#E3EED4] dark:bg-[#0F2A1D]">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-[#375534] dark:text-[#E3EED4]">
-                            Guide Management
-                        </h1>
-                        <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mt-1">
-                            {counts.total} total • {counts.pending} pending • {counts.approved} approved
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <Link
-                            href="/guides/create"
-                            className="flex items-center gap-2 px-4 py-2 bg-green-600 dark:bg-green-600 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-700 transition-colors"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Register Guide
-                        </Link>
-                        <button
-                            onClick={handleExport}
-                            className="flex items-center gap-2 px-4 py-2 bg-[#375534] text-white rounded-lg hover:bg-[#2d4227] transition-colors"
-                        >
-                            <Download className="w-4 h-4" />
-                            Export CSV
-                        </button>
-                    </div>
-                </div>
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
-                        <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0]">Total Guides</p>
-                        <p className="text-3xl font-bold text-[#375534] dark:text-[#AEC3B0]">{counts.total}</p>
+                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-gradient-to-r from-[#0F2A1D] to-[#375534] shadow-sm p-6">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <p className="text-xs text-[#AEC3B0] mb-2">Total Guides</p>
+                                <p className="text-3xl font-bold text-white mb-1">{counts.total}</p>
+                                <p className="text-xs text-[#AEC3B0]">All registered guides</p>
+                            </div>
+                            <div className="dark:bg-[#375534] rounded-lg p-3 flex-shrink-0">
+                                <Users className="w-6 h-6 text-[#E3EED4]" />
+                            </div>
+                        </div>
                     </div>
-                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
-                        <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0]">Pending</p>
-                        <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{counts.pending}</p>
+                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-gradient-to-r from-[#0F2A1D] to-[#375534] shadow-sm p-6">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <p className="text-xs text-[#AEC3B0] mb-2">Pending</p>
+                                <p className="text-3xl font-bold text-yellow-300 mb-1">{counts.pending}</p>
+                                <p className="text-xs text-[#AEC3B0]">Awaiting review</p>
+                            </div>
+                            <div className="dark:bg-[#375534] rounded-lg p-3 flex-shrink-0">
+                                <AlertCircle className="w-6 h-6 text-white" />
+                            </div>
+                        </div>
                     </div>
-                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
-                        <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0]">Approved</p>
-                        <p className="text-3xl font-bold text-green-600 dark:text-green-400">{counts.approved}</p>
+                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-gradient-to-r from-[#0F2A1D] to-[#375534] shadow-sm p-6">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <p className="text-xs text-[#AEC3B0] mb-2">Approved</p>
+                                <p className="text-3xl font-bold text-green-300 mb-1">{counts.approved}</p>
+                                <p className="text-xs text-[#AEC3B0]">Successfully approved</p>
+                            </div>
+                            <div className="dark:bg-[#375534] rounded-lg p-3 flex-shrink-0">
+                                <Check className="w-6 h-6 text-white" />
+                            </div>
+                        </div>
                     </div>
-                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
-                        <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0]">Rejected</p>
-                        <p className="text-3xl font-bold text-red-600 dark:text-red-400">{counts.rejected}</p>
+                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-gradient-to-r from-[#0F2A1D] to-[#375534] shadow-sm p-6">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <p className="text-xs text-[#AEC3B0] mb-2">Rejected</p>
+                                <p className="text-3xl font-bold text-red-300 mb-1">{counts.rejected}</p>
+                                <p className="text-xs text-[#AEC3B0]">Application rejected</p>
+                            </div>
+                            <div className="dark:bg-[#375534] rounded-lg p-3 flex-shrink-0">
+                                <X className="w-6 h-6 text-white" />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -203,23 +208,35 @@ export default function GuideIndex({ guides, pagination, counts, filters, specia
 
                 {/* Guides Table */}
                 <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm overflow-hidden">
+                    <div className="p-6 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20 flex items-center justify-between">
+                        <div>
+                            <h2 className="text-lg font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">Guide Lists</h2>
+                        </div>
+                        <Link
+                            href="/guides/create"
+                            className="flex items-center gap-2 px-4 py-2 bg-green-600 dark:bg-green-600 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-700 transition-colors"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Register Guide
+                        </Link>
+                    </div>
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-[#F8FAFB] dark:bg-[#1a3a2e]">
-                                    <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                <tr className="bg-[#6B9071] dark:bg-[#0F2A1D]/50 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20">
+                                    <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F2A1D] text-white dark:text-[#E3EED4]">
                                         Name
                                     </th>
-                                    <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                    <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F2A1D] text-white dark:text-[#E3EED4]">
                                         Email
                                     </th>
-                                    <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                    <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F2A1D] text-white dark:text-[#E3EED4]">
                                         Experience
                                     </th>
-                                    <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                    <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F2A1D] text-white dark:text-[#E3EED4]">
                                         Status
                                     </th>
-                                    <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                    <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F2A1D] text-white dark:text-[#E3EED4]">
                                         Actions
                                     </th>
                                 </tr>

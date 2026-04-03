@@ -83,7 +83,7 @@ export default function GuideAvailability({ availabilities, guides, filters, pag
                             Availability Tracking
                         </h1>
                         <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0]">
-                            Manage guide schedules and availability.
+                            Guide schedules and availability.
                         </p>
                     </div>
                 </div>
@@ -227,13 +227,13 @@ export default function GuideAvailability({ availabilities, guides, filters, pag
                 <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm overflow-x-auto">
                     <table className="w-full">
                         <thead>
-                            <tr className="bg-[#F8FAFB] dark:bg-[#1a3a2e]">
-                                <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">Guide</th>
-                                <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">Start</th>
-                                <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">End</th>
-                                <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">Status</th>
-                                <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">Notes</th>
-                                <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">Actions</th>
+                            <tr className="bg-[#6B9071] dark:bg-[#0F2A1D]/50 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20">
+                                <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F2A1D] text-white dark:text-[#E3EED4]">Guide</th>
+                                <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F2A1D] text-white dark:text-[#E3EED4]">Start</th>
+                                <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] text-white dark:text-[#E3EED4]">End</th>
+                                <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] text-white dark:text-[#E3EED4]">Status</th>
+                                <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] text-white dark:text-[#E3EED4]">Notes</th>
+                                <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] text-white dark:text-[#E3EED4]">Actions</th>
                             </tr>
                         </thead>
                         <tbody>

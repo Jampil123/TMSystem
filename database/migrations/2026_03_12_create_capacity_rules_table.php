@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('capacity_rules', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('attraction_id')->constrained('attractions')->onDelete('cascade');
             $table->integer('max_visitors')->default(350)->comment('Maximum visitors allowed at the site');
             $table->integer('warning_threshold_percent')->default(80)->comment('Capacity percentage to trigger warning');
             $table->integer('critical_threshold_percent')->default(100)->comment('Capacity percentage to trigger critical alert');
@@ -21,6 +22,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Add indexes
+            $table->index('attraction_id');
             $table->index('created_at');
         });
     }

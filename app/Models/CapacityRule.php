@@ -9,6 +9,7 @@ class CapacityRule extends Model
     protected $table = 'capacity_rules';
 
     protected $fillable = [
+        'attraction_id',
         'max_visitors',
         'warning_threshold_percent',
         'critical_threshold_percent',
@@ -38,6 +39,14 @@ class CapacityRule extends Model
             'max_guests_per_guide' => 20,
             'max_daily_visitors' => 500,
         ]);
+    }
+
+    /**
+     * Relationship: Capacity rule belongs to an attraction
+     */
+    public function attraction()
+    {
+        return $this->belongsTo(Attraction::class);
     }
 
     /**

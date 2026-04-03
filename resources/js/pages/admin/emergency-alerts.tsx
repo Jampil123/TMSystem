@@ -3,6 +3,13 @@ import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
 import { AlertTriangle, CheckCircle, Clock, AlertCircle, RefreshCw, Zap } from 'lucide-react';
 import axios from 'axios';
+import type { BreadcrumbItem } from '@/types';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'Settings', href: '#' },
+    { title: 'Emergency Alerts', href: '#' },
+];
 
 interface Emergency {
     id: string;
@@ -164,19 +171,83 @@ const EmergencyAlertsDashboard = () => {
             : emergencyHistory.filter((e) => e.emergency_type === filterType);
 
     return (
-        <AppLayout>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Emergency Alerts Management" />
 
-            <div className="min-h-screen bg-gray-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="p-6 bg-[#E3EED4] dark:bg-[#0F2A1D] min-h-screen space-y-6">
+                <div className="max-w-7xl mx-auto">
+
+                    {/* Status Cards */}
+                    {emergencyStatus && (
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                            <div className="bg-green-900 rounded-lg border-l-4 border-red-500 p-6">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-green-100 text-sm font-medium">Active Emergencies</p>
+                                        <p className="text-3xl font-bold text-red-300">
+                                            {emergencyStatus.active_count}
+                                        </p>
+                                    </div>
+                                    <AlertTriangle className="w-12 h-12 text-red-400 opacity-30" />
+                                </div>
+                            </div>
+
+                            <div className="bg-green-900 rounded-lg border-l-4 border-orange-500 p-6">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-green-100 text-sm font-medium">Emergency Types Active</p>
+                                        <p className="text-3xl font-bold text-orange-300">
+                                            {emergencyStatus.total_emergency_types}
+                                        </p>
+                                    </div>
+                                    <Zap className="w-12 h-12 text-orange-400 opacity-30" />
+                                </div>
+                            </div>
+
+                            <div
+                                className={`bg-green-900 rounded-lg border-l-4 p-6 ${
+                                    emergencyStatus.should_block_entry
+                                        ? 'border-red-500'
+                                        : 'border-green-500'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-green-100 text-sm font-medium">Entry Status</p>
+                                        <p
+                                            className={`text-3xl font-bold ${
+                                                emergencyStatus.should_block_entry
+                                                    ? 'text-red-300'
+                                                    : 'text-green-300'
+                                            }`}
+                                        >
+                                            {emergencyStatus.should_block_entry ? 'BLOCKED' : 'ACTIVE'}
+                                        </p>
+                                    </div>
+                                    {emergencyStatus.should_block_entry ? (
+                                        <AlertTriangle className="w-12 h-12 text-red-400 opacity-30" />
+                                    ) : (
+                                        <CheckCircle className="w-12 h-12 text-green-400 opacity-30" />
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="bg-green-900 rounded-lg border-l-4 border-green-500 p-6">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-green-100 text-sm font-medium">Recently Resolved</p>
+                                        <p className="text-3xl font-bold text-green-200">
+                                            {emergencyStatus.recently_resolved_count}
+                                        </p>
+                                    </div>
+                                    <CheckCircle className="w-12 h-12 text-green-300 opacity-20" />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Header */}
                     <div className="flex justify-between items-center mb-8">
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                                🚨 Emergency Alert Management
-                            </h1>
-                            <p className="text-gray-500 mt-1">Monitor and manage emergency situations</p>
-                        </div>
                         <div className="flex gap-3">
                             <button
                                 onClick={() => fetchEmergencyData()}
@@ -194,75 +265,7 @@ const EmergencyAlertsDashboard = () => {
                             </button>
                         </div>
                     </div>
-
-                    {/* Status Cards */}
-                    {emergencyStatus && (
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                            <div className="bg-white rounded-lg border-l-4 border-red-500 p-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-gray-500 text-sm font-medium">Active Emergencies</p>
-                                        <p className="text-3xl font-bold text-red-600">
-                                            {emergencyStatus.active_count}
-                                        </p>
-                                    </div>
-                                    <AlertTriangle className="w-12 h-12 text-red-500 opacity-20" />
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-lg border-l-4 border-orange-500 p-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-gray-500 text-sm font-medium">Emergency Types Active</p>
-                                        <p className="text-3xl font-bold text-orange-600">
-                                            {emergencyStatus.total_emergency_types}
-                                        </p>
-                                    </div>
-                                    <Zap className="w-12 h-12 text-orange-500 opacity-20" />
-                                </div>
-                            </div>
-
-                            <div
-                                className={`bg-white rounded-lg border-l-4 p-6 ${
-                                    emergencyStatus.should_block_entry
-                                        ? 'border-red-500'
-                                        : 'border-green-500'
-                                }`}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-gray-500 text-sm font-medium">Entry Status</p>
-                                        <p
-                                            className={`text-3xl font-bold ${
-                                                emergencyStatus.should_block_entry
-                                                    ? 'text-red-600'
-                                                    : 'text-green-600'
-                                            }`}
-                                        >
-                                            {emergencyStatus.should_block_entry ? 'BLOCKED' : 'ACTIVE'}
-                                        </p>
-                                    </div>
-                                    {emergencyStatus.should_block_entry ? (
-                                        <AlertTriangle className="w-12 h-12 text-red-500 opacity-20" />
-                                    ) : (
-                                        <CheckCircle className="w-12 h-12 text-green-500 opacity-20" />
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-lg border-l-4 border-green-500 p-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-gray-500 text-sm font-medium">Recently Resolved</p>
-                                        <p className="text-3xl font-bold text-green-600">
-                                            {emergencyStatus.recently_resolved_count}
-                                        </p>
-                                    </div>
-                                    <CheckCircle className="w-12 h-12 text-green-500 opacity-20" />
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                
 
                     {/* Trigger Form */}
                     {showTriggerForm && (
@@ -328,7 +331,7 @@ const EmergencyAlertsDashboard = () => {
 
                     {/* Active Emergencies */}
                     <div className="mb-8">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">🚨 Active Emergencies</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">Active Emergencies</h2>
                         {activeEmergencies.length === 0 ? (
                             <div className="bg-green-50 border border-green-200 rounded-lg p-8 text-center">
                                 <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
@@ -449,19 +452,13 @@ const EmergencyAlertsDashboard = () => {
 
                         <div className="bg-white rounded-lg shadow-md overflow-hidden">
                             <table className="w-full">
-                                <thead className="bg-gray-100 border-b border-gray-200">
+                                <thead className="bg-[#6B9071] dark:bg-[#0F2A1D]/50 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Title</th>
-                                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Type</th>
-                                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                                            Severity
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                                            Status
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                                            Triggered
-                                        </th>
+                                        <th className="text-left py-3 px-4 font-semibold text-white dark:text-[#E3EED4]">Title</th>
+                                        <th className="text-left py-3 px-4 font-semibold text-white dark:text-[#E3EED4]">Type</th>
+                                        <th className="text-left py-3 px-4 font-semibold text-white dark:text-[#E3EED4]">Severity</th>
+                                        <th className="text-left py-3 px-4 font-semibold text-white dark:text-[#E3EED4]">Status</th>
+                                        <th className="text-left py-3 px-4 font-semibold text-white dark:text-[#E3EED4]">Triggered</th>
                                     </tr>
                                 </thead>
                                 <tbody>

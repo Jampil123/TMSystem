@@ -331,8 +331,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // Capacity Rules API Routes (Admin)
 Route::middleware(['auth', 'verified'])->group(function () {
+    // Attraction API endpoints
+    Route::get('/admin/api/attractions', [AttractionController::class, 'apiIndex'])->name('api.attractions.index');
+    
     Route::get('/admin/api/capacity-rules', [CapacityRuleController::class, 'index'])->name('capacity-rules.index');
+    Route::get('/admin/api/capacity-rules/all', [CapacityRuleController::class, 'allRules'])->name('capacity-rules.all');
     Route::post('/admin/api/capacity-rules', [CapacityRuleController::class, 'update'])->name('capacity-rules.update');
+    Route::post('/admin/api/capacity-rules/{attractionId}', [CapacityRuleController::class, 'saveAttractionRules'])->name('capacity-rules.save-attraction');
     Route::get('/admin/api/capacity-rules/history', [CapacityRuleController::class, 'history'])->name('capacity-rules.history');
     Route::post('/admin/api/capacity-rules/reset', [CapacityRuleController::class, 'reset'])->name('capacity-rules.reset');
 
