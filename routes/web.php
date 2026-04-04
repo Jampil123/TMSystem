@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AttractionController;
 use App\Http\Controllers\Admin\OperatorManagementController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
+use App\Http\Controllers\Admin\MapController;
 use App\Http\Controllers\Portal\HomeController;
 use App\Http\Controllers\Portal\AttractionDetailController;
 use App\Http\Controllers\Portal\ContactController;
@@ -238,6 +239,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('attractions', [AttractionController::class, 'store'])->name('attractions.store');
     Route::put('attractions/{attraction}', [AttractionController::class, 'update'])->name('attractions.update');
     Route::delete('attractions/{attraction}', [AttractionController::class, 'destroy'])->name('attractions.destroy');
+
+    // Map Route for Attractions
+    Route::get('map', [MapController::class, 'index'])->name('map.index');
+    Route::get('api/map/attractions', [MapController::class, 'api'])->name('map.api');
 
     // Admin Service Management Routes
     Route::get('services', [AdminServiceController::class, 'index'])->name('services.index');

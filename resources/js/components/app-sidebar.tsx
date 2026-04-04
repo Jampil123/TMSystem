@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Users, Compass, Home, User, FileText, Bell, Settings, ClipboardList, CheckCircle, Package, Plus, List, CheckCheck, Calendar, QrCode, LogIn, Eye, Users2, TrendingUp, BarChart3, Gauge, AlertTriangle } from 'lucide-react';
+import { LayoutGrid, Users, Compass, Home, User, FileText, Bell, Settings, ClipboardList, CheckCircle, Package, Plus, List, CheckCheck, Calendar, QrCode, LogIn, Eye, Users2, TrendingUp, BarChart3, Gauge, AlertTriangle, Map } from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -84,6 +84,12 @@ export function AppSidebar() {
             title: 'Attractions',
             href: '/attractions',
             icon: Compass,
+        },
+        {
+            section: 'Tourism',
+            title: 'Map',
+            href: '/map',
+            icon: Map,
         },
         // Communication
         {
