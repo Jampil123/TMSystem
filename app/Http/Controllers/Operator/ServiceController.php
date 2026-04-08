@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Operator;
 
 use App\Http\Controllers\Controller;
 use App\Models\Service;
+use App\Models\Activity;
+use App\Models\Accommodation;
 use App\Models\Attraction;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -138,16 +140,15 @@ class ServiceController extends Controller
 
         // Create or handle related Activity or Accommodation record based on type
         if (in_array($serviceType, ['adventure', 'tour'])) {
-            ActivityService::create([
+            Activity::create([
                 'service_id' => $service->service_id,
-                'activity_name' => $request->input('activity_name'),
                 'price_per_person' => (float) $request->input('price_per_person'),
                 'duration_minutes' => (int) $request->input('duration_minutes'),
                 'max_participants' => (int) $request->input('max_participants'),
                 'required_equipment' => $request->input('required_equipment'),
             ]);
         } elseif (in_array($serviceType, ['accommodation', 'restaurant'])) {
-            AccommodationService::create([
+            Accommodation::create([
                 'service_id' => $service->service_id,
                 'room_type' => $request->input('room_type'),
                 'capacity' => (int) $request->input('capacity'),
@@ -257,14 +258,12 @@ class ServiceController extends Controller
         // Update or create related Activity or Accommodation record based on type
         if (in_array($serviceType, ['adventure', 'tour'])) {
             // Delete accommodation if it exists
-            if ($service->accommodation) {
-                $service->accommodation->delete();
-            }
+            Accommodation::where('service_id', $service->service_id)->delete();
+            
             // Create or update activity
-            ActivityService::updateOrCreate(
+            Activity::updateOrCreate(
                 ['service_id' => $service->service_id],
                 [
-                    'activity_name' => $request->input('activity_name'),
                     'price_per_person' => (float) $request->input('price_per_person'),
                     'duration_minutes' => (int) $request->input('duration_minutes'),
                     'max_participants' => (int) $request->input('max_participants'),
@@ -273,11 +272,10 @@ class ServiceController extends Controller
             );
         } elseif (in_array($serviceType, ['accommodation', 'restaurant'])) {
             // Delete activity if it exists
-            if ($service->activity) {
-                $service->activity->delete();
-            }
+            Activity::where('service_id', $service->service_id)->delete();
+            
             // Create or update accommodation
-            AccommodationService::updateOrCreate(
+            Accommodation::updateOrCreate(
                 ['service_id' => $service->service_id],
                 [
                     'room_type' => $request->input('room_type'),

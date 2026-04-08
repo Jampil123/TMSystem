@@ -112,19 +112,17 @@ class Service extends Model
 
     /**
      * Get activity details if service is an activity.
-     * NOTE: Activity model has been removed. This relationship is kept for reference.
      */
-    // public function activity()
-    // {
-    //     return $this->hasOne(ActivityService::class, 'service_id', 'service_id');
-    // }
+    public function activity()
+    {
+        return $this->hasOne(Activity::class, 'service_id', 'service_id');
+    }
 
     /**
      * Get accommodation details if service is accommodation.
-     * NOTE: Accommodation model has been removed. This relationship is kept for reference.
      */
-    // public function accommodation()
-    // {
-    //     return $this->hasOne(AccommodationService::class, 'service_id', 'service_id');
-    // }
+    public function accommodation()
+    {
+        return $this->hasOne(Accommodation::class, 'service_id', 'service_id');
+    }
 }

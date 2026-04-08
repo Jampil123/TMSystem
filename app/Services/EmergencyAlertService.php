@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\EmergencyLog;
 use App\Models\CapacityRule;
 use App\Models\GuestList;
+use App\Models\ArrivalLog;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -117,7 +118,7 @@ class EmergencyAlertService
                 if (!$existingEmergency) {
                     $emergency = EmergencyLog::createNoGuideAssignment(
                         $guestList->id,
-                        $guestList->guest_count,
+                        $guestList->total_guests,
                         ['group_name' => $guestList->group_name]
                     );
 
@@ -231,10 +232,21 @@ class EmergencyAlertService
      */
     private function getCurrentVisitorCount(): int
     {
-        return DB::table('arrival_logs')
-            ->where('status', '!=', 'denied')
-            ->whereDate('created_at', today())
-            ->sum('guest_count') ?? 0;
+        try {
+            // Sum guest counts from guest_lists via arrival_logs with relationships
+            $totalGuests = ArrivalLog::whereDate('created_at', today())
+                ->where('status', '!=', 'denied')
+                ->with('guestList')
+                ->get()
+                ->sum(function ($arrival) {
+                    return $arrival->guestList?->total_guests ?? 0;
+                });
+            
+            return $totalGuests ?? 0;
+        } catch (\Exception $e) {
+            Log::warning('Error calculating visitor count: ' . $e->getMessage());
+            return 0;
+        }
     }
 
     /**

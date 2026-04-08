@@ -7,6 +7,7 @@ use App\Models\CapacityRule;
 use App\Models\GuideAssignment;
 use App\Models\GuestList;
 use App\Models\Guide;
+use App\Models\ArrivalLog;
 use Illuminate\Support\Facades\DB;
 
 class SafetyAlertEngine
@@ -33,16 +34,16 @@ class SafetyAlertEngine
 
         // Get all active guide assignments with guest counts
         $violatingAssignments = GuideAssignment::with('guide', 'guestList')
-            ->where('status', '!=', 'completed')
-            ->where('status', '!=', 'cancelled')
+            ->where('assignment_status', '!=', 'Completed')
+            ->where('assignment_status', '!=', 'Cancelled')
             ->get()
             ->filter(function ($assignment) use ($maxGuestsPerGuide) {
-                $guestCount = $assignment->guestList?->guest_count ?? 0;
+                $guestCount = $assignment->guestList?->total_guests ?? 0;
                 return $guestCount > $maxGuestsPerGuide;
             });
 
         foreach ($violatingAssignments as $assignment) {
-            $guestCount = $assignment->guestList?->guest_count ?? 0;
+            $guestCount = $assignment->guestList?->total_guests ?? 0;
             
             // Check if alert already exists for this assignment
             $existingAlert = SystemAlert::where('alert_type', 'guide_assignment_issue')
@@ -119,16 +120,16 @@ class SafetyAlertEngine
      */
     public function checkMissingGuideAssignments(): void
     {
-        // Get guest lists that arrived today without a confirmed guide assignment
-        $missingGuideAssignments = GuestList::with('guideAssignment', 'user')
-            ->where('arrival_status', 'arrived')
+        // Get guest lists that completed today without a confirmed guide assignment
+        $missingGuideAssignments = GuestList::with('assignments', 'operator')
+            ->where('status', 'Completed')
             ->whereDate('created_at', today())
             ->get()
             ->filter(function ($guestList) {
                 // Check if there's a confirmed guide assignment
-                $hasConfirmedGuide = $guestList->guideAssignment()
-                    ->where('status', '!=', 'cancelled')
-                    ->where('status', '!=', 'pending')
+                $hasConfirmedGuide = $guestList->assignments()
+                    ->where('assignment_status', '!=', 'Cancelled')
+                    ->where('assignment_status', '!=', 'Pending')
                     ->exists();
                 return !$hasConfirmedGuide;
             });
@@ -143,8 +144,8 @@ class SafetyAlertEngine
             if (!$existingAlert) {
                 SystemAlert::createSystemError(
                     "Guest group without assigned guide",
-                    "Guest group '{$guestList->group_name}' ({$guestList->guest_count} guests) arrived without a confirmed guide assignment",
-                    ['guest_list_id' => $guestList->id, 'group_name' => $guestList->group_name, 'guest_count' => $guestList->guest_count]
+                    "Guest group '{$guestList->group_name}' ({$guestList->total_guests} guests) arrived without a confirmed guide assignment",
+                    ['guest_list_id' => $guestList->id, 'group_name' => $guestList->group_name, 'guest_count' => $guestList->total_guests]
                 );
             }
         }
@@ -158,8 +159,8 @@ class SafetyAlertEngine
     {
         // Get all active guide assignments grouped by guide
         $assignments = GuideAssignment::with('guide', 'guestList')
-            ->where('status', '!=', 'completed')
-            ->where('status', '!=', 'cancelled')
+            ->where('assignment_status', '!=', 'Completed')
+            ->where('assignment_status', '!=', 'Cancelled')
             ->get()
             ->groupBy('guide_id');
 
@@ -206,10 +207,21 @@ class SafetyAlertEngine
      */
     private function getCurrentVisitorCount(): int
     {
-        return DB::table('arrival_logs')
-            ->where('status', '!=', 'denied')
-            ->whereDate('created_at', today())
-            ->sum('guest_count') ?? 0;
+        try {
+            // Sum guest counts from guest_lists via arrival_logs with relationships
+            $totalGuests = ArrivalLog::whereDate('created_at', today())
+                ->where('status', '!=', 'denied')
+                ->with('guestList')
+                ->get()
+                ->sum(function ($arrival) {
+                    return $arrival->guestList?->total_guests ?? 0;
+                });
+            
+            return $totalGuests ?? 0;
+        } catch (\Exception $e) {
+            \Log::warning('Error calculating visitor count: ' . $e->getMessage());
+            return 0;
+        }
     }
 
     /**
@@ -278,10 +290,10 @@ class SafetyAlertEngine
     {
         $config = CapacityRule::active();
         return GuideAssignment::with('guestList')
-            ->where('status', '!=', 'completed')
-            ->where('status', '!=', 'cancelled')
+            ->where('assignment_status', '!=', 'Completed')
+            ->where('assignment_status', '!=', 'Cancelled')
             ->get()
-            ->some(fn($a) => ($a->guestList?->guest_count ?? 0) > $config->max_guests_per_guide);
+            ->some(fn($a) => ($a->guestList?->total_guests ?? 0) > $config->max_guests_per_guide);
     }
 
     private function isAtWarningCapacity(): bool
@@ -302,22 +314,22 @@ class SafetyAlertEngine
 
     private function hasMissingGuideAssignments(): bool
     {
-        return GuestList::with('guideAssignment')
-            ->where('arrival_status', 'arrived')
+        return GuestList::with('assignments')
+            ->where('status', 'Completed')
             ->whereDate('created_at', today())
             ->get()
             ->some(function ($g) {
-                return !$g->guideAssignment()
-                    ->where('status', '!=', 'cancelled')
-                    ->where('status', '!=', 'pending')
+                return !$g->assignments()
+                    ->where('assignment_status', '!=', 'Cancelled')
+                    ->where('assignment_status', '!=', 'Pending')
                     ->exists();
             });
     }
 
     private function hasScheduleConflicts(): bool
     {
-        $assignments = GuideAssignment::where('status', '!=', 'completed')
-            ->where('status', '!=', 'cancelled')
+        $assignments = GuideAssignment::where('assignment_status', '!=', 'Completed')
+            ->where('assignment_status', '!=', 'Cancelled')
             ->get()
             ->groupBy('guide_id');
 

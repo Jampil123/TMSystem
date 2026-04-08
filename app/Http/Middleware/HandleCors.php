@@ -18,22 +18,35 @@ class HandleCors
         // Get the origin from the request
         $origin = $request->header('Origin');
         
-        // List of allowed origins (localhost, ngrok, etc.)
+        // List of allowed origins (localhost, tunnels, etc.)
         $allowedOrigins = [
             'http://localhost:8000',
             'http://127.0.0.1:8000',
             'https://localhost:8000',
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            // Cloudflare tunnel URLs
+            'https://dry-pens-vatican-away.trycloudflare.com',
+            'https://infringement-resort-felt-ips.trycloudflare.com',
         ];
         
-        // Allow ngrok tunnels (dynamic)
-        if ($origin && (strpos($origin, 'ngrok') !== false || strpos($origin, 'localhost') !== false || strpos($origin, '127.0.0.1') !== false)) {
+        // Allow tunnels dynamically (ngrok, cloudflare, etc.)
+        if ($origin && (
+            strpos($origin, 'ngrok') !== false || 
+            strpos($origin, 'trycloudflare.com') !== false ||
+            strpos($origin, 'localhost') !== false || 
+            strpos($origin, '127.0.0.1') !== false
+        )) {
             $allowedOrigins[] = $origin;
         }
         
         $response = $next($request);
         
         // If origin is allowed, add CORS headers
-        if (in_array($origin, $allowedOrigins) || ($origin && strpos($origin, 'ngrok') !== false)) {
+        if (in_array($origin, $allowedOrigins) || ($origin && (
+            strpos($origin, 'ngrok') !== false || 
+            strpos($origin, 'trycloudflare.com') !== false
+        ))) {
             $response->header('Access-Control-Allow-Origin', $origin);
             $response->header('Access-Control-Allow-Credentials', 'true');
             $response->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');

@@ -231,7 +231,7 @@ class QRCodeArrivalController extends Controller
                     $guestList->guest_names[0] ?? 'Guest Group',
                     $guestList->total_guests,
                     $guideAssignment->guide->full_name ?? 'Unknown Guide',
-                    $arrivalLog->id
+                    $arrivalLog->log_id  // Use log_id instead of id (it's the primary key)
                 );
 
                 // Run safety checks for this arrival
@@ -255,8 +255,8 @@ class QRCodeArrivalController extends Controller
                     ->count();
 
                 if ($unusedCount === 0) {
-                    // All guests have arrived - mark assignment as completed
-                    $guestList->status = 'Arrived';
+                    // All guests have arrived - mark status as Completed
+                    $guestList->status = 'Completed';
                     $guestList->save();
 
                     // Mark guide assignment as 'Completed' when all guests arrive
@@ -270,7 +270,7 @@ class QRCodeArrivalController extends Controller
                     'code' => 'SUCCESS',
                     'guide_verified' => true,
                     'data' => [
-                        'arrival_log_id' => $arrivalLog->id,
+                        'arrival_log_id' => $arrivalLog->log_id,  // Use log_id instead of id
                         'guest_list_id' => $guestList->id,
                         'guest_name' => $arrivalLog->guest_name,
                         'guide_name' => $guideAssignment->guide->full_name ?? 'Unknown Guide',
