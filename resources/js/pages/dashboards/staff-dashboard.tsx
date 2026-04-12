@@ -308,12 +308,7 @@ export default function StaffDashboard() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Entrance Staff Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-6 p-6 bg-[#E3EED4] dark:bg-[#0F2A1D]">
-                {/* Header */}
-                <div className="rounded-2xl bg-gradient-to-r from-[#6B8071] to-[#375534] p-8 text-white shadow-lg">
-                    <h1 className="text-3xl font-bold mb-2">Entrance Point Control</h1>
-                    <p className="text-[#E3EED4]">Smart Arrival Logging System - Scan, Verify, and Log Tourist Arrivals in Real-Time</p>
-                </div>
-
+               
                 {/* Statistics Cards */}
                 <div className="grid gap-6 md:grid-cols-4">
                     <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6 hover:shadow-md transition-shadow">

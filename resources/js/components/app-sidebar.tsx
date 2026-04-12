@@ -138,21 +138,25 @@ export function AppSidebar() {
     // items for external operator accounts
     const operatorNavItems: NavItem[] = [
         {
+            section: 'Main',
             title: 'Dashboard',
             href: '/operator-dashboard',
             icon: Home,
         },
         {
+            section: 'User',
             title: 'Profile',
             href: '/operator/profile',
             icon: User,
         },
         {
+            section: 'User',
             title: 'Documents',
             href: '/operator/documents',
             icon: FileText,
         },
         {
+            section: 'Operations',
             title: 'Services',
             icon: Package,
             disabled: !isApproved,
@@ -178,22 +182,26 @@ export function AppSidebar() {
             ],
         },
         {
+            section: 'Operations',
             title: 'Guest Submission',
             href: '/operator/guest-submission',
             icon: ClipboardList,
             disabled: !isApproved,
         },
         {
+            section: 'System',
             title: 'Alerts',
             href: '/operator/alerts',
             icon: Bell,
         },
         {
+            section: 'System',
             title: 'Notifications',
             href: '/operator/notifications',
             icon: Bell,
         },
         {
+            section: 'System',
             title: 'Settings',
             href: '/settings',
             icon: Settings,
@@ -202,27 +210,32 @@ export function AppSidebar() {
 
     // items for entrance staff accounts
     const staffNavItems: NavItem[] = [
-        {
+        {   
+            section: 'Main',
             title: 'Dashboard',
             href: '/staff-dashboard',
             icon: Home,
         },
         {
+            section: 'Operations',
             title: 'Scan QR',
             href: '/staff/qr-scanner',
             icon: QrCode,
         },
         {
+            section: 'Operations',
             title: 'Arrival Logs',
             href: '/staff/arrivals',
             icon: LogIn,
         },
         {
+            section: 'Operations',
             title: 'Visitor Monitoring',
             href: '/staff/visitor-counter',
             icon: Users2,
         },
         {
+            section: 'System',
             title: 'Notifications',
             href: '/staff/notifications',
             icon: Bell,

@@ -521,10 +521,12 @@ export default function QRCodeScanner() {
         try {
             const response = await fetch('/staff/api/arrival-stats');
             const data = await response.json();
-            if (data.success) {
+            addDebugInfo('Stats API Response:', data);
+            if (data.success && data.data) {
                 setTodayStats(data.data);
             }
         } catch (error) {
+            addDebugInfo('Error fetching stats:', (error as any).message);
             console.error('Error fetching stats:', error);
         } finally {
             setIsLoadingStats(false);
@@ -537,25 +539,31 @@ export default function QRCodeScanner() {
         try {
             const response = await fetch('/staff/api/recent-arrivals');
             const data = await response.json();
-            if (data.success) {
+            addDebugInfo('Recent Arrivals API Response:', data);
+            if (data.success && data.data) {
                 setRecentArrivals(data.data);
             }
         } catch (error) {
+            addDebugInfo('Error fetching recent arrivals:', (error as any).message);
             console.error('Error fetching recent arrivals:', error);
         } finally {
             setIsLoadingRecents(false);
         }
     };
 
-    // Load stats on mount
+    // Load stats on mount and set up auto-refresh
     useEffect(() => {
+        // Fetch immediately on mount
+        addDebugInfo('');
+        addDebugInfo('🔄 Component mounted - fetching initial stats');
         fetchTodayStats();
         fetchRecentArrivals();
         
+        // Refresh every 10 seconds (more responsive)
         const statsInterval = setInterval(() => {
             fetchTodayStats();
             fetchRecentArrivals();
-        }, 30000);
+        }, 10000);
 
         return () => clearInterval(statsInterval);
     }, []);
@@ -625,41 +633,177 @@ export default function QRCodeScanner() {
                             </pre>
                         </div>
 
-                        {/* Camera Feed */}
+                        {/* Camera Feed - Enhanced UI */}
                         <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-6">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                                 <Camera className="h-5 w-5 text-blue-500" />
                                 Camera Scanner
                             </h2>
 
-                            {/* Video Element - Always visible */}
-                            <video
-                                ref={videoRef}
-                                style={{ 
-                                    width: '100%',
-                                    maxHeight: '400px',
-                                    objectFit: 'cover',
-                                    borderRadius: '0.5rem',
-                                    backgroundColor: '#000',
-                                    border: isCameraActive ? '2px solid #22c55e' : '2px solid #6b7280'
-                                }}
-                                playsInline
-                                muted
-                                autoPlay
-                                controls={false}
-                            />
-                            
+                            {/* Scanner Container */}
+                            <div className="relative w-full mx-auto" style={{ aspectRatio: '4/5', maxWidth: '500px' }}>
+                                {/* Video Element - Background */}
+                                <video
+                                    ref={videoRef}
+                                    style={{ 
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover',
+                                        borderRadius: '0.5rem',
+                                        backgroundColor: '#000',
+                                    }}
+                                    className={`absolute inset-0 transition-all duration-500 ${
+                                        isCameraActive ? 'ring-2 ring-green-500' : 'ring-2 ring-gray-400'
+                                    }`}
+                                    playsInline
+                                    muted
+                                    autoPlay
+                                    controls={false}
+                                />
+
+                                {/* Overlay - Darkened Background */}
+                                {isCameraActive && (
+                                    <div 
+                                        className="absolute inset-0 rounded-lg"
+                                        style={{
+                                            background: `
+                                                linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.1) 60%, rgba(0,0,0,0.4) 100%)
+                                            `,
+                                            pointerEvents: 'none',
+                                        }}
+                                    />
+                                )}
+
+                                {/* Scanning Frame Container */}
+                                {isCameraActive && (
+                                    <div className="absolute inset-0 rounded-lg flex items-center justify-center overflow-hidden">
+                                        {/* Centered Square Frame */}
+                                        <div 
+                                            className="relative"
+                                            style={{
+                                                width: '70%',
+                                                aspectRatio: '1',
+                                                maxWidth: '280px',
+                                                maxHeight: '280px',
+                                            }}
+                                        >
+                                            {/* Corner Guides - Top Left */}
+                                            <div className="absolute top-0 left-0 w-8 h-8">
+                                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-green-300 rounded-full" />
+                                                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-green-400 to-green-300 rounded-full" />
+                                            </div>
+
+                                            {/* Corner Guides - Top Right */}
+                                            <div className="absolute top-0 right-0 w-8 h-8">
+                                                <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-l from-green-400 to-green-300 rounded-full" />
+                                                <div className="absolute top-0 right-0 w-1 h-full bg-gradient-to-b from-green-400 to-green-300 rounded-full" />
+                                            </div>
+
+                                            {/* Corner Guides - Bottom Left */}
+                                            <div className="absolute bottom-0 left-0 w-8 h-8">
+                                                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-green-300 rounded-full" />
+                                                <div className="absolute bottom-0 left-0 w-1 h-full bg-gradient-to-t from-green-400 to-green-300 rounded-full" />
+                                            </div>
+
+                                            {/* Corner Guides - Bottom Right */}
+                                            <div className="absolute bottom-0 right-0 w-8 h-8">
+                                                <div className="absolute bottom-0 right-0 w-full h-1 bg-gradient-to-l from-green-400 to-green-300 rounded-full" />
+                                                <div className="absolute bottom-0 right-0 w-1 h-full bg-gradient-to-t from-green-400 to-green-300 rounded-full" />
+                                            </div>
+
+                                            {/* Scanning Line - Horizontal */}
+                                            <style>
+                                                {`
+                                                    @keyframes scanLine {
+                                                        0% { top: 0%; }
+                                                        50% { top: 100%; }
+                                                        100% { top: 0%; }
+                                                    }
+
+                                                    @keyframes dotBlink1 {
+                                                        0%, 20% { opacity: 0.3; }
+                                                        40%, 100% { opacity: 1; }
+                                                    }
+
+                                                    @keyframes dotBlink2 {
+                                                        0%, 40% { opacity: 0.3; }
+                                                        60%, 100% { opacity: 1; }
+                                                    }
+
+                                                    @keyframes dotBlink3 {
+                                                        0%, 60% { opacity: 0.3; }
+                                                        80%, 100% { opacity: 1; }
+                                                    }
+
+                                                    .scan-line {
+                                                        animation: scanLine 2s ease-in-out infinite;
+                                                    }
+
+                                                    .dot-1 {
+                                                        animation: dotBlink1 1.4s ease-in-out infinite;
+                                                    }
+
+                                                    .dot-2 {
+                                                        animation: dotBlink2 1.4s ease-in-out infinite;
+                                                    }
+
+                                                    .dot-3 {
+                                                        animation: dotBlink3 1.4s ease-in-out infinite;
+                                                    }
+                                                `}
+                                            </style>
+                                            <div 
+                                                className="scan-line absolute w-full h-1 bg-gradient-to-r from-transparent via-green-400 to-transparent rounded-full"
+                                                style={{
+                                                    boxShadow: '0 0 10px rgba(74, 222, 128, 0.8)',
+                                                }}
+                                            />
+
+                                            {/* Loading Dots - Bottom Center */}
+                                            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center justify-center gap-2">
+                                                <div 
+                                                    className="dot-1 w-2 h-2 rounded-full bg-green-400"
+                                                    style={{ boxShadow: '0 0 6px rgba(74, 222, 128, 0.8)' }}
+                                                />
+                                                <div 
+                                                    className="dot-2 w-2 h-2 rounded-full bg-green-400"
+                                                    style={{ boxShadow: '0 0 6px rgba(74, 222, 128, 0.8)' }}
+                                                />
+                                                <div 
+                                                    className="dot-3 w-2 h-2 rounded-full bg-green-400"
+                                                    style={{ boxShadow: '0 0 6px rgba(74, 222, 128, 0.8)' }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Ready to Scan Message */}
+                                {!isCameraActive && (
+                                    <div className="absolute inset-0 rounded-lg bg-black/30 dark:bg-black/50 flex items-center justify-center">
+                                        <div className="text-center">
+                                            <div className="mb-3">
+                                                <QrCodeIcon className="h-12 w-12 text-white/60 mx-auto" />
+                                            </div>
+                                            <p className="text-white text-sm font-semibold">Start scanning to begin</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Status Message */}
                             {isCameraActive && (
                                 <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg">
                                     <p className="text-sm text-blue-700 dark:text-blue-300 text-center">
-                                        📷 Camera is active - <strong>Point QR code at center</strong> of screen to scan
+                                        📷 <strong>Position the QR code inside the frame</strong>
                                     </p>
                                     <p className="text-xs text-blue-600 dark:text-blue-400 text-center mt-2">
-                                        💡 Tip: Hold steady 10-15cm away from QR code in good lighting
+                                        💡 Tip: Keep the code within the green guides. System is actively scanning...
                                     </p>
                                 </div>
                             )}
 
+                            {/* Action Buttons */}
                             {isCameraActive ? (
                                 <div className="space-y-4 mt-4">
                                     <button

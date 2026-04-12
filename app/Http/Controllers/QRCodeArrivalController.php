@@ -325,9 +325,9 @@ class QRCodeArrivalController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'total_arrivals' => $totalArrivals,
-                    'verified_arrivals' => $verifiedArrivals,
-                    'denied_arrivals' => $deniedArrivals,
+                    'total_scans' => $totalArrivals,
+                    'successful_arrivals' => $verifiedArrivals,
+                    'failed_scans' => $deniedArrivals,
                     'total_guests' => $totalGuests,
                 ],
             ]);
@@ -337,9 +337,9 @@ class QRCodeArrivalController extends Controller
                 'success' => false,
                 'message' => 'Error fetching statistics',
                 'data' => [
-                    'total_arrivals' => 0,
-                    'verified_arrivals' => 0,
-                    'denied_arrivals' => 0,
+                    'total_scans' => 0,
+                    'successful_arrivals' => 0,
+                    'failed_scans' => 0,
                     'total_guests' => 0,
                 ],
             ], 200); // Return 200 to prevent page reload; error handled gracefully
@@ -355,21 +355,23 @@ class QRCodeArrivalController extends Controller
             $today = Carbon::today();
 
             $arrivals = ArrivalLog::whereDate('arrival_date', $today)
-                ->with(['guestList', 'guide'])
+                ->with(['guestList.qrCodes', 'guide'])
                 ->orderBy('arrival_time', 'desc')
                 ->limit(20)
                 ->get()
                 ->map(function ($arrival) {
-                    $arrivalTime = $arrival->arrival_time;
-                    $arrivalDate = $arrival->arrival_date;
+                    // Get the QR token from the guest list's QR codes
+                    $qrToken = $arrival->guestList?->qrCodes?->first()?->token ?? 'N/A';
                     
                     return [
                         'id' => $arrival->log_id,
                         'guest_list_id' => $arrival->guest_list_id,
+                        'qr_token' => $qrToken,
                         'guest_name' => $arrival->guest_name ?? 'Unknown',
                         'guide_name' => $arrival->guide?->full_name ?? 'N/A',
-                        'arrival_time' => $arrivalTime ? $arrivalTime->format('H:i') : 'N/A',
-                        'arrival_date' => $arrivalDate ? $arrivalDate->format('Y-m-d') : 'N/A',
+                        'arrival_time' => $arrival->arrival_time ?? 'N/A',
+                        'arrival_date' => $arrival->arrival_date ? $arrival->arrival_date->format('Y-m-d') : 'N/A',
+                        'created_at' => $arrival->created_at,
                         'status' => $arrival->status ?? 'pending',
                         'total_guests' => $arrival->guestList?->total_guests ?? 0,
                         'service_name' => $arrival->guestList?->service?->service_name ?? 'Unknown Service',
