@@ -35,6 +35,8 @@ interface DashboardData {
     pendingGuides: any[];
     pendingServices: any[];
     pendingUsers: any[];
+    monthlyRevenue: Array<{ month: string; revenue: number }>;
+    totalCollection: { today: number; all_time: number };
     timestamp: string;
 }
 
@@ -179,7 +181,7 @@ export default function LGUDOTDashboard({ initialData }: Props) {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-[#AEC3B0] mb-1">Total Collections Today</p>
-                                <p className="text-2xl font-bold text-white">₱45.2K</p>
+                                <p className="text-2xl font-bold text-white">₱{(dashboardData.totalCollection?.today || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                             </div>
                             <TrendingUp className="w-8 h-8 text-[#AEC3B0]" />
                         </div>
@@ -195,22 +197,34 @@ export default function LGUDOTDashboard({ initialData }: Props) {
                         </div>
                         <div className="p-6">
                             {/* Revenue Chart */}
+                            <div className="mb-4">
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-[#0F2A1D] dark:text-white">Total Revenue (All Time)</h3>
+                                        <p className="text-2xl font-bold text-[#375534] dark:text-[#AEC3B0] mt-1">₱{(dashboardData.totalCollection?.all_time || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-[#0F2A1D] dark:text-white text-right">Today's Collection</h3>
+                                        <p className="text-xl font-bold text-green-600 dark:text-green-400 mt-1 text-right">₱{(dashboardData.totalCollection?.today || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                    </div>
+                                </div>
+                            </div>
                             <div className="h-80 w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart
-                                        data={[
-                                            { month: 'Jan', revenue: 32000, target: 28000 },
-                                            { month: 'Feb', revenue: 28000, target: 28000 },
-                                            { month: 'Mar', revenue: 35000, target: 30000 },
-                                            { month: 'Apr', revenue: 24000, target: 28000 },
-                                            { month: 'May', revenue: 33000, target: 30000 },
-                                            { month: 'Jun', revenue: 45000, target: 35000 },
-                                            { month: 'Jul', revenue: 28000, target: 28000 },
-                                            { month: 'Aug', revenue: 22000, target: 25000 },
-                                            { month: 'Sep', revenue: 38000, target: 32000 },
-                                            { month: 'Oct', revenue: 28000, target: 28000 },
-                                            { month: 'Nov', revenue: 32000, target: 30000 },
-                                            { month: 'Dec', revenue: 35000, target: 32000 },
+                                        data={dashboardData.monthlyRevenue || [
+                                            { month: 'Jan', revenue: 0 },
+                                            { month: 'Feb', revenue: 0 },
+                                            { month: 'Mar', revenue: 0 },
+                                            { month: 'Apr', revenue: 0 },
+                                            { month: 'May', revenue: 0 },
+                                            { month: 'Jun', revenue: 0 },
+                                            { month: 'Jul', revenue: 0 },
+                                            { month: 'Aug', revenue: 0 },
+                                            { month: 'Sep', revenue: 0 },
+                                            { month: 'Oct', revenue: 0 },
+                                            { month: 'Nov', revenue: 0 },
+                                            { month: 'Dec', revenue: 0 },
                                         ]}
                                         margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
                                     >
@@ -223,6 +237,7 @@ export default function LGUDOTDashboard({ initialData }: Props) {
                                         <YAxis 
                                             stroke="#6B8071"
                                             style={{ fontSize: '12px' }}
+                                            tickFormatter={(value) => `₱${(value / 1000).toFixed(0)}k`}
                                         />
                                         <Tooltip 
                                             contentStyle={{
@@ -231,7 +246,7 @@ export default function LGUDOTDashboard({ initialData }: Props) {
                                                 borderRadius: '8px',
                                                 color: '#E3EED4',
                                             }}
-                                            formatter={(value: any) => value ? `₱${Number(value).toLocaleString()}` : '₱0'}
+                                            formatter={(value: any) => value ? `₱${Number(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '₱0.00'}
                                         />
                                         <Legend 
                                             wrapperStyle={{ color: '#6B8071' }}
@@ -240,15 +255,8 @@ export default function LGUDOTDashboard({ initialData }: Props) {
                                         <Bar 
                                             dataKey="revenue" 
                                             fill="#375534" 
-                                            name="Entrance Fees"
+                                            name="Monthly Revenue"
                                             radius={[8, 8, 0, 0]}
-                                        />
-                                        <Bar 
-                                            dataKey="target" 
-                                            fill="#AEC3B0" 
-                                            name="Target"
-                                            radius={[8, 8, 0, 0]}
-                                            opacity={0.6}
                                         />
                                     </BarChart>
                                 </ResponsiveContainer>

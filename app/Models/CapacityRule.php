@@ -29,10 +29,12 @@ class CapacityRule extends Model
 
     /**
      * Get the active capacity rules (typically only one record exists)
+     * Creates a default global capacity rule if none exists
      */
     public static function active()
     {
         return static::first() ?? static::create([
+            'attraction_id' => null,  // Global default rule (not specific to any attraction)
             'max_visitors' => 350,
             'warning_threshold_percent' => 80,
             'critical_threshold_percent' => 100,

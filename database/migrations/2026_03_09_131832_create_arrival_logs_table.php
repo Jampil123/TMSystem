@@ -18,6 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('guide_id')->nullable();
             $table->time('arrival_time');
             $table->date('arrival_date');
+            $table->decimal('fee_paid', 8, 2)->default(0.00);
             $table->enum('status', ['arrived', 'denied'])->default('arrived');
             $table->timestamps();
 

@@ -16,6 +16,7 @@ class ArrivalLog extends Model
         'guide_id',
         'arrival_time',
         'arrival_date',
+        'fee_paid',
         'status',
     ];
 

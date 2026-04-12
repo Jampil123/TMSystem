@@ -72,6 +72,10 @@ class DashboardController extends Controller
             ->distinct('guide_id')
             ->count('guide_id');
 
+        // Get monthly revenue and total collection
+        $monthlyRevenue = $this->getMonthlyRevenue();
+        $totalCollection = $this->getTotalCollection();
+
         return [
             'totalVisitorsToday' => $totalVisitorsToday,
             'activeLocations' => count($locations),
@@ -79,6 +83,8 @@ class DashboardController extends Controller
             'activeAlerts' => $alerts->count(),
             'locations' => $locations,
             'alerts' => $alerts,
+            'monthlyRevenue' => $monthlyRevenue,
+            'totalCollection' => $totalCollection,
             'timestamp' => now(),
         ];
     }
@@ -141,6 +147,59 @@ class DashboardController extends Controller
                 'percentageCapacity' => round($crowdPercentage, 2),
             ];
         })->toArray();
+    }
+
+    /**
+     * Get monthly revenue from entrance fees
+     */
+    private function getMonthlyRevenue()
+    {
+        $currentYear = now()->year;
+        
+        // Get all 12 months of data
+        $monthlyData = [];
+        for ($month = 1; $month <= 12; $month++) {
+            $monthStart = \Carbon\Carbon::createFromDate($currentYear, $month, 1)->startOfMonth();
+            $monthEnd = \Carbon\Carbon::createFromDate($currentYear, $month, 1)->endOfMonth();
+            
+            $monthName = $monthStart->format('M');
+            
+            $revenue = ArrivalLog::whereBetween('arrival_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
+                ->where('status', 'arrived')
+                ->where('fee_paid', '>', 0)
+                ->sum('fee_paid');
+            
+            $monthlyData[] = [
+                'month' => $monthName,
+                'revenue' => floatval($revenue),
+            ];
+        }
+        
+        return $monthlyData;
+    }
+
+    /**
+     * Get total collection for today and all time
+     */
+    private function getTotalCollection()
+    {
+        $today = now()->startOfDay();
+        
+        // Today's collection
+        $todayCollection = ArrivalLog::where('arrival_date', $today->toDateString())
+            ->where('status', 'arrived')
+            ->where('fee_paid', '>', 0)
+            ->sum('fee_paid');
+        
+        // All time collection
+        $allTimeCollection = ArrivalLog::where('status', 'arrived')
+            ->where('fee_paid', '>', 0)
+            ->sum('fee_paid');
+        
+        return [
+            'today' => floatval($todayCollection),
+            'all_time' => floatval($allTimeCollection),
+        ];
     }
 
     /**

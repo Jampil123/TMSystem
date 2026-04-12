@@ -217,12 +217,19 @@ class QRCodeArrivalController extends Controller
                 }
 
                 // Step 5: Create arrival log
+                // Get entry fee from the attraction associated with the service
+                $entryFee = 0;
+                if ($guestList->service && $guestList->service->touristSpot) {
+                    $entryFee = $guestList->service->touristSpot->entry_fee ?? 0;
+                }
+
                 $arrivalLog = ArrivalLog::create([
                     'guest_list_id' => $guestList->id,
                     'guest_name' => $guestList->guest_names[0] ?? 'Guest Group',
                     'guide_id' => $guideAssignment->guide_id,
                     'arrival_time' => now()->format('H:i:s'),
                     'arrival_date' => now()->toDateString(),
+                    'fee_paid' => $entryFee,
                     'status' => 'arrived',
                 ]);
 
@@ -279,6 +286,7 @@ class QRCodeArrivalController extends Controller
                         'arrival_date' => $arrivalLog->arrival_date,
                         'total_guests' => $guestList->total_guests,
                         'service_name' => $guestList->service->service_name ?? 'Unknown Service',
+                        'fee_paid' => $arrivalLog->fee_paid,
                     ],
                 ]);
             } catch (\Exception $e) {
