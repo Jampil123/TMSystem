@@ -1079,7 +1079,7 @@ export default function QRCodeScanner() {
                                             setScanInput('');
                                             // Focus input for next scan
                                             setTimeout(() => {
-                                                (document.querySelector('[placeholder="Enter QR code..."]') as HTMLInputElement)?.focus();
+                                                (document.querySelector('[placeholder="Enter booking code (or press ENTER to scan)..."]') as HTMLInputElement)?.focus();
                                             }, 100);
                                         }}
                                         className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition text-sm"
