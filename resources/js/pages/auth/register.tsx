@@ -20,7 +20,7 @@ export default function Register() {
                 {...store.form()}
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
-                className="flex flex-col gap-5"
+                className="flex flex-col gap-5 mt-6"
             >
                 {({ processing, errors }) => (
                     <>

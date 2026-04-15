@@ -37,6 +37,38 @@ class GuideController extends Controller
     }
 
     /**
+     * Get all approved guides as JSON API for walk-in modal
+     */
+    public function apiIndex()
+    {
+        try {
+            $guides = Guide::where('status', 'Approved')
+                ->select('id', 'full_name', 'specialty_areas', 'years_of_experience')
+                ->get()
+                ->map(function ($guide) {
+                    return [
+                        'id' => $guide->id,
+                        'name' => $guide->full_name,
+                        'full_name' => $guide->full_name,
+                        'specialty_areas' => $guide->specialty_areas,
+                        'years_of_experience' => $guide->years_of_experience,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $guides,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching guides: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching guides',
+            ], 500);
+        }
+    }
+
+    /**
      * Store guide registration.
      */
     public function store(Request $request)

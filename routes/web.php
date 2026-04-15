@@ -219,6 +219,7 @@ Route::middleware(['auth', 'verified'])->prefix('staff')->name('staff.')->group(
     Route::post('api/log-arrival', [StaffArrivalidateController::class, 'logArrival'])->name('api.log-arrival');
     Route::post('api/deny-arrival', [StaffArrivalidateController::class, 'denyArrival'])->name('api.deny-arrival');
     Route::get('api/arrivals-today', [StaffArrivalidateController::class, 'getTodayArrivals'])->name('api.arrivals-today');
+    Route::post('api/log-walk-in', [StaffArrivalidateController::class, 'logWalkInWithQR'])->name('api.log-walk-in');
 });
 
 // Admin-only user and attraction management routes
@@ -338,6 +339,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     // Attraction API endpoints
     Route::get('/admin/api/attractions', [AttractionController::class, 'apiIndex'])->name('api.attractions.index');
+    
+    // Guide API endpoints
+    Route::get('/admin/api/guides', [GuideController::class, 'apiIndex'])->name('api.guides.index');
     
     Route::get('/admin/api/capacity-rules', [CapacityRuleController::class, 'index'])->name('capacity-rules.index');
     Route::get('/admin/api/capacity-rules/all', [CapacityRuleController::class, 'allRules'])->name('capacity-rules.all');

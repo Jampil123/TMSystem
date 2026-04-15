@@ -8,6 +8,7 @@ class GuestList extends Model
 {
     protected $fillable = [
         'service_id',
+        'attraction_id',
         'operator_id',
         'visit_date',
         'total_guests',
@@ -39,6 +40,14 @@ class GuestList extends Model
     public function operator()
     {
         return $this->belongsTo(User::class, 'operator_id');
+    }
+
+    /**
+     * Get the attraction for this guest list (for walk-ins).
+     */
+    public function attraction()
+    {
+        return $this->belongsTo(Attraction::class, 'attraction_id');
     }
 
     /**

@@ -4,9 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\ArrivalLog;
 use App\Models\GuestList;
+use App\Models\GuestListQRCode;
 use App\Models\Guide;
+use App\Models\Attraction;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use App\Services\NotificationService;
+use App\Services\SafetyAlertEngine;
+use App\Services\EmergencyAlertService;
 
 class StaffArrivalidateController extends Controller
 {
@@ -222,16 +229,27 @@ class StaffArrivalidateController extends Controller
                 ->orderBy('arrival_time', 'desc')
                 ->get()
                 ->map(function ($arrival) {
+                    // Handle arrival_time as string (TIME column)
+                    $arrivalTime = is_string($arrival->arrival_time) 
+                        ? $arrival->arrival_time 
+                        : $arrival->arrival_time?->format('H:i');
+                    
+                    // Handle arrival_date
+                    $arrivalDate = is_string($arrival->arrival_date)
+                        ? $arrival->arrival_date
+                        : $arrival->arrival_date?->format('Y-m-d');
+                    
                     return [
                         'id' => $arrival->log_id,
                         'guest_list_id' => $arrival->guest_list_id,
                         'guest_name' => $arrival->guest_name,
                         'guide_id' => $arrival->guide_id,
-                        'guide_name' => $arrival->guide?->name ?? 'N/A',
-                        'arrival_time' => $arrival->arrival_time->format('H:i'),
-                        'arrival_date' => $arrival->arrival_date->format('Y-m-d'),
+                        'guide_name' => $arrival->guide?->full_name ?? $arrival->guide?->name ?? 'N/A',
+                        'arrival_time' => $arrivalTime,
+                        'arrival_date' => $arrivalDate,
                         'status' => $arrival->status,
                         'guest_count' => $arrival->guestList?->total_guests ?? 0,
+                        'is_walk_in' => $arrival->guestList?->notes === 'walk-in',
                     ];
                 });
 
@@ -241,9 +259,180 @@ class StaffArrivalidateController extends Controller
                 'count' => $arrivals->count(),
             ]);
         } catch (\Exception $e) {
+            \Log::error('getTodayArrivals error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching arrivals: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Log a walk-in tourist (no pre-existing booking/QR)
+     * Creates GuestList, QR code, and ArrivalLog in one transaction
+     * 
+     * Request body:
+     * - guest_name (required)
+     * - guest_count (required) 
+     * - service_id (required)
+     * - guide_id (optional)
+     * - local_tourists (optional, defaults to guest_count)
+     * - foreign_tourists (optional, defaults to 0)
+     */
+    public function logWalkInWithQR(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'guest_name' => 'required|string|max:255',
+                'guest_count' => 'required|integer|min:1|max:500',
+                'service_id' => 'required|integer|exists:attractions,id',
+                'guide_id' => 'nullable|integer|exists:guides,id',
+                'local_tourists' => 'nullable|integer|min:0',
+                'foreign_tourists' => 'nullable|integer|min:0',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Walk-in validation error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error: ' . $e->getMessage(),
+            ], 400);
+        }
+
+        try {
+            return DB::transaction(function () use ($validated) {
+                $guestCount = $validated['guest_count'];
+                $localTourists = $validated['local_tourists'] ?? $guestCount;
+                $foreignTourists = $validated['foreign_tourists'] ?? 0;
+
+                // Validate tourist counts
+                if (($localTourists + $foreignTourists) != $guestCount) {
+                    // Auto-balance if not provided
+                    $localTourists = $guestCount;
+                    $foreignTourists = 0;
+                }
+
+                // Step 1: Get the attraction
+                $attraction = Attraction::find($validated['service_id']);
+                if (!$attraction) {
+                    abort(404, 'Attraction not found');
+                }
+
+                // Step 2: Create GuestList for walk-in
+                $guestList = GuestList::create([
+                    'service_id' => null,  // Walk-in has no service (operator-specific)
+                    'attraction_id' => $validated['service_id'],  // Store attraction instead
+                    'operator_id' => null,  // Walk-in has no operator
+                    'visit_date' => now()->toDateString(),
+                    'total_guests' => $guestCount,
+                    'local_tourists' => $localTourists,
+                    'foreign_tourists' => $foreignTourists,
+                    'status' => 'Completed',  // Walk-in is immediate arrival
+                    'notes' => 'walk-in',  // Flag for walk-in identification
+                    'guest_names' => [$validated['guest_name']],
+                ]);
+
+                // Step 3: Generate unique QR code for walk-in
+                $qrToken = 'WALK-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6));
+                
+                $qrCode = GuestListQRCode::create([
+                    'guest_list_id' => $guestList->id,
+                    'token' => $qrToken,
+                    'status' => 'Used',  // Already used since walk-in is immediate arrival
+                    'expiration_date' => null,
+                    'used_at' => now(),
+                ]);
+
+                // Step 4: Get entry fee from attraction
+                $entryFee = $attraction->entry_fee ?? 0;
+                $arrivalLog = ArrivalLog::create([
+                    'guest_list_id' => $guestList->id,
+                    'guest_name' => $validated['guest_name'],
+                    'guide_id' => $validated['guide_id'] ?? null,
+                    'arrival_time' => now()->format('H:i:s'),
+                    'arrival_date' => now()->toDateString(),
+                    'fee_paid' => $guestCount * $entryFee,
+                    'status' => 'arrived',
+                ]);
+
+                // Step 5: Notify about arrival (optional - catch errors)
+                try {
+                    $guideName = null;
+                    if ($validated['guide_id']) {
+                        $guide = Guide::find($validated['guide_id']);
+                        $guideName = $guide->full_name ?? $guide->name ?? 'Unknown Guide';
+                    }
+
+                    if (class_exists('App\Services\NotificationService')) {
+                        NotificationService::arrivalLogged(
+                            $validated['guest_name'],
+                            $guestCount,
+                            $guideName ?? 'Walk-in (No Guide)',
+                            $arrivalLog->log_id
+                        );
+                    }
+                } catch (\Exception $notifyError) {
+                    \Log::warning('Notification service error (non-critical): ' . $notifyError->getMessage());
+                }
+
+                // Step 6: Run safety checks (optional - catch errors)
+                try {
+                    if (class_exists('App\Services\SafetyAlertEngine')) {
+                        $alertEngine = new SafetyAlertEngine();
+                        $alertEngine->checkAllConditions();
+                    }
+                } catch (\Exception $safetyError) {
+                    \Log::warning('Safety alert error (non-critical): ' . $safetyError->getMessage());
+                }
+
+                // Step 7: Run emergency checks (optional - catch errors)
+                try {
+                    if (class_exists('App\Services\EmergencyAlertService')) {
+                        $emergencyService = new EmergencyAlertService();
+                        $emergencyService->checkCapacityEmergency();
+                        if ($validated['guide_id']) {
+                            $emergencyService->checkMissingGuideEmergency($guestList);
+                        }
+                    }
+                } catch (\Exception $emergencyError) {
+                    \Log::warning('Emergency alert error (non-critical): ' . $emergencyError->getMessage());
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => '✅ Walk-in arrival logged successfully!',
+                    'code' => 'WALK_IN_SUCCESS',
+                    'data' => [
+                        'arrival_log_id' => $arrivalLog->log_id,
+                        'guest_list_id' => $guestList->id,
+                        'guest_name' => $validated['guest_name'],
+                        'guide_name' => $guideName ?? 'None',
+                        'arrival_time' => $arrivalLog->arrival_time,
+                        'arrival_date' => $arrivalLog->arrival_date,
+                        'total_guests' => $guestCount,
+                        'qr_token' => $qrToken,
+                        'service_name' => $attraction->name ?? 'Unknown Attraction',
+                        'fee_paid' => $arrivalLog->fee_paid,
+                        'is_walk_in' => true,
+                    ],
+                ], 201);
+            });
+        } catch (\Exception $e) {
+            \Log::error('Walk-in logging error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error logging walk-in arrival: ' . $e->getMessage(),
+                'code' => 'WALK_IN_ERROR',
             ], 500);
         }
     }

@@ -409,11 +409,15 @@ class QRCodeArrivalController extends Controller
         try {
             $today = Carbon::today();
 
-            // Get current visitor count from arrival_logs
-            // Query: SELECT COUNT(*) FROM arrival_logs WHERE status = 'Arrived' AND arrival_date = CURRENT_DATE
+            // Get current visitor count by summing total_guests from guest_lists
+            // where the corresponding arrival_log has status = 'arrived' for today
             $currentVisitors = ArrivalLog::whereDate('arrival_date', $today)
                 ->where('status', 'arrived')
-                ->count();
+                ->with('guestList')
+                ->get()
+                ->sum(function ($arrival) {
+                    return $arrival->guestList?->total_guests ?? 0;
+                });
 
             // Get maximum capacity from configuration
             // Can be set via env variable or hardcoded default

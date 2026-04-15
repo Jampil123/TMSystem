@@ -31,18 +31,23 @@ export default function AuthSplitLayoutModern({
                     <p className="text-xl font-semibold mb-6 text-white/90 drop-shadow">
                         TOURISM MANAGEMENT SYSTEM
                     </p>
-                    
-                    <p className="text-lg font-light mb-4 text-white/95 drop-shadow">
-                        Welcome to Excellence
-                    </p>
                 </div>
             </div>
 
             {/* Right Section - Login Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-10">
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-10 overflow-y-auto max-h-svh scrollbar-hide">
+                <style>{`
+                    .scrollbar-hide::-webkit-scrollbar {
+                        display: none;
+                    }
+                    .scrollbar-hide {
+                        -ms-overflow-style: none;
+                        scrollbar-width: none;
+                    }
+                `}</style>
                 <div className="w-full max-w-md">
                     {/* Glassmorphism Card */}
-                    <div className="relative rounded-3xl bg-white/15 backdrop-blur-xl border border-white/30 shadow-2xl overflow-hidden p-8 md:p-10">
+                    <div className="relative rounded-3xl bg-white/15 backdrop-blur-xl border border-white/30 shadow-2xl overflow-hidden p-8 md:p-10 mt-10">
                         {/* Gradient overlay on hover */}
                         <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5 pointer-events-none" />
 
@@ -65,7 +70,7 @@ export default function AuthSplitLayoutModern({
                     </div>
 
                     {/* Bottom Text */}
-                    <div className="mt-8 text-center">
+                    <div className="mt-6 text-center">
                         <p className="text-sm text-[#375534] font-medium">
                             Tourism Management System © 2025 
                         </p>

@@ -1,9 +1,10 @@
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { LogIn, QrCode, Check, X, AlertTriangle, Users, Clock, TrendingUp, Search, Filter, CheckCircle } from 'lucide-react';
+import { LogIn, QrCode, Check, X, AlertTriangle, Users, Clock, TrendingUp, Search, Filter, CheckCircle, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
 import type { BreadcrumbItem } from '@/types';
+import WalkInModal from '@/components/staff/walk-in-modal';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Staff Dashboard', href: '/staff-dashboard' },
@@ -88,6 +89,9 @@ export default function Arrivals() {
     const [capacityPercentage, setCapacityPercentage] = useState(0);
     const [remainingCapacity, setRemainingCapacity] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [showWalkInModal, setShowWalkInModal] = useState(false);
+    const [services, setServices] = useState<any[]>([]);
+    const [guides, setGuides] = useState<any[]>([]);
 
     // Fetch visitor count from API
     const fetchVisitorCount = async () => {
@@ -108,72 +112,117 @@ export default function Arrivals() {
         }
     };
 
-    // Fetch today's arrivals and visitor count from API
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                // Fetch arrivals
-                console.log('Fetching today arrivals...');
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                
-                const [arrivalsResponse, visitorResponse] = await Promise.all([
-                    fetch('/staff/api/arrivals-today', {
-                        headers: {
-                            'X-CSRF-TOKEN': csrfToken || '',
-                        },
-                    }),
-                    fetch('/staff/api/visitor-count')
-                ]);
-                
-                // Process arrivals
-                if (arrivalsResponse.ok) {
-                    const responseText = await arrivalsResponse.text();
-                    const data = JSON.parse(responseText);
-                    
-                    if (data.success) {
-                        const transformedArrivals = data.data.map((arrival: any) => ({
-                            id: String(arrival.id),
-                            bookingCode: `BK-${arrival.guest_list_id}`,
-                            guestCount: arrival.guest_count,
-                            guideName: arrival.guide_name,
-                            arrivalTime: arrival.arrival_time,
-                            scannedTime: arrival.arrival_time,
-                            serviceType: 'Service',
-                            guideVerified: arrival.status === 'arrived',
-                            qrValidated: true,
-                            status: arrival.status === 'arrived' ? 'verified' : arrival.status === 'denied' ? 'rejected' : 'pending',
-                        }));
-                        setArrivals(transformedArrivals);
-                    }
-                }
-                
-                // Process visitor count
-                if (visitorResponse.ok) {
-                    const visitorData = await visitorResponse.json();
-                    if (visitorData.success) {
-                        const data = visitorData.data;
-                        setCurrentVisitors(data.current_visitors);
-                        setMaximumCapacity(data.maximum_capacity);
-                        setCapacityPercentage(data.capacity_percentage);
-                        setCapacityStatus(data.capacity_status);
-                        setRemainingCapacity(data.remaining_capacity);
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                // Fall back to mock data if API fails
-                setArrivals(mockArrivals);
-            } finally {
-                setLoading(false);
+    // Fetch attractions and guides for walk-in modal
+    const fetchServicesAndGuides = async () => {
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            
+            // Fetch attractions (instead of services)
+            const attractionsRes = await fetch('/admin/api/attractions', {
+                headers: { 'X-CSRF-TOKEN': csrfToken || '' }
+            });
+            const attractionsData = await attractionsRes.json();
+            if (attractionsData.success && attractionsData.data) {
+                setServices(attractionsData.data);
             }
-        };
 
+            // Fetch approved guides
+            const guidesRes = await fetch('/admin/api/guides', {
+                headers: { 'X-CSRF-TOKEN': csrfToken || '' }
+            });
+            const guidesData = await guidesRes.json();
+            if (guidesData.success && guidesData.data) {
+                setGuides(guidesData.data);
+            }
+        } catch (error) {
+            console.error('Error fetching attractions and guides:', error);
+        }
+    };
+
+    // Handle successful walk-in
+    const handleWalkInSuccess = (data: any) => {
+        // Refresh arrivals and visitor count
+        fetchData();
+        console.log('Walk-in recorded successfully:', data);
+    };
+
+    // Fetch today's arrivals and visitor count from API
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            // Fetch arrivals
+            console.log('Fetching today arrivals...');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            
+            const [arrivalsResponse, visitorResponse] = await Promise.all([
+                fetch('/staff/api/arrivals-today', {
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken || '',
+                    },
+                }),
+                fetch('/staff/api/visitor-count')
+            ]);
+            
+            // Process arrivals
+            if (arrivalsResponse.ok) {
+                const responseText = await arrivalsResponse.text();
+                const data = JSON.parse(responseText);
+                
+                if (data.success) {
+                    const transformedArrivals = data.data.map((arrival: any) => ({
+                        id: String(arrival.id),
+                        bookingCode: arrival.is_walk_in ? `WALK-${arrival.guest_list_id}` : `BK-${arrival.guest_list_id}`,
+                        guestCount: arrival.guest_count,
+                        guideName: arrival.guide_name,
+                        arrivalTime: arrival.arrival_time,
+                        scannedTime: arrival.arrival_time,
+                        serviceType: arrival.is_walk_in ? 'Walk-in' : 'Booking',
+                        guideVerified: arrival.status === 'arrived',
+                        qrValidated: true,
+                        status: arrival.status === 'arrived' ? 'verified' : arrival.status === 'denied' ? 'rejected' : 'pending',
+                    }));
+                    setArrivals(transformedArrivals);
+                    console.log('Fetched arrivals:', transformedArrivals);
+                }
+            } else {
+                console.error('Failed to fetch arrivals:', arrivalsResponse.statusText);
+            }
+            
+            // Process visitor count
+            if (visitorResponse.ok) {
+                const visitorData = await visitorResponse.json();
+                if (visitorData.success) {
+                    const data = visitorData.data;
+                    setCurrentVisitors(data.current_visitors);
+                    setMaximumCapacity(data.maximum_capacity);
+                    setCapacityPercentage(data.capacity_percentage);
+                    setCapacityStatus(data.capacity_status);
+                    setRemainingCapacity(data.remaining_capacity);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            // Fall back to mock data if API fails
+            setArrivals(mockArrivals);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Load data on mount
+    useEffect(() => {
         fetchData();
         // Refresh every 10 seconds for real-time updates
         const interval = setInterval(fetchData, 10000);
         return () => clearInterval(interval);
     }, []);
+
+    // Load services and guides when modal opens
+    useEffect(() => {
+        if (showWalkInModal && services.length === 0) {
+            fetchServicesAndGuides();
+        }
+    }, [showWalkInModal]);
 
     // Calculate metrics
     const totalArrivals = arrivals.length;
@@ -334,7 +383,7 @@ export default function Arrivals() {
                 <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
                     {/* Controls */}
                     <div className="p-6 border-b border-gray-200 dark:border-slate-700 space-y-4">
-                        <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex flex-col md:flex-row gap-4 items-end">
                             {/* Search */}
                             <div className="flex-1 relative">
                                 <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -358,6 +407,16 @@ export default function Arrivals() {
                                 <option value="pending">Pending</option>
                                 <option value="rejected">Rejected</option>
                             </select>
+
+                            {/* Walk-in Entry Button */}
+                            <button
+                                onClick={() => setShowWalkInModal(true)}
+                                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition shadow-md hover:shadow-lg whitespace-nowrap"
+                                title="Record a walk-in tourist arrival"
+                            >
+                                <Plus className="h-5 w-5" />
+                                Walk-in Entry
+                            </button>
                         </div>
                     </div>
 
@@ -441,6 +500,15 @@ export default function Arrivals() {
                     </div>
                 </div>
             </div>
+
+            {/* Walk-in Modal */}
+            <WalkInModal
+                isOpen={showWalkInModal}
+                onClose={() => setShowWalkInModal(false)}
+                onSuccess={handleWalkInSuccess}
+                services={services}
+                guides={guides}
+            />
         </AppLayout>
     );
 }

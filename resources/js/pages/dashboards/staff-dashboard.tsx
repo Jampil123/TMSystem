@@ -1,8 +1,9 @@
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { LogIn, Users, Maximize2, CheckCircle, AlertTriangle, AlertCircle, QrCode as QrCodeIcon, TrendingUp, Check, X, Clock, MapPin, UserCheck } from 'lucide-react';
+import { LogIn, Users, Maximize2, CheckCircle, AlertTriangle, AlertCircle, QrCode as QrCodeIcon, TrendingUp, Check, X, Clock, MapPin, UserCheck, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
+import WalkInModal from '@/components/staff/walk-in-modal';
 import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -72,6 +73,10 @@ const recentlyLoggedArrivals = [
 ];
 
 export default function StaffDashboard() {
+    const [entryMode, setEntryMode] = useState<'qr' | 'walk-in'>('qr');
+    const [showWalkInModal, setShowWalkInModal] = useState(false);
+    const [services, setServices] = useState<any[]>([]);
+    const [guides, setGuides] = useState<any[]>([]);
     const [scanInput, setScanInput] = useState('');
     const [scannedBooking, setScannedBooking] = useState<any>(null);
     const [scanError, setScanError] = useState('');
@@ -209,12 +214,42 @@ export default function StaffDashboard() {
         }
     };
 
+    // Fetch attractions for walk-in modal
+    const fetchAttractions = async () => {
+        try {
+            const response = await fetch('/admin/api/attractions');
+            const data = await response.json();
+            
+            if (data.success) {
+                setServices(data.data || []);
+            }
+        } catch (error) {
+            console.error('Error fetching attractions:', error);
+        }
+    };
+    
+    // Fetch guides for walk-in modal
+    const fetchGuides = async () => {
+        try {
+            const response = await fetch('/admin/api/guides');
+            const data = await response.json();
+            
+            if (data.success) {
+                setGuides(data.data || []);
+            }
+        } catch (error) {
+            console.error('Error fetching guides:', error);
+        }
+    };
+
     // Load all data on mount and set up auto-refresh
     useEffect(() => {
         // Fetch all data on mount
         fetchCapacityStatus();
         fetchTodayStats();
         fetchRecentArrivals();
+        fetchAttractions();
+        fetchGuides();
         
         // Set up intervals for real-time updates
         const capacityInterval = setInterval(fetchCapacityStatus, 10000); // Every 10 seconds
@@ -401,31 +436,65 @@ export default function StaffDashboard() {
                     {/* QR Scanner and Verification - Main Panel */}
                     <div className="lg:col-span-2 rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-md overflow-hidden">
                         <div className="p-6 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20">
-                            <div className="flex items-center gap-3 mb-2">
-                                <QrCodeIcon className="w-6 h-6 text-[#6B8071]" />
-                                <h2 className="text-xl font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">Arrival Logging System</h2>
+                            <div className="flex items-center justify-between gap-3 mb-4">
+                                <div className="flex items-center gap-3">
+                                    <QrCodeIcon className="w-6 h-6 text-[#6B8071]" />
+                                    <h2 className="text-xl font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">Arrival Logging System</h2>
+                                </div>
+                                {/* Mode Toggle */}
+                                <div className="flex gap-2 bg-[#F0F5F0] dark:bg-[#1a3a2a] p-1 rounded-lg">
+                                    <button
+                                        onClick={() => setEntryMode('qr')}
+                                        className={`px-4 py-2 rounded-md text-sm font-semibold transition-all ${
+                                            entryMode === 'qr'
+                                                ? 'bg-white dark:bg-[#375534] text-[#375534] dark:text-white shadow-sm'
+                                                : 'text-[#6B8071] dark:text-[#AEC3B0] hover:bg-white/50 dark:hover:bg-[#0F2A1D]/50'
+                                        }`}
+                                    >
+                                        <QrCodeIcon className="w-4 h-4 inline-block mr-2" />
+                                        QR Code
+                                    </button>
+                                    <button
+                                        onClick={() => setEntryMode('walk-in')}
+                                        className={`px-4 py-2 rounded-md text-sm font-semibold transition-all ${
+                                            entryMode === 'walk-in'
+                                                ? 'bg-white dark:bg-[#375534] text-[#375534] dark:text-white shadow-sm'
+                                                : 'text-[#6B8071] dark:text-[#AEC3B0] hover:bg-white/50 dark:hover:bg-[#0F2A1D]/50'
+                                        }`}
+                                    >
+                                        <Plus className="w-4 h-4 inline-block mr-2" />
+                                        Walk-in
+                                    </button>
+                                </div>
                             </div>
-                            <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0]">Scan QR code to verify booking and log arrival</p>
+                            <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0]">
+                                {entryMode === 'qr' 
+                                    ? 'Scan QR code to verify booking and log arrival'
+                                    : 'Record a tourist without a pre-existing booking'
+                                }
+                            </p>
                         </div>
 
                         <div className="p-8 space-y-6">
-                            {/* QR Scanner Input */}
-                            <div>
-                                <label className="block text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4] mb-3">QR Code Scanner</label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        value={scanInput}
-                                        onChange={(e) => setScanInput(e.target.value)}
-                                        onKeyDown={handleScan}
-                                        placeholder="Scan booking QR code here... (Try: BK-001-2026, BK-002-2026, BK-INVALID-001, BK-USED-001)"
-                                        className="w-full px-4 py-3 border-2 border-[#AEC3B0]/40 dark:border-[#375534]/40 rounded-lg bg-white dark:bg-[#0F2A1D] text-[#0F2A1D] dark:text-white placeholder:text-[#6B8071] dark:placeholder:text-[#AEC3B0] focus:border-[#6B8071] focus:outline-none"
-                                        autoFocus
-                                    />
-                                    <QrCodeIcon className="absolute right-4 top-3.5 w-5 h-5 text-[#6B8071]" />
-                                </div>
-                                <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mt-2">Press ENTER to scan</p>
-                            </div>
+                            {entryMode === 'qr' ? (
+                                <>
+                                    {/* QR Scanner Input */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4] mb-3">QR Code Scanner</label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={scanInput}
+                                                onChange={(e) => setScanInput(e.target.value)}
+                                                onKeyDown={handleScan}
+                                                placeholder="Scan booking QR code here... (Try: BK-001-2026, BK-002-2026, BK-INVALID-001, BK-USED-001)"
+                                                className="w-full px-4 py-3 border-2 border-[#AEC3B0]/40 dark:border-[#375534]/40 rounded-lg bg-white dark:bg-[#0F2A1D] text-[#0F2A1D] dark:text-white placeholder:text-[#6B8071] dark:placeholder:text-[#AEC3B0] focus:border-[#6B8071] focus:outline-none"
+                                                autoFocus
+                                            />
+                                            <QrCodeIcon className="absolute right-4 top-3.5 w-5 h-5 text-[#6B8071]" />
+                                        </div>
+                                        <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mt-2">Press ENTER to scan</p>
+                                    </div>
 
                             {/* Alert Messages */}
                             {scanError && (
@@ -596,6 +665,28 @@ export default function StaffDashboard() {
                                     <p className="font-medium">Ready to scan</p>
                                     <p className="text-xs mt-1">Point camera at QR code or type booking code</p>
                                 </div>
+                            )}
+                                </>
+                            ) : (
+                                <>
+                                    {/* Walk-in Entry Section */}
+                                    <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+                                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/30 dark:to-green-900/10 flex items-center justify-center">
+                                            <Plus className="w-8 h-8 text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-[#0F2A1D] dark:text-[#E3EED4] mb-2">Add Walk-in Tourist</h3>
+                                            <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-6">Record a tourist without a pre-existing booking</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowWalkInModal(true)}
+                                            className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:shadow-lg transition-shadow font-semibold flex items-center gap-2"
+                                        >
+                                            <Plus className="w-5 h-5" />
+                                            Start Walk-in Entry
+                                        </button>
+                                    </div>
+                                </>
                             )}
                         </div>
                     </div>
@@ -781,6 +872,14 @@ export default function StaffDashboard() {
                         </div>
                     </div>
                 </div>
+
+                {/* Walk-in Modal */}
+                <WalkInModal 
+                    isOpen={showWalkInModal}
+                    onClose={() => setShowWalkInModal(false)}
+                    services={services}
+                    guides={guides}
+                />
 
                 {/* Recently Logged Arrivals */}
                 <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-md overflow-hidden">
