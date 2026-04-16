@@ -10,6 +10,7 @@ class GuestListQRCode extends Model
     
     protected $fillable = [
         'guest_list_id',
+        'guest_index',
         'token',
         'status',
         'expiration_date',

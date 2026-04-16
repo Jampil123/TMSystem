@@ -38,44 +38,39 @@ export default function QRCodeScanner() {
     // Track scanned QR codes today to prevent duplicates
     const [scannedQRCodes, setScannedQRCodes] = useState<Set<string>>(new Set());
     const [processingCode, setProcessingCode] = useState<string | null>(null);
+    const [validationType, setValidationType] = useState<'arrival_duplicate' | 'departure_duplicate' | 'error' | null>(null);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [successAction, setSuccessAction] = useState<'entry' | 'exit' | null>(null);
+    const [successDetails, setSuccessDetails] = useState<any>(null);
 
-    // Debug function to add debug info
+    // Simplified debug function - only logs to console, not to state
     const addDebugInfo = (message: string, data?: any) => {
-        const timestamp = new Date().toLocaleTimeString();
-        const logLine = `[${timestamp}] ${message}${data ? ': ' + JSON.stringify(data, null, 2) : ''}`;
-        console.log(logLine);
-        setDebugInfo(prev => prev + '\n' + logLine);
+        // Only log errors and critical info, not verbose debug steps
+        if (message.includes('ERROR') || message.includes('❌') || message.includes('✅')) {
+            console.log(`[${new Date().toLocaleTimeString()}] ${message}`, data || '');
+        }
     };
 
     // Test camera function
     const testCameraAccess = async () => {
-        addDebugInfo('=== TESTING CAMERA ACCESS ===');
-        
         try {
             // Check if mediaDevices API exists
             if (!navigator.mediaDevices) {
-                addDebugInfo('❌ navigator.mediaDevices is not available');
+                console.error('mediaDevices not available');
                 return false;
             }
             
             if (!navigator.mediaDevices.enumerateDevices) {
-                addDebugInfo('❌ enumerateDevices is not available');
+                console.error('enumerateDevices not available');
                 return false;
             }
             
             // Get all devices
             const devices = await navigator.mediaDevices.enumerateDevices();
-            addDebugInfo('✓ enumerateDevices success', devices.length + ' devices found');
-            
             const videoDevices = devices.filter(device => device.kind === 'videoinput');
-            addDebugInfo('Video devices found:', videoDevices.length);
-            
-            videoDevices.forEach((device, index) => {
-                addDebugInfo(`  Camera ${index + 1}: ${device.label || 'No label'} (ID: ${device.deviceId.substring(0, 20)}...)`);
-            });
             
             if (videoDevices.length === 0) {
-                addDebugInfo('❌ No video devices found!');
+                console.error('No video devices found');
                 return false;
             }
             
@@ -87,36 +82,21 @@ export default function QRCodeScanner() {
                 } 
             });
             
-            addDebugInfo('✓ Camera access granted!');
             const videoTrack = stream.getVideoTracks()[0];
-            addDebugInfo('Video track info:', {
-                label: videoTrack.label,
-                settings: videoTrack.getSettings(),
-                readyState: videoTrack.readyState
-            });
             
             // Stop the stream
             stream.getTracks().forEach(track => track.stop());
-            addDebugInfo('✓ Test stream stopped');
             
             return true;
             
         } catch (error: any) {
-            addDebugInfo('❌ Camera test failed:', {
-                name: error.name,
-                message: error.message,
-                constraint: error.constraint
-            });
+            console.error('Camera test failed:', error);
             return false;
         }
     };
 
-    // Start Camera Scanner with full debug
+    // Start Camera Scanner
     const startScanner = async () => {
-        addDebugInfo('=== STARTING SCANNER ===');
-        addDebugInfo('Browser info:', navigator.userAgent);
-        addDebugInfo('HTTPS:', window.location.protocol === 'https:');
-        
         try {
             // Run camera test first
             const cameraAccessible = await testCameraAccess();
@@ -127,79 +107,45 @@ export default function QRCodeScanner() {
             // Set camera active
             setIsCameraActive(true);
             setCameraError('');
-            addDebugInfo('Camera active state set to true');
             
             // Wait for DOM
             await new Promise(resolve => setTimeout(resolve, 500));
-            addDebugInfo('✓ DOM delay complete');
             
             // Check video element
             if (!videoRef.current) {
                 throw new Error('Video element reference is null');
             }
-            addDebugInfo('✓ Video element found', {
-                id: videoRef.current.id,
-                tagName: videoRef.current.tagName,
-                readyState: videoRef.current.readyState
-            });
             
             // Create scanner
-            addDebugInfo('Creating QrScanner instance...');
-            let scanCount = 0;
             let lastDetectedCode: string | null = null;
             
             const scanner = new QrScanner(
                 videoRef.current,
                 (result: any) => {
-                    scanCount++;
-                    addDebugInfo('─────────────────────────────────────────');
-                    addDebugInfo(`📱 Scan Attempt #${scanCount}:`);
-                    addDebugInfo('─────────────────────────────────────────');
-                    addDebugInfo('Result object:', {
-                        hasData: !!result?.data,
-                        dataType: typeof result?.data,
-                        dataLength: result?.data?.length || 0,
-                    });
-                    
                     if (result && result.data) {
                         const detectedCode = result.data.trim();
                         
                         // Check for duplicate scans
                         if (lastDetectedCode === detectedCode) {
-                            addDebugInfo('⚠️ Duplicate scan detected - skipping to prevent double processing');
                             return;
                         }
                         
                         lastDetectedCode = detectedCode;
-                        addDebugInfo('Detected QR Code:', detectedCode);
-                        addDebugInfo('Code length:', detectedCode.length);
-                        addDebugInfo('Calling handleScanResult...');
+                        console.log('QR Code detected:', detectedCode);
                         
                         // Disable scanner briefly to prevent duplicate processing
                         scanner.stop();
-                        addDebugInfo('Scanner paused to process scan');
                         
                         handleScanResult(detectedCode).finally(() => {
                             // Resume scanner after processing
                             scanner.start();
-                            addDebugInfo('Scanner resumed after processing');
                             lastDetectedCode = null; // Reset last code
                         });
-                    } else {
-                        addDebugInfo('⚠️ Scan result missing data property');
-                        addDebugInfo('Result keys:', result ? Object.keys(result) : 'null');
                     }
-                    addDebugInfo('─────────────────────────────────────────');
                 },
                 {
                     onDecodeError: (error: any) => {
-                        // Only log significant errors, not "No QR code found"
-                        if (error && error.message && !error.message.includes('No QR code found')) {
-                            addDebugInfo('⚠️ Decode error (non-critical):', {
-                                name: error.name,
-                                message: error.message,
-                            });
-                        }
+                        // Silently ignore decode errors (normal when no QR in frame)
                     },
                     preferredCamera: 'environment',
                     maxScansPerSecond: 5,
@@ -209,49 +155,13 @@ export default function QRCodeScanner() {
             );
             
             scannerRef.current = scanner;
-            addDebugInfo('✓ QrScanner instance created');
             
             // Start scanner
-            addDebugInfo('Starting scanner...');
             await scanner.start();
-            addDebugInfo('✅ Scanner started successfully!');
-            
-            // Check if video is actually playing
-            setTimeout(() => {
-                if (videoRef.current) {
-                    addDebugInfo('Video element status:', {
-                        readyState: videoRef.current.readyState,
-                        videoWidth: videoRef.current.videoWidth,
-                        videoHeight: videoRef.current.videoHeight,
-                        paused: videoRef.current.paused
-                    });
-                    
-                    if (videoRef.current.videoWidth === 0) {
-                        addDebugInfo('⚠️ Warning: Video dimensions are 0 - camera may not be streaming');
-                    } else {
-                        addDebugInfo('✅ Video is playing correctly');
-                    }
-                }
-            }, 1000);
-            
-            // Monitor scanner state
-            let frameCount = 0;
-            const monitorInterval = setInterval(() => {
-                frameCount++;
-                if (frameCount % 30 === 0) { // Log every ~30 seconds
-                    addDebugInfo(`Scanner still active (${frameCount/2} seconds)`);
-                }
-            }, 1000);
-            
-            // Store interval to clear later
-            (scanner as any).monitorInterval = monitorInterval;
+            console.log('Scanner started');
             
         } catch (error: any) {
-            addDebugInfo('❌ ERROR starting scanner:', {
-                name: error.name,
-                message: error.message,
-                stack: error.stack
-            });
+            console.error('ERROR starting scanner:', error);
             
             let errorMessage = 'Camera error: ';
             if (error.name === 'NotAllowedError') {
@@ -273,9 +183,6 @@ export default function QRCodeScanner() {
             if (scannerRef.current) {
                 try {
                     scannerRef.current.destroy();
-                    if ((scannerRef.current as any).monitorInterval) {
-                        clearInterval((scannerRef.current as any).monitorInterval);
-                    }
                 } catch (e) {
                     console.error('Cleanup error:', e);
                 }
@@ -286,37 +193,24 @@ export default function QRCodeScanner() {
 
     // Stop Camera Scanner
     const stopScanner = () => {
-        addDebugInfo('Stopping scanner...');
         if (scannerRef.current) {
             try {
                 scannerRef.current.stop();
                 scannerRef.current.destroy();
-                if ((scannerRef.current as any).monitorInterval) {
-                    clearInterval((scannerRef.current as any).monitorInterval);
-                }
             } catch (e) {
                 console.error('Stop error:', e);
             }
             scannerRef.current = null;
             setIsCameraActive(false);
-            addDebugInfo('✅ Scanner stopped');
         }
     };
 
     // Handle scan result
     const handleScanResult = async (code: string) => {
         const cleanCode = code.trim();
-        addDebugInfo('═══════════════════════════════════════════');
-        addDebugInfo('▶ PROCESSING QR CODE SCAN');
-        addDebugInfo('═══════════════════════════════════════════');
-        addDebugInfo('QR Code detected:', cleanCode);
-        addDebugInfo('Code length:', cleanCode.length);
-        addDebugInfo('Code type:', typeof cleanCode);
         
         // CHECK: Validate QR code is not already being processed
-        addDebugInfo('Validation: Checking if code is already being processed...');
         if (processingCode === cleanCode) {
-            addDebugInfo('⚠️ CODE ALREADY PROCESSING - Duplicate attempt blocked');
             setScanResult('error');
             setValidationDetails({ 
                 allValid: false, 
@@ -327,161 +221,106 @@ export default function QRCodeScanner() {
         }
         setProcessingCode(cleanCode);
         
-        // CHECK: Validate QR code has not been scanned before today
-        addDebugInfo('Validation: Checking if code was already scanned today...');
-        if (scannedQRCodes.has(cleanCode)) {
-            addDebugInfo('❌ DUPLICATE QR CODE - Already scanned today!');
-            addDebugInfo('Previously scanned codes:', Array.from(scannedQRCodes));
-            
-            setScanResult('error');
-            setValidationDetails({ 
-                allValid: false, 
-                issues: [
-                    '❌ This QR code has already been scanned today.',
-                    'Each QR code can only be scanned once to prevent duplicate arrivals.',
-                    'If this is a different guest group, please use a different QR code.'
-                ] 
-            });
-            setShowValidationModal(true);
-            setProcessingCode(null);
-            return;
-        }
-        
-        addDebugInfo('✓ Code is new - proceeding with processing');
-        
         setScanResult(null);
         setValidationDetails(null);
 
         try {
-            // Step 1: Validate input
-            addDebugInfo('Step 1: Validating input...');
+            // Validate input
             if (!cleanCode || cleanCode.length === 0) {
                 throw new Error('Empty QR code');
             }
-            addDebugInfo('✓ Input validation passed');
 
-            // Step 2: Get CSRF token
-            addDebugInfo('Step 2: Getting CSRF token...');
+            // Get CSRF token
             const csrfTokenElement = document.querySelector('meta[name="csrf-token"]');
             const csrfToken = csrfTokenElement?.getAttribute('content');
-            addDebugInfo('CSRF token found:', !!csrfToken);
-            addDebugInfo('CSRF token preview:', csrfToken ? csrfToken.substring(0, 20) + '...' : 'NOT FOUND');
             
-            // Step 3: Prepare request
-            addDebugInfo('Step 3: Preparing API request...');
-            const apiUrl = '/staff/api/qr-arrival';
-            const requestHeaders = {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken || '',
-            };
-            const requestBody = JSON.stringify({ qr_token: cleanCode });
-            addDebugInfo('API URL:', apiUrl);
-            addDebugInfo('Request headers:', requestHeaders);
-            addDebugInfo('Request body:', requestBody);
-            
-            // Step 4: Send API request
-            addDebugInfo('Step 4: Sending API request...');
-            const startTime = performance.now();
-            const response = await fetch(apiUrl, {
+            // Call toggle-guest-status endpoint
+            const response = await fetch('/staff/api/toggle-guest-status', {
                 method: 'POST',
-                headers: requestHeaders,
-                body: requestBody,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken || '',
+                },
+                body: JSON.stringify({ qr_token: cleanCode }),
             });
-            const endTime = performance.now();
-            addDebugInfo('Request completed in:', Math.round(endTime - startTime) + 'ms');
             
-            // Step 5: Read response body (only once!)
-            addDebugInfo('Step 5: Reading response body...');
+            // Read response body
             let responseBody: string;
             try {
                 responseBody = await response.text();
-                addDebugInfo('✓ Response body received (' + responseBody.length + ' chars)');
             } catch (readError: any) {
-                addDebugInfo('✗ Error reading response body:', readError.message);
                 throw new Error('Failed to read response: ' + readError.message);
             }
             
-            // Step 6: Check response status
-            addDebugInfo('Step 6: Checking response status...');
-            addDebugInfo('Response status:', response.status);
-            addDebugInfo('Response status text:', response.statusText);
-            addDebugInfo('Response headers:', {
-                contentType: response.headers.get('content-type'),
-                contentLength: response.headers.get('content-length'),
-            });
-            
-            if (!response.ok) {
-                addDebugInfo('⚠️ Response not OK (status ' + response.status + ')');
-                addDebugInfo('Response body preview:', responseBody.substring(0, 300));
-            }
-            
-            // Step 7: Parse JSON response
-            addDebugInfo('Step 7: Parsing JSON response...');
+            // Parse JSON response
             let data: any;
             try {
                 data = JSON.parse(responseBody);
-                addDebugInfo('✓ JSON parsed successfully');
-                addDebugInfo('Response data:', data);
             } catch (parseError: any) {
-                addDebugInfo('✗ JSON parse error:', parseError.message);
-                addDebugInfo('Response body that failed to parse:', responseBody.substring(0, 500));
                 throw new Error('Invalid JSON response from server: ' + parseError.message);
             }
 
-            // Step 8: Process response
-            addDebugInfo('Step 8: Processing API response...');
+            // Process response
             if (data.success) {
-                addDebugInfo('✅ SUCCESS - Arrival logged!');
-                addDebugInfo('Scan data:', data.data);
+                console.log(`✅ ${data.action === 'entry' ? 'Entry' : 'Exit'} recorded:`, data.data);
                 
                 // ADD CODE TO SCANNED CODES SET
-                addDebugInfo('Step 8.5: Recording QR code as scanned...');
                 setScannedQRCodes(prev => new Set([...prev, cleanCode]));
-                addDebugInfo('✓ QR code added to scanned list');
-                addDebugInfo('Total scanned codes:', scannedQRCodes.size + 1);
                 
                 setScanResult('success');
                 setScannedBooking(data.data);
-                setValidationDetails({ allValid: true, issues: [] });
+                setSuccessAction(data.action);
+                setSuccessDetails(data.data);
+                setShowSuccessModal(true);
                 
-                addDebugInfo('Step 9: Updating statistics...');
                 fetchTodayStats();
                 fetchRecentArrivals();
-                addDebugInfo('✓ Statistics fetch triggered');
                 
+                // Auto-close success modal after 4 seconds
                 setTimeout(() => {
-                    setScanResult(null);
-                    setScannedBooking(null);
-                    setValidationDetails(null);
-                    setScanInput('');
-                }, 3000);
+                    setShowSuccessModal(false);
+                    handleClearScan();
+                }, 4000);
             } else {
-                addDebugInfo('✗ API returned success=false');
-                addDebugInfo('Error code:', data.code);
-                addDebugInfo('Error message:', data.message);
-                
                 setScanResult('error');
-                setValidationDetails({ allValid: false, issues: [data.message] });
+                
+                // Determine validation type based on error message
+                const msgLower = data.message?.toLowerCase() || '';
+                if (msgLower.includes('already arrived') || msgLower.includes('already checked in')) {
+                    setValidationType('arrival_duplicate');
+                } else if (msgLower.includes('already departed') || msgLower.includes('already checked out')) {
+                    setValidationType('departure_duplicate');
+                } else {
+                    setValidationType('error');
+                }
+                
+                setValidationDetails({ 
+                    allValid: false, 
+                    issues: [data.message],
+                    guestName: data.data?.guest_name,
+                    arrivalTime: data.data?.arrival_time,
+                    departureTime: data.data?.departure_time,
+                });
                 setShowValidationModal(true);
             }
+            
+            setTimeout(() => {
+                setScanResult(null);
+                setScannedBooking(null);
+                setValidationDetails(null);
+                setScanInput('');
+            }, 3000);
         } catch (error: any) {
-            addDebugInfo('═══════════════════════════════════════════');
-            addDebugInfo('❌ ERROR OCCURRED');
-            addDebugInfo('═══════════════════════════════════════════');
-            addDebugInfo('Error type:', error.name);
-            addDebugInfo('Error message:', error.message);
-            addDebugInfo('Error stack:', error.stack?.substring(0, 300));
+            console.error('Error processing QR code:', error);
             
             setScanResult('error');
+            setValidationType('error');
             setValidationDetails({
                 allValid: false,
                 issues: [`Error: ${error.message || 'Unable to process QR code'}`],
             });
             setShowValidationModal(true);
         } finally {
-            addDebugInfo('═══════════════════════════════════════════');
-            addDebugInfo('◀ PROCESSING COMPLETE');
-            addDebugInfo('═══════════════════════════════════════════');
             setProcessingCode(null);
         }
     };
@@ -489,9 +328,7 @@ export default function QRCodeScanner() {
     // Handle manual entry
     const handleManualScan = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
-            addDebugInfo('');
-            addDebugInfo('🖐️  MANUAL ENTRY INITIATED');
-            addDebugInfo('Input field value:', scanInput);
+            setValidationType(null);
             handleScanResult(scanInput);
             setScanInput('');
         }
@@ -507,26 +344,26 @@ export default function QRCodeScanner() {
 
     // Clear all scanned codes (admin reset)
     const handleClearScannedCodes = () => {
-        addDebugInfo('');
-        addDebugInfo('🔄 CLEARING ALL SCANNED CODES');
-        addDebugInfo('Previous count:', scannedQRCodes.size);
         setScannedQRCodes(new Set());
-        addDebugInfo('✓ All scanned codes cleared - scanner reset');
-        addDebugInfo('');
     };
 
     // Fetch today's stats
     const fetchTodayStats = async () => {
         setIsLoadingStats(true);
         try {
-            const response = await fetch('/staff/api/arrival-stats');
+            const response = await fetch('/staff/api/arrivals-today');
             const data = await response.json();
-            addDebugInfo('Stats API Response:', data);
             if (data.success && data.data) {
-                setTodayStats(data.data);
+                const arrivals = data.data;
+                const verified = arrivals.filter((a: any) => a.status === 'arrived').length;
+                const failed = arrivals.filter((a: any) => a.status === 'denied').length;
+                setTodayStats({
+                    total_scans: arrivals.length,
+                    successful_arrivals: verified,
+                    failed_scans: failed,
+                });
             }
         } catch (error) {
-            addDebugInfo('Error fetching stats:', (error as any).message);
             console.error('Error fetching stats:', error);
         } finally {
             setIsLoadingStats(false);
@@ -537,14 +374,13 @@ export default function QRCodeScanner() {
     const fetchRecentArrivals = async () => {
         setIsLoadingRecents(true);
         try {
-            const response = await fetch('/staff/api/recent-arrivals');
+            const response = await fetch('/staff/api/arrivals-today');
             const data = await response.json();
-            addDebugInfo('Recent Arrivals API Response:', data);
             if (data.success && data.data) {
-                setRecentArrivals(data.data);
+                const arrivals = data.data.slice(0, 10); // Last 10 arrivals
+                setRecentArrivals(arrivals);
             }
         } catch (error) {
-            addDebugInfo('Error fetching recent arrivals:', (error as any).message);
             console.error('Error fetching recent arrivals:', error);
         } finally {
             setIsLoadingRecents(false);
@@ -554,16 +390,14 @@ export default function QRCodeScanner() {
     // Load stats on mount and set up auto-refresh
     useEffect(() => {
         // Fetch immediately on mount
-        addDebugInfo('');
-        addDebugInfo('🔄 Component mounted - fetching initial stats');
         fetchTodayStats();
         fetchRecentArrivals();
         
-        // Refresh every 10 seconds (more responsive)
+        // Refresh every 30 seconds to reduce browser load
         const statsInterval = setInterval(() => {
             fetchTodayStats();
             fetchRecentArrivals();
-        }, 10000);
+        }, 30000);
 
         return () => clearInterval(statsInterval);
     }, []);
@@ -972,122 +806,336 @@ export default function QRCodeScanner() {
                     </div>
                 </div>
 
-                {/* Validation Error Modal */}
-                {showValidationModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70">
-                        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
-                            {/* Modal Header */}
-                            <div className={`px-6 py-4 border-b ${
-                                validationDetails?.issues?.some((issue: string) => issue.includes('already been scanned'))
-                                    ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700'
-                                    : 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700'
-                            }`}>
-                                <div className="flex items-center gap-3">
-                                    <div className="flex-shrink-0">
-                                        {validationDetails?.issues?.some((issue: string) => issue.includes('already been scanned')) ? (
-                                            <div className="flex items-center justify-center h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900/50">
-                                                <QrCodeIcon className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                                            </div>
-                                        ) : (
-                                            <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
-                                        )}
+                {/* SUCCESS MODAL - Arrival Recorded */}
+                {showSuccessModal && successAction === 'entry' && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 p-4">
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in fade-in zoom-in">
+                            {/* Header - Green Success */}
+                            <div className="px-6 py-8 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 border-b border-green-200 dark:border-green-800">
+                                <div className="flex flex-col items-center gap-4">
+                                    <div className="flex items-center justify-center h-16 w-16 rounded-full bg-green-200 dark:bg-green-900/60 animate-pulse">
+                                        <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
                                     </div>
-                                    <div>
-                                        {validationDetails?.issues?.some((issue: string) => issue.includes('already been scanned')) ? (
-                                            <>
-                                                <p className="font-bold text-lg text-orange-900 dark:text-orange-300">⚠️ QR Code Already Used</p>
-                                                <p className="text-sm text-orange-700 dark:text-orange-400">This QR code has already been scanned today</p>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <p className="font-bold text-lg text-red-900 dark:text-red-300">❌ Validation Error</p>
-                                                <p className="text-sm text-red-700 dark:text-red-400">Please review the issue below</p>
-                                            </>
-                                        )}
+                                    <div className="text-center">
+                                        <p className="font-bold text-2xl text-green-900 dark:text-green-200">✓ Arrival Recorded</p>
+                                        <p className="text-sm text-green-700 dark:text-green-300 mt-1">Guest successfully checked in</p>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Modal Body */}
-                            <div className="px-6 py-4 space-y-4">
-                                {validationDetails?.issues?.some((issue: string) => issue.includes('already been scanned')) ? (
-                                    <>
-                                        <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4 border-l-4 border-orange-500">
-                                            <p className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Why does this happen?</p>
-                                            <p className="text-sm text-gray-700 dark:text-gray-300">
-                                                Each QR code can only be scanned once to prevent duplicate guest arrivals in the system and protect data integrity.
-                                            </p>
+                            {/* Body - Guest Details */}
+                            <div className="px-6 py-6 space-y-4">
+                                {/* Guest Name */}
+                                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
+                                    <p className="text-xs text-green-600 dark:text-green-400 font-semibold mb-2">Guest Name</p>
+                                    <p className="text-lg font-bold text-green-900 dark:text-green-200">{successDetails?.guest_name || 'N/A'}</p>
+                                </div>
+
+                                {/* Arrival Time */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                            <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">Arrival Time</p>
+                                        </div>
+                                        <p className="text-sm font-bold text-blue-900 dark:text-blue-200">{successDetails?.arrival_time || 'N/A'}</p>
+                                    </div>
+
+                                    {/* Entry Fee */}
+                                    <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 border border-amber-200 dark:border-amber-700">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Shield className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                            <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold">Fee Paid</p>
+                                        </div>
+                                        <p className="text-sm font-bold text-amber-900 dark:text-amber-200">₱{successDetails?.fee_paid || '0'}</p>
+                                    </div>
+                                </div>
+
+                                {/* Status Badge */}
+                                <div className="flex items-center justify-center gap-2 bg-green-100 dark:bg-green-900/40 rounded-lg py-3 border border-green-300 dark:border-green-700">
+                                    <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                    <span className="font-semibold text-green-700 dark:text-green-300">Status: Arrived</span>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="px-6 py-4 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-700">
+                                <p className="text-center text-xs text-gray-600 dark:text-gray-400">
+                                    🎯 Scan the same QR code again to record departure
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* SUCCESS MODAL - Exit Recorded */}
+                {showSuccessModal && successAction === 'exit' && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 p-4">
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in fade-in zoom-in">
+                            {/* Header - Purple Success */}
+                            <div className="px-6 py-8 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30 border-b border-purple-200 dark:border-purple-800">
+                                <div className="flex flex-col items-center gap-4">
+                                    <div className="flex items-center justify-center h-16 w-16 rounded-full bg-purple-200 dark:bg-purple-900/60 animate-pulse">
+                                        <CheckCircle className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="font-bold text-2xl text-purple-900 dark:text-purple-200">✓ Departure Recorded</p>
+                                        <p className="text-sm text-purple-700 dark:text-purple-300 mt-1">Guest successfully checked out</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Body - Guest Details */}
+                            <div className="px-6 py-6 space-y-4">
+                                {/* Guest Name */}
+                                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
+                                    <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-2">Guest Name</p>
+                                    <p className="text-lg font-bold text-purple-900 dark:text-purple-200">{successDetails?.guest_name || 'N/A'}</p>
+                                </div>
+
+                                {/* Times */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                            <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">Arrival</p>
+                                        </div>
+                                        <p className="text-sm font-bold text-blue-900 dark:text-blue-200">{successDetails?.arrival_time || 'N/A'}</p>
+                                    </div>
+
+                                    <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-700">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <StopCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                            <p className="text-xs text-red-600 dark:text-red-400 font-semibold">Departure</p>
+                                        </div>
+                                        <p className="text-sm font-bold text-red-900 dark:text-red-200">{successDetails?.departure_time || 'N/A'}</p>
+                                    </div>
+                                </div>
+
+                                {/* Visit Summary */}
+                                <div className="flex items-center justify-center gap-2 bg-purple-100 dark:bg-purple-900/40 rounded-lg py-3 border border-purple-300 dark:border-purple-700">
+                                    <Check className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                    <span className="font-semibold text-purple-700 dark:text-purple-300">Visit Complete</span>
+                                </div>
+                                <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+                                    <p>Fee Paid: <span className="font-bold text-green-600 dark:text-green-400">₱{successDetails?.fee_paid || '0'}</span></p>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="px-6 py-4 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-700">
+                                <p className="text-center text-xs text-gray-600 dark:text-gray-400">
+                                    👋 Ready to scan the next QR code
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Validation Modal - with Different Scenarios */}
+                {showValidationModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70">
+                        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+                            
+                            {/* ARRIVAL DUPLICATE Modal */}
+                            {validationType === 'arrival_duplicate' && (
+                                <>
+                                    <div className="px-6 py-5 border-b bg-amber-50 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex-shrink-0">
+                                                <div className="flex items-center justify-center h-11 w-11 rounded-full bg-amber-200 dark:bg-amber-900/60">
+                                                    <AlertTriangle className="h-6 w-6 text-amber-700 dark:text-amber-300" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-lg text-amber-900 dark:text-amber-200">⚠️ Guest Already Arrived</p>
+                                                <p className="text-sm text-amber-700 dark:text-amber-300">This guest has already checked in today</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="px-6 py-5 space-y-4">
+                                        <div className="bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-700 rounded-lg p-4">
+                                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Guest Information:</p>
+                                            {validationDetails?.guestName && (
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Users className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{validationDetails.guestName}</span>
+                                                </div>
+                                            )}
+                                            {validationDetails?.arrivalTime && (
+                                                <div className="flex items-center gap-2">
+                                                    <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                                    <span className="text-sm text-gray-700 dark:text-gray-300">Arrived at {validationDetails.arrivalTime}</span>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-300 dark:border-blue-700">
-                                            <p className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-2">💡 What should you do?</p>
+                                            <p className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-2">ℹ️ What does this mean?</p>
+                                            <p className="text-sm text-blue-800 dark:text-blue-400">
+                                                This QR code was already scanned for entry today. To record this guest's departure, scan their code again.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="px-6 py-4 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-700 flex gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setShowValidationModal(false);
+                                                setValidationType(null);
+                                                handleClearScan();
+                                            }}
+                                            className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2 px-4 rounded-lg transition text-sm"
+                                        >
+                                            Understand
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowValidationModal(false);
+                                                setValidationType(null);
+                                                handleClearScan();
+                                            }}
+                                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition text-sm"
+                                        >
+                                            Scan Next
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* DEPARTURE DUPLICATE Modal */}
+                            {validationType === 'departure_duplicate' && (
+                                <>
+                                    <div className="px-6 py-5 border-b bg-purple-50 dark:bg-purple-900/30 border-purple-300 dark:border-purple-700">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex-shrink-0">
+                                                <div className="flex items-center justify-center h-11 w-11 rounded-full bg-purple-200 dark:bg-purple-900/60">
+                                                    <StopCircle className="h-6 w-6 text-purple-700 dark:text-purple-300" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-lg text-purple-900 dark:text-purple-200">🚪 Guest Already Departed</p>
+                                                <p className="text-sm text-purple-700 dark:text-purple-300">This guest has already checked out</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="px-6 py-5 space-y-4">
+                                        <div className="bg-white dark:bg-slate-800 border-2 border-purple-200 dark:border-purple-700 rounded-lg p-4">
+                                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Guest Information:</p>
+                                            {validationDetails?.guestName && (
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{validationDetails.guestName}</span>
+                                                </div>
+                                            )}
+                                            {validationDetails?.departureTime && (
+                                                <div className="flex items-center gap-2">
+                                                    <Clock className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                                    <span className="text-sm text-gray-700 dark:text-gray-300">Departed at {validationDetails.departureTime}</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-300 dark:border-green-700">
+                                            <p className="text-sm font-semibold text-green-900 dark:text-green-300 mb-2">✓ Transaction Complete</p>
+                                            <p className="text-sm text-green-800 dark:text-green-400">
+                                                The guest's entry and exit have been recorded. Their visit is now closed.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="px-6 py-4 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-700 flex gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setShowValidationModal(false);
+                                                setValidationType(null);
+                                                handleClearScan();
+                                            }}
+                                            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition text-sm"
+                                        >
+                                            Done
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowValidationModal(false);
+                                                setValidationType(null);
+                                                handleClearScan();
+                                            }}
+                                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition text-sm"
+                                        >
+                                            Scan Next
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* GENERAL ERROR Modal */}
+                            {validationType === 'error' && (
+                                <>
+                                    <div className="px-6 py-5 border-b bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex-shrink-0">
+                                                <div className="flex items-center justify-center h-11 w-11 rounded-full bg-red-200 dark:bg-red-900/60">
+                                                    <AlertCircle className="h-6 w-6 text-red-700 dark:text-red-300" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-lg text-red-900 dark:text-red-200">❌ Validation Error</p>
+                                                <p className="text-sm text-red-700 dark:text-red-300">Unable to process this QR code</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="px-6 py-5 space-y-4">
+                                        <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border-l-4 border-red-500">
+                                            {validationDetails?.issues && (
+                                                <div className="space-y-2">
+                                                    {validationDetails.issues.map((issue: string, idx: number) => (
+                                                        <div key={idx} className="flex items-start gap-2">
+                                                            <X className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                                                            <span className="text-sm text-red-800 dark:text-red-300">{issue}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-300 dark:border-blue-700">
+                                            <p className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-2">💡 Try this:</p>
                                             <ul className="text-sm text-blue-800 dark:text-blue-400 space-y-1">
-                                                <li className="flex items-start gap-2">
-                                                    <span className="text-green-600 dark:text-green-400 flex-shrink-0">✓</span>
-                                                    <span>If this is the same group: The arrival is already logged</span>
-                                                </li>
-                                                <li className="flex items-start gap-2">
-                                                    <span className="text-green-600 dark:text-green-400 flex-shrink-0">✓</span>
-                                                    <span>If this is a different group: Use their unique QR code</span>
-                                                </li>
-                                                <li className="flex items-start gap-2">
-                                                    <span className="text-green-600 dark:text-green-400 flex-shrink-0">✓</span>
-                                                    <span>To reset codes: Click "Reset Codes" in debug console (admin only)</span>
-                                                </li>
+                                                <li>• Check if the QR code is valid and not damaged</li>
+                                                <li>• Ensure good lighting for camera scanning</li>
+                                                <li>• Try scanning again or use manual entry</li>
                                             </ul>
                                         </div>
-                                    </>
-                                ) : (
-                                    <div className="space-y-3">
-                                        <div className="text-center">
-                                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Issues Found:</p>
-                                        </div>
-                                        {validationDetails?.issues && (
-                                            <div className="space-y-2">
-                                                {validationDetails.issues.map((issue: string, idx: number) => (
-                                                    <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
-                                                        <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                                                        <span className="text-sm text-gray-900 dark:text-white">{issue}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
                                     </div>
-                                )}
-                            </div>
 
-                            {/* Modal Footer */}
-                            <div className="px-6 py-4 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-700 flex gap-3">
-                                <button
-                                    onClick={() => {
-                                        setShowValidationModal(false);
-                                        handleClearScan();
-                                    }}
-                                    className={`flex-1 font-semibold py-2 px-4 rounded-lg transition text-sm ${
-                                        validationDetails?.issues?.some((issue: string) => issue.includes('already been scanned'))
-                                            ? 'bg-orange-600 hover:bg-orange-700 text-white'
-                                            : 'bg-gray-300 hover:bg-gray-400 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-800 dark:text-white'
-                                    }`}
-                                >
-                                    {validationDetails?.issues?.some((issue: string) => issue.includes('already been scanned')) ? 'Dismiss' : 'Try Again'}
-                                </button>
-                                {validationDetails?.issues?.some((issue: string) => issue.includes('already been scanned')) && (
-                                    <button
-                                        onClick={() => {
-                                            setShowValidationModal(false);
-                                            handleClearScan();
-                                            setScanInput('');
-                                            // Focus input for next scan
-                                            setTimeout(() => {
-                                                (document.querySelector('[placeholder="Enter booking code (or press ENTER to scan)..."]') as HTMLInputElement)?.focus();
-                                            }, 100);
-                                        }}
-                                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition text-sm"
-                                    >
-                                        Scan Next QR
-                                    </button>
-                                )}
-                            </div>
+                                    <div className="px-6 py-4 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-700 flex gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setShowValidationModal(false);
+                                                setValidationType(null);
+                                                handleClearScan();
+                                            }}
+                                            className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition text-sm"
+                                        >
+                                            Close
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowValidationModal(false);
+                                                setValidationType(null);
+                                                handleClearScan();
+                                            }}
+                                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition text-sm"
+                                        >
+                                            Try Again
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}

@@ -9,6 +9,7 @@ interface Service {
     name: string;
     type: string;
     date: string;
+    tourist_spot_id: number;
 }
 
 interface GuestSubmission {
@@ -95,8 +96,12 @@ export default function GuestSubmission({ services, guestSubmissions }: Props) {
         setIsSubmitting(true);
 
         try {
+            // Get the selected service to extract attraction_id
+            const selected = services.find(s => s.id === selectedService);
+            
             router.post('/operator/guest-submission', {
                 service_id: selectedService,
+                attraction_id: selected?.tourist_spot_id,
                 visit_date: visitDate,
                 total_guests: totalGuests,
                 local_tourists: localTourists,

@@ -18,7 +18,7 @@ use App\Services\EmergencyAlertService;
 class StaffArrivalidateController extends Controller
 {
     /**
-     * Validate a booking code against the guest_lists table
+     * Validate a booking code against the guest_lists table or tour QR codes
      */
     public function validateBooking(Request $request)
     {
@@ -32,18 +32,33 @@ class StaffArrivalidateController extends Controller
                 ], 400);
             }
 
-            // Search in guest_lists table - assumes booking code is stored or can be referenced
-            // Adjust the query based on your actual guest_lists structure
-            $guestList = GuestList::where('id', $bookingCode)
-                ->orWhere('service_id', $bookingCode)
-                ->first();
+            // First, try to find by QR code token (tour codes like TR-BDN-2026-0019)
+            $qrCode = GuestListQRCode::where('token', $bookingCode)->first();
+            
+            if ($qrCode) {
+                // Found a QR code, get the associated guest list
+                $guestList = GuestList::find($qrCode->guest_list_id);
+                
+                if (!$guestList) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Associated guest list not found',
+                        'issues' => ['❌ Guest list data not found for this QR code'],
+                    ], 404);
+                }
+            } else {
+                // If no QR code found, try searching in guest_lists directly
+                $guestList = GuestList::where('id', $bookingCode)
+                    ->orWhere('service_id', $bookingCode)
+                    ->first();
 
-            if (!$guestList) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Booking not found in system',
-                    'issues' => ['❌ Booking code not found - please verify the QR code and try again'],
-                ], 404);
+                if (!$guestList) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Booking not found in system',
+                        'issues' => ['❌ Booking code not found - please verify the QR code and try again'],
+                    ], 404);
+                }
             }
 
             // Validate booking details
@@ -136,43 +151,330 @@ class StaffArrivalidateController extends Controller
     }
 
     /**
-     * Log an arrival
+     * Log an arrival from a scanned QR code
+     * Updates QR code status, checks if all scanned, updates guest_list status, creates arrival_log
      */
     public function logArrival(Request $request)
     {
         try {
             $request->validate([
-                'guest_list_id' => 'required|exists:guest_lists,id',
+                'qr_token' => 'required|string|exists:guest_list_qr_codes,token',
                 'guest_name' => 'required|string',
                 'guide_id' => 'nullable|exists:guides,id',
                 'arrival_time' => 'nullable|date_format:H:i',
             ]);
 
-            $arrivalLog = ArrivalLog::create([
-                'guest_list_id' => $request->input('guest_list_id'),
-                'guest_name' => $request->input('guest_name'),
-                'guide_id' => $request->input('guide_id'),
-                'arrival_time' => $request->input('arrival_time') ?? now()->format('H:i'),
-                'arrival_date' => now()->toDateString(),
-                'status' => 'arrived',
-            ]);
+            return DB::transaction(function () use ($request) {
+                // Step 1: Get the QR code and mark it as used
+                $qrCode = GuestListQRCode::where('token', $request->input('qr_token'))->first();
+                
+                if (!$qrCode) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'QR code not found',
+                    ], 404);
+                }
 
-            // Update the guest list status to indicate arrival logged
-            $guestList = GuestList::find($request->input('guest_list_id'));
-            if ($guestList) {
-                $guestList->status = 'arrived';
+                // Update QR code status to Used
+                $qrCode->status = 'Used';
+                $qrCode->used_at = now();
+                $qrCode->save();
+
+                // Step 2: Get the guest list
+                $guestList = GuestList::find($qrCode->guest_list_id);
+                
+                if (!$guestList) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Guest list not found',
+                    ], 404);
+                }
+
+                // Step 3: Check if all QR codes for this guest list are now used
+                $totalQRCodes = GuestListQRCode::where('guest_list_id', $guestList->id)->count();
+                $usedQRCodes = GuestListQRCode::where('guest_list_id', $guestList->id)
+                    ->where('status', 'Used')
+                    ->count();
+
+                // If all QR codes are scanned, mark guest_list as Completed
+                if ($totalQRCodes === $usedQRCodes) {
+                    $guestList->status = 'Completed';
+                }
+
                 $guestList->save();
-            }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Arrival logged successfully',
-                'arrival_log' => $arrivalLog,
-            ]);
+                // Step 4: Get the attraction and its entry fee
+                $attraction = Attraction::find($guestList->attraction_id);
+                $entryFee = $attraction ? $attraction->entry_fee : 0;
+
+                // Step 5: Create arrival log entry with fee_paid from attraction
+                $arrivalLog = ArrivalLog::create([
+                    'guest_list_id' => $guestList->id,
+                    'guest_name' => $request->input('guest_name'),
+                    'guide_id' => $request->input('guide_id'),
+                    'arrival_time' => $request->input('arrival_time') ?? now()->format('H:i:s'),
+                    'arrival_date' => now()->toDateString(),
+                    'fee_paid' => $entryFee,
+                    'status' => 'arrived',
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Arrival logged successfully',
+                    'data' => [
+                        'arrival_log_id' => $arrivalLog->log_id,
+                        'guest_list_id' => $guestList->id,
+                        'guest_name' => $arrivalLog->guest_name,
+                        'arrival_time' => $arrivalLog->arrival_time,
+                        'arrival_date' => $arrivalLog->arrival_date,
+                        'fee_paid' => $arrivalLog->fee_paid,
+                        'all_guests_arrived' => $totalQRCodes === $usedQRCodes,
+                        'guests_arrived_count' => $usedQRCodes,
+                        'total_guests' => $totalQRCodes,
+                        'qr_code' => $qrCode->token,
+                    ],
+                ]);
+            });
         } catch (\Exception $e) {
+            \Log::error('logArrival error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error logging arrival: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Log departure when tourist exits the spot
+     */
+    public function logDeparture(Request $request)
+    {
+        try {
+            $request->validate([
+                'qr_token' => 'required|string|exists:guest_list_qr_codes,token',
+                'departure_time' => 'nullable|date_format:H:i',
+            ]);
+
+            return DB::transaction(function () use ($request) {
+                // Step 1: Get the QR code
+                $qrCode = GuestListQRCode::where('token', $request->input('qr_token'))->first();
+                
+                if (!$qrCode) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'QR code not found',
+                    ], 404);
+                }
+
+                // Step 2: Get the guest list and find the arrival log
+                $guestList = GuestList::find($qrCode->guest_list_id);
+                
+                if (!$guestList) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Guest list not found',
+                    ], 404);
+                }
+
+                // Step 3: Find the arrival log for this guest (most recent with 'arrived' status)
+                $arrivalLog = ArrivalLog::where('guest_list_id', $guestList->id)
+                    ->where('status', 'arrived')
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                if (!$arrivalLog) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No active arrival log found for this guest',
+                    ], 404);
+                }
+
+                // Step 4: Update arrival log with departure info
+                $arrivalLog->departure_time = $request->input('departure_time') ?? now()->format('H:i:s');
+                $arrivalLog->status = 'departed';
+                $arrivalLog->save();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Departure logged successfully',
+                    'data' => [
+                        'arrival_log_id' => $arrivalLog->log_id,
+                        'guest_list_id' => $guestList->id,
+                        'guest_name' => $arrivalLog->guest_name,
+                        'arrival_time' => $arrivalLog->arrival_time,
+                        'departure_time' => $arrivalLog->departure_time,
+                        'arrival_date' => $arrivalLog->arrival_date,
+                        'fee_paid' => $arrivalLog->fee_paid,
+                        'status' => $arrivalLog->status,
+                        'qr_code' => $qrCode->token,
+                    ],
+                ]);
+            });
+        } catch (\Exception $e) {
+            \Log::error('logDeparture error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error logging departure: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Toggle guest status - handles both entry and exit
+     * First scan = entry, Second scan = exit
+     */
+    public function toggleGuestStatus(Request $request)
+    {
+        try {
+            $request->validate([
+                'qr_token' => 'required|string|exists:guest_list_qr_codes,token',
+            ]);
+
+            return DB::transaction(function () use ($request) {
+                $qrToken = $request->input('qr_token');
+
+                // Step 1: Validate QR code exists and get associated guest list
+                $qrCode = GuestListQRCode::where('token', $qrToken)->first();
+                
+                if (!$qrCode) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'QR code not found',
+                    ], 404);
+                }
+
+                // Check if QR code is expired
+                if ($qrCode->expiration_date && now()->isAfter($qrCode->expiration_date)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'QR code has expired',
+                    ], 410);
+                }
+
+                // Step 2: Get the guest list
+                $guestList = GuestList::find($qrCode->guest_list_id);
+                
+                if (!$guestList) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Guest list not found',
+                    ], 404);
+                }
+
+                // Get the correct guest name based on guest_index from QR code
+                $guestNames = $guestList->guest_names ?? [];
+                $guestIndex = $qrCode->guest_index ?? 0;
+                
+                // Get the guest name for this specific QR code
+                $guestName = (is_array($guestNames) && isset($guestNames[$guestIndex])) 
+                    ? $guestNames[$guestIndex] 
+                    : (count($guestNames) > 0 ? $guestNames[0] : 'Guest ' . $guestList->id);
+
+                // Step 3: Get the attraction and its entry fee
+                $attraction = Attraction::find($guestList->attraction_id);
+                $entryFee = $attraction ? $attraction->entry_fee : 0;
+
+                // Step 4: Check if THIS SPECIFIC GUEST has records today (by guest_name from guest_index)
+                $todayRecords = ArrivalLog::where('guest_list_id', $guestList->id)
+                    ->where('guest_name', $guestName)
+                    ->whereDate('arrival_date', today())
+                    ->first();
+
+                // Check for active "arrived" record for THIS SPECIFIC GUEST
+                $activeArrival = ArrivalLog::where('guest_list_id', $guestList->id)
+                    ->where('guest_name', $guestName)
+                    ->where('status', 'arrived')
+                    ->whereDate('arrival_date', today())
+                    ->first();
+
+                // Check for already "departed" record for THIS SPECIFIC GUEST
+                $departedRecord = ArrivalLog::where('guest_list_id', $guestList->id)
+                    ->where('guest_name', $guestName)
+                    ->where('status', 'departed')
+                    ->whereDate('arrival_date', today())
+                    ->first();
+
+                // Step 5: Handle entry or exit
+                if ($departedRecord) {
+                    // DUPLICATE DEPARTURE: Guest already exited today
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Guest has already departed today',
+                        'data' => [
+                            'guest_name' => $departedRecord->guest_name,
+                            'departure_time' => $departedRecord->departure_time,
+                            'status' => 'departed',
+                        ],
+                    ], 400);
+                } elseif ($activeArrival) {
+                    // EXIT: Update existing arrival log to departure
+                    $activeArrival->departure_time = now()->format('H:i:s');
+                    $activeArrival->status = 'departed';
+                    $activeArrival->save();
+
+                    // Mark QR code as Used on exit as well
+                    $qrCode->status = 'Used';
+                    $qrCode->used_at = now();
+                    $qrCode->save();
+
+                    return response()->json([
+                        'success' => true,
+                        'action' => 'exit',
+                        'message' => 'Guest exit recorded',
+                        'data' => [
+                            'arrival_log_id' => $activeArrival->log_id,
+                            'guest_list_id' => $guestList->id,
+                            'guest_name' => $activeArrival->guest_name,
+                            'arrival_time' => $activeArrival->arrival_time,
+                            'departure_time' => $activeArrival->departure_time,
+                            'arrival_date' => $activeArrival->arrival_date,
+                            'fee_paid' => $activeArrival->fee_paid,
+                            'status' => $activeArrival->status,
+                            'qr_code' => $qrToken,
+                            'total_guests' => $guestList->total_guests,
+                        ],
+                    ]);
+                } else {
+                    // ENTRY: Create new arrival log
+                    $arrivalLog = ArrivalLog::create([
+                        'guest_list_id' => $guestList->id,
+                        'guest_name' => $guestName,
+                        'guide_id' => null,
+                        'arrival_time' => now()->format('H:i:s'),
+                        'arrival_date' => now()->toDateString(),
+                        'departure_time' => null,
+                        'fee_paid' => $entryFee, // Charge fee on entry only
+                        'status' => 'arrived',
+                    ]);
+
+                    // Update QR code status to Used
+                    $qrCode->status = 'Used';
+                    $qrCode->used_at = now();
+                    $qrCode->save();
+
+                    return response()->json([
+                        'success' => true,
+                        'action' => 'entry',
+                        'message' => 'Guest entry recorded',
+                        'data' => [
+                            'arrival_log_id' => $arrivalLog->log_id,
+                            'guest_list_id' => $guestList->id,
+                            'guest_name' => $arrivalLog->guest_name,
+                            'arrival_time' => $arrivalLog->arrival_time,
+                            'arrival_date' => $arrivalLog->arrival_date,
+                            'fee_paid' => $arrivalLog->fee_paid,
+                            'status' => $arrivalLog->status,
+                            'qr_code' => $qrToken,
+                            'total_guests' => $guestList->total_guests,
+                        ],
+                    ]);
+                }
+            });
+        } catch (\Exception $e) {
+            \Log::error('toggleGuestStatus error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error processing QR code: ' . $e->getMessage(),
             ], 500);
         }
     }

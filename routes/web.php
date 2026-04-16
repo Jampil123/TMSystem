@@ -217,6 +217,8 @@ Route::middleware(['auth', 'verified'])->prefix('staff')->name('staff.')->group(
     // Staff API Endpoints for arrival logging
     Route::post('api/validate-booking', [StaffArrivalidateController::class, 'validateBooking'])->name('api.validate-booking');
     Route::post('api/log-arrival', [StaffArrivalidateController::class, 'logArrival'])->name('api.log-arrival');
+    Route::post('api/toggle-guest-status', [StaffArrivalidateController::class, 'toggleGuestStatus'])->name('api.toggle-guest-status');
+    Route::post('api/log-departure', [StaffArrivalidateController::class, 'logDeparture'])->name('api.log-departure');
     Route::post('api/deny-arrival', [StaffArrivalidateController::class, 'denyArrival'])->name('api.deny-arrival');
     Route::get('api/arrivals-today', [StaffArrivalidateController::class, 'getTodayArrivals'])->name('api.arrivals-today');
     Route::post('api/log-walk-in', [StaffArrivalidateController::class, 'logWalkInWithQR'])->name('api.log-walk-in');

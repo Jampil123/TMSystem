@@ -235,6 +235,12 @@ export function AppSidebar() {
             icon: Users2,
         },
         {
+            section: 'Operations',
+            title: 'Reports and Analytics',
+            href: '/staff/reports',
+            icon: BarChart3,
+        },
+        {
             section: 'System',
             title: 'Notifications',
             href: '/staff/notifications',

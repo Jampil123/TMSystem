@@ -23,13 +23,14 @@ class GuestSubmissionController extends Controller
         // Get all approved services for this operator
         $services = Service::where('operator_id', $user->id)
             ->where('status', 'Approved')
-            ->select('service_id', 'service_name', 'service_type', 'created_at')
+            ->select('service_id', 'service_name', 'service_type', 'tourist_spot_id', 'created_at')
             ->get()
             ->map(function ($service) {
                 return [
                     'id' => $service->service_id,
                     'name' => $service->service_name,
                     'type' => $service->service_type,
+                    'tourist_spot_id' => $service->tourist_spot_id,
                     'date' => $service->created_at->format('M d, Y'),
                 ];
             });
@@ -65,6 +66,7 @@ class GuestSubmissionController extends Controller
         // Validate request
         $validated = $request->validate([
             'service_id' => 'required|integer',
+            'attraction_id' => 'nullable|integer',
             'visit_date' => 'required|date|after:today',
             'total_guests' => 'required|integer|min:1',
             'local_tourists' => 'required|integer|min:0',
@@ -93,6 +95,9 @@ class GuestSubmissionController extends Controller
             ])->withInput();
         }
 
+        // Get attraction_id from service if not provided
+        $attractionId = $validated['attraction_id'] ?? $service->tourist_spot_id;
+
         // Filter out empty guest names
         $guestNames = array_filter($validated['guest_names'] ?? [], fn ($name) => !empty($name));
         $guestNames = !empty($guestNames) ? array_values($guestNames) : null;
@@ -100,6 +105,7 @@ class GuestSubmissionController extends Controller
         // Create guest list record
         $guestList = GuestList::create([
             'service_id' => $service->service_id,
+            'attraction_id' => $attractionId,
             'operator_id' => $user->id,
             'visit_date' => $validated['visit_date'],
             'total_guests' => $validated['total_guests'],
@@ -134,6 +140,7 @@ class GuestSubmissionController extends Controller
             $codeName = "$prefix-$locationCode-$year-$serial";
             GuestListQRCode::create([
                 'guest_list_id' => $guestList->id,
+                'guest_index' => $i,
                 'token' => $codeName,
                 'status' => 'Unused',
                 'expiration_date' => $validated['visit_date'],
