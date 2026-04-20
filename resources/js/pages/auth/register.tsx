@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthSplitLayoutModern from '@/layouts/auth/auth-split-layout-modern';
 import { login } from '@/routes';
-import { store } from '@/routes/register';
+import { store } from '@/routes/portal/register';
 
 export default function Register() {
     const { props } = usePage();
@@ -65,9 +65,9 @@ export default function Register() {
 
             {/* Registration Form */}
             <Form
-                {...store.form()}
+                method="post"
+                action={store.url()}
                 resetOnSuccess={['password', 'password_confirmation']}
-                disableWhileProcessing
                 className="flex flex-col gap-5 mt-6"
                 onSuccess={() => {
                     // If we reach here without redirect, user is pending
