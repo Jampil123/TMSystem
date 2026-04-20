@@ -32,18 +32,7 @@ export function TouristSidebar() {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
-
-                {/* Search Bar */}
-                <div className="mt-4 px-2">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B8071] dark:text-[#AEC3B0]" />
-                        <input
-                            type="text"
-                            placeholder="Search here..."
-                            className="w-full pl-10 pr-4 py-2 rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#1a3a2e] text-[#0F2A1D] dark:text-white placeholder-[#6B8071] dark:placeholder-[#AEC3B0] focus:outline-none focus:ring-2 focus:ring-[#C84B59]/50"
-                        />
-                    </div>
-                </div>
+                
             </SidebarHeader>
 
             <SidebarContent className="px-2 py-4">

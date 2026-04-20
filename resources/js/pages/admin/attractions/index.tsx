@@ -439,7 +439,7 @@ export default function AttractionManagement({ attractions = [], stats = { total
 
                 {/* Add/Edit Modal */}
                 {(isAdding || isEditModalOpen) && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
                         <div className="bg-white dark:bg-[#1F3A2F] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 dark:border-gray-700">
                             <div className="flex justify-between items-center p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-[#0F2A1D] dark:to-[#1F3A2F]">
                                 <div className="flex items-center gap-3">
@@ -706,7 +706,7 @@ export default function AttractionManagement({ attractions = [], stats = { total
 
                 {/* Delete Confirmation Modal */}
                 {isDeleteModalOpen && deleteConfirmationAttraction && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
                         <div className="bg-white dark:bg-[#1F3A2F] rounded-2xl max-w-sm w-full shadow-2xl border border-gray-100 dark:border-gray-700">
                             <div className="p-8">
                                 <div className="flex items-start gap-4">
