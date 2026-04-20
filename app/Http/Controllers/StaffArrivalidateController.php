@@ -417,6 +417,19 @@ class StaffArrivalidateController extends Controller
                     $qrCode->used_at = now();
                     $qrCode->save();
 
+                    // Check if all guests have departed
+                    $totalGuests = $guestList->total_guests;
+                    $departedGuests = ArrivalLog::where('guest_list_id', $guestList->id)
+                        ->where('status', 'departed')
+                        ->whereDate('arrival_date', today())
+                        ->count();
+
+                    // If all guests have departed, mark guest list as completed
+                    if ($departedGuests >= $totalGuests) {
+                        $guestList->status = 'Completed';
+                        $guestList->save();
+                    }
+
                     return response()->json([
                         'success' => true,
                         'action' => 'exit',
@@ -432,6 +445,7 @@ class StaffArrivalidateController extends Controller
                             'status' => $activeArrival->status,
                             'qr_code' => $qrToken,
                             'total_guests' => $guestList->total_guests,
+                            'guest_list_status' => $guestList->status,
                         ],
                     ]);
                 } else {
@@ -446,6 +460,12 @@ class StaffArrivalidateController extends Controller
                         'fee_paid' => $entryFee, // Charge fee on entry only
                         'status' => 'arrived',
                     ]);
+
+                    // Set guest list status to Active on first guest arrival
+                    if ($guestList->status === 'Pending Entrance') {
+                        $guestList->status = 'Active';
+                        $guestList->save();
+                    }
 
                     // Update QR code status to Used
                     $qrCode->status = 'Used';
@@ -466,6 +486,7 @@ class StaffArrivalidateController extends Controller
                             'status' => $arrivalLog->status,
                             'qr_code' => $qrToken,
                             'total_guests' => $guestList->total_guests,
+                            'guest_list_status' => $guestList->status,
                         ],
                     ]);
                 }

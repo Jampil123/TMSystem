@@ -39,9 +39,9 @@ class DashboardController extends Controller
     {
         $today = now()->startOfDay();
 
-        // Get today's total visitors
+        // Get today's total visitors (both arrived and departed, but not denied)
         $totalVisitorsToday = ArrivalLog::where('arrival_date', $today->toDateString())
-            ->where('status', 'arrived')
+            ->where('status', '!=', 'denied')
             ->count();
 
         // Get active locations with current visitor count
@@ -164,8 +164,10 @@ class DashboardController extends Controller
             
             $monthName = $monthStart->format('M');
             
+            // Count all fees except from 'denied' records (rejections)
+            // Fees collected should remain regardless of arrival/departed status
             $revenue = ArrivalLog::whereBetween('arrival_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
-                ->where('status', 'arrived')
+                ->where('status', '!=', 'denied')
                 ->where('fee_paid', '>', 0)
                 ->sum('fee_paid');
             
@@ -180,19 +182,21 @@ class DashboardController extends Controller
 
     /**
      * Get total collection for today and all time
+     * Counts fees from both 'arrived' and 'departed' statuses (non-refundable on departure)
+     * Excludes 'denied' records (rejections with no fee collected)
      */
     private function getTotalCollection()
     {
         $today = now()->startOfDay();
         
-        // Today's collection
+        // Today's collection (arrived + departed, but NOT denied)
         $todayCollection = ArrivalLog::where('arrival_date', $today->toDateString())
-            ->where('status', 'arrived')
+            ->where('status', '!=', 'denied')
             ->where('fee_paid', '>', 0)
             ->sum('fee_paid');
         
-        // All time collection
-        $allTimeCollection = ArrivalLog::where('status', 'arrived')
+        // All time collection (arrived + departed, but NOT denied)
+        $allTimeCollection = ArrivalLog::where('status', '!=', 'denied')
             ->where('fee_paid', '>', 0)
             ->sum('fee_paid');
         
@@ -224,7 +228,7 @@ class DashboardController extends Controller
         $endDate = $endDate ? \Carbon\Carbon::parse($endDate) : now()->endOfMonth();
 
         $stats = ArrivalLog::whereBetween('arrival_date', [$startDate->toDateString(), $endDate->toDateString()])
-            ->where('status', 'arrived')
+            ->where('status', '!=', 'denied')
             ->groupBy('arrival_date')
             ->select(
                 DB::raw('arrival_date as date'),

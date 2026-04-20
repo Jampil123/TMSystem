@@ -47,6 +47,7 @@ class GuestSubmissionController extends Controller
                     'date' => $submission->visit_date->format('M d, Y'),
                     'guestCount' => $submission->total_guests,
                     'status' => $submission->status,
+                    'qrCodeCount' => $submission->qrCodes()->count(),
                 ];
             });
 

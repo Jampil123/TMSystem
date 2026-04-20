@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Actions\Fortify\AttemptToAuthenticate;
+use App\Actions\Fortify\PortalAttemptToAuthenticate;
+use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -40,6 +42,12 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureActions(): void
     {
         Fortify::authenticateUsing(function (Request $request) {
+            // Use PortalAttemptToAuthenticate for portal login (tourist only)
+            if ($request->is('portal/login')) {
+                return (new PortalAttemptToAuthenticate)($request);
+            }
+            
+            // Use regular AttemptToAuthenticate for admin login
             return (new AttemptToAuthenticate)($request);
         });
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);

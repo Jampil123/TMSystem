@@ -29,8 +29,12 @@ use App\Http\Controllers\Tourist\ExploreAttractionController;
 use App\Http\Controllers\Tourist\OperatorListingController;
 use App\Http\Controllers\StaffArrivalidateController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Auth\RegisteredUserController;
 
 Route::redirect('/', '/login')->name('home');
+
+// Custom registration endpoint to handle pending users
+Route::post('/register', [RegisteredUserController::class, 'store']);
 
 // Public Tourism Portal Routes (No Authentication Required)
 Route::prefix('portal')->name('portal.')->group(function () {
@@ -53,6 +57,24 @@ Route::prefix('portal')->name('portal.')->group(function () {
     
     Route::get('contact', [ContactController::class, 'show'])->name('contact');
     Route::post('contact', [ContactController::class, 'store'])->name('contact.store');
+    
+    Route::get('login', function () {
+        return Inertia::render('portal/auth/Login');
+    })->name('login');
+    
+    Route::get('register', function () {
+        return Inertia::render('portal/auth/Register');
+    })->name('register');
+    
+    Route::post('register', [RegisteredUserController::class, 'store'])->name('register.store');
+    
+    Route::get('forgot-password', function () {
+        return Inertia::render('portal/auth/ForgotPassword');
+    })->name('password.request');
+    
+    Route::post('password/email', function () {
+        return response()->json(['message' => 'Password reset link sent']);
+    })->name('password.email');
 });
 
 // Main dashboard - redirects to role-based dashboard

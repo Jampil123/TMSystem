@@ -1,4 +1,6 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, usePage } from '@inertiajs/react';
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
@@ -10,21 +12,74 @@ import { login } from '@/routes';
 import { store } from '@/routes/register';
 
 export default function Register() {
+    const { props } = usePage();
+    const flash = props.flash as Record<string, any>;
+    const [isRegistered, setIsRegistered] = useState(!!flash?.registration_status);
+
+    // Render modal at document root level using Portal
+    const modalContent = isRegistered && createPortal(
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+                {/* Success Checkmark */}
+                <div className="flex justify-center mb-6">
+                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
+                        <div className="text-4xl text-green-600">✓</div>
+                    </div>
+                </div>
+
+                {/* Success Message */}
+                <h2 className="text-2xl font-bold text-center text-green-900 mb-3">
+                    Registration Successful!
+                </h2>
+                <p className="text-center text-green-800 mb-6">
+                    Your account has been created and is pending admin approval.
+                </p>
+
+                {/* Admin Approval Notice */}
+                <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 text-sm text-amber-900 mb-6">
+                    <p className="font-semibold mb-2">⏳ Admin Approval Required</p>
+                    <p>Your account will be reviewed by our administrators. You will receive an email once your account is approved. This typically takes 24-48 hours.</p>
+                </div>
+
+                {/* Sign In Button */}
+                <TextLink
+                    href={login()}
+                    className="block w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg text-center transition-colors"
+                >
+                    Back to Sign In
+                </TextLink>
+            </div>
+        </div>,
+        document.body
+    );
+
     return (
         <AuthSplitLayoutModern
             title="Create Your Account"
             description="Join us and start your journey today"
         >
             <Head title="Register" />
+            
+            {/* Modal rendered via Portal at document root */}
+            {modalContent}
+
+            {/* Registration Form */}
             <Form
                 {...store.form()}
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
                 className="flex flex-col gap-5 mt-6"
-            >
-                {({ processing, errors }) => (
-                    <>
-                        {/* Full Name Field */}
+                onSuccess={() => {
+                    // If we reach here without redirect, user is pending
+                    // Check if still on register page after submission (pending user)
+                    // If approved user, Fortify will redirect before onSuccess fires
+                    setIsRegistered(true);
+                }}
+                >
+                    {({ processing, errors }) => (
+                        <>
+                            {/* Hidden registration type field */}
+                            <input type="hidden" name="registration_type" value="operator" />
                         <div className="space-y-2.5">
                             <Label htmlFor="name" className="text-[#0F2A1D] font-semibold text-sm">
                                 Full Name

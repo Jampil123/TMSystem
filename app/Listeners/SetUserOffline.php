@@ -20,6 +20,11 @@ class SetUserOffline
      */
     public function handle(Logout $event): void
     {
+        // Check if user exists before updating
+        if (! $event->user) {
+            return;
+        }
+
         $offlineStatus = Userstatus::where('status', 'OFFLINE')
             ->where('type', 'ONLINE')
             ->first();

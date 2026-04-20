@@ -19,6 +19,7 @@ interface GuestSubmission {
     date: string;
     guestCount: number;
     status: string;
+    qrCodeCount: number;
 }
 
 interface Props {
@@ -393,6 +394,9 @@ export default function GuestSubmission({ services, guestSubmissions }: Props) {
                                         </p>
                                         <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0]">
                                             Guests: {submission.guestCount}
+                                        </p>
+                                        <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                                            QR Codes Assigned: {submission.qrCodeCount}
                                         </p>
                                     </Link>
                                 ))}
