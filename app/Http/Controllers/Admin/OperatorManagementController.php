@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Role;
 use App\Models\Userstatus;
 use App\Models\OperatorDocument;
+use App\Notifications\AccountApprovedNotification;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -139,9 +140,18 @@ class OperatorManagementController extends Controller
             'account_status_id' => $approvedStatus->id,
         ]);
 
+        // Send approval notification to the operator
+        $operator->notify(new AccountApprovedNotification($operator));
+
         return response()->json([
             'success' => true,
             'message' => 'Operator approved successfully!',
+            'email_notification' => [
+                'sent' => true,
+                'recipient' => $operator->email,
+                'subject' => 'Your Account Has Been Approved! 🎉',
+                'message' => "Approval email sent to {$operator->email}",
+            ],
         ]);
     }
 
@@ -177,15 +187,26 @@ class OperatorManagementController extends Controller
 
         $document->update(['status' => 'approved']);
 
+        $successMessage = 'Document approved successfully!';
+
         // Check if all documents are now approved using the User model method
         if ($operator->hasAllDocumentsApproved()) {
             $approvedStatus = Userstatus::where('status', 'APPROVED')
                 ->where('type', 'ACCOUNT')
                 ->firstOrFail();
             $operator->update(['account_status_id' => $approvedStatus->id]);
+
+            // Send approval notification to the operator when all documents are approved
+            $operator->notify(new AccountApprovedNotification($operator));
+
+            $successMessage = "Document approved! All documents are now approved. Account approval email has been sent to {$operator->email}";
         }
 
-        return redirect()->back()->with('success', 'Document approved successfully!');
+        return redirect()->back()->with([
+            'success' => $successMessage,
+            'email_sent' => $operator->hasAllDocumentsApproved() ? true : false,
+            'email_recipient' => $operator->hasAllDocumentsApproved() ? $operator->email : null,
+        ]);
     }
 
     /**

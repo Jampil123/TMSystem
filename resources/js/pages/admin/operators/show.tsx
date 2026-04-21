@@ -1,7 +1,8 @@
 import React from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { CheckCircle, AlertCircle, XCircle, Info, ArrowLeft, Eye, Check, X, Loader } from 'lucide-react';
+import { CheckCircle, AlertCircle, XCircle, Info, ArrowLeft, Eye, Check, X, Loader, Mail } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import type { BreadcrumbItem } from '@/types';
 
 const statusBadge = {
@@ -58,6 +59,26 @@ interface PageProps {
 
 export default function OperatorDetail({ operator, documents, statuses }: PageProps) {
     const { put, processing } = useForm();
+    const { props } = usePage();
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [emailSent, setEmailSent] = useState(false);
+    const [emailRecipient, setEmailRecipient] = useState<string | null>(null);
+
+    useEffect(() => {
+        const flash = props.flash as any;
+        if (flash?.success) {
+            setSuccessMessage(flash.success);
+            if (flash.email_sent) {
+                setEmailSent(true);
+                setEmailRecipient(flash.email_recipient);
+            }
+            const timer = setTimeout(() => {
+                setSuccessMessage(null);
+                setEmailSent(false);
+            }, 6000);
+            return () => clearTimeout(timer);
+        }
+    }, [props.flash]);
 
     const handleApproveDocument = (docId: number) => {
         if (confirm('Are you sure you want to approve this document?')) {
@@ -89,6 +110,33 @@ export default function OperatorDetail({ operator, documents, statuses }: PagePr
                         <ArrowLeft className="w-4 h-4" /> Back to Operators
                     </Link>
                 </div>
+
+                {/* Success Notifications */}
+                {successMessage && (
+                    <div className="rounded-2xl bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-700 p-4">
+                        <div className="flex gap-3">
+                            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                                <p className="font-semibold text-green-900 dark:text-green-100">{successMessage}</p>
+                                {emailSent && emailRecipient && (
+                                    <div className="mt-2 flex items-center gap-2 bg-white dark:bg-green-950/50 rounded-lg p-3">
+                                        <Mail className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                        <div>
+                                            <p className="text-sm font-medium text-green-900 dark:text-green-100">✓ Approval email sent</p>
+                                            <p className="text-xs text-green-700 dark:text-green-300">To: {emailRecipient}</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => setSuccessMessage(null)}
+                                className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Operator Info Card */}
                 <div className="rounded-2xl bg-gradient-to-r from-[#0F2A1D] to-[#375534] p-8 text-white shadow-lg">

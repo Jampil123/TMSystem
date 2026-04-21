@@ -1,8 +1,8 @@
-import { Head } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, usePage } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
-import { Users, UserCheck, UserX, Plus, Trash2, Edit, X, AlertTriangle } from 'lucide-react';
+import { Users, UserCheck, UserX, Plus, Trash2, Edit, X, AlertTriangle, CheckCircle, Mail } from 'lucide-react';
 import { router } from '@inertiajs/react';
 import type { BreadcrumbItem } from '@/types';
 
@@ -39,11 +39,15 @@ interface PageProps {
 }
 
 export default function UserManagement({ users = [], stats = { total_users: 0, approved_users: 0, pending_users: 0 }, roles = {}, statuses = {} }: PageProps) {
+    const { props } = usePage();
     const [isDeleting, setIsDeleting] = useState<number | null>(null);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deleteConfirmationUser, setDeleteConfirmationUser] = useState<User | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [emailSent, setEmailSent] = useState(false);
+    const [emailRecipient, setEmailRecipient] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -52,6 +56,22 @@ export default function UserManagement({ users = [], stats = { total_users: 0, a
         account_status_id: '',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        const flash = props.flash as any;
+        if (flash?.success) {
+            setSuccessMessage(flash.success);
+            if (flash.email_sent) {
+                setEmailSent(true);
+                setEmailRecipient(flash.email_recipient);
+            }
+            const timer = setTimeout(() => {
+                setSuccessMessage(null);
+                setEmailSent(false);
+            }, 6000);
+            return () => clearTimeout(timer);
+        }
+    }, [props.flash]);
 
     const handleEditClick = (user: User) => {
         setEditingUser(user);
@@ -116,6 +136,33 @@ export default function UserManagement({ users = [], stats = { total_users: 0, a
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="User Management" />
             <div className="flex h-full flex-1 flex-col gap-6 p-6 bg-[#E3EED4] dark:bg-[#0F2A1D]">
+                {/* Success Notifications */}
+                {successMessage && (
+                    <div className="rounded-2xl bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-700 p-4">
+                        <div className="flex gap-3">
+                            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                                <p className="font-semibold text-green-900 dark:text-green-100">{successMessage}</p>
+                                {emailSent && emailRecipient && (
+                                    <div className="mt-2 flex items-center gap-2 bg-white dark:bg-green-950/50 rounded-lg p-3">
+                                        <Mail className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                        <div>
+                                            <p className="text-sm font-medium text-green-900 dark:text-green-100">✓ Approval email sent</p>
+                                            <p className="text-xs text-green-700 dark:text-green-300">To: {emailRecipient}</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => setSuccessMessage(null)}
+                                className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Stats Cards */}
                 <div className="grid auto-rows-min gap-6 md:grid-cols-3">
                     <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm hover:shadow-md transition-shadow p-6">
