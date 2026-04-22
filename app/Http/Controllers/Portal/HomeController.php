@@ -18,13 +18,19 @@ class HomeController extends Controller
                 'id' => 1,
                 'name' => 'Island Hopping Adventure',
                 'description' => 'Explore the beautiful islands around Badian',
-                'image_url' => 'https://via.placeholder.com/300x200/375534/ffffff?text=Island+Hopping',
+                'image_url' => 'storage/images/island.jpg',
             ],
             (object) [
                 'id' => 2,
                 'name' => 'Snorkeling Experience',
                 'description' => 'Discover vibrant coral reefs and marine life',
-                'image_url' => 'https://via.placeholder.com/300x200/375534/ffffff?text=Snorkeling',
+                'image_url' => 'storage/images/snorkel.jpg',
+            ],
+            (object) [
+                'id' => 3,
+                'name' => 'Hiking to Osmena Peak',
+                'description' => 'Reach the highest peak in Cebu for breathtaking views',
+                'image_url' => 'storage/images/hiking.jpg',
             ],
         ]);
         
@@ -32,15 +38,31 @@ class HomeController extends Controller
         $accommodations = collect([
             (object) [
                 'id' => 1,
-                'name' => 'Badian Cove Beach Resort',
+                'name' => 'Badian Island Resort',
                 'description' => 'Luxury beachfront resort with stunning oceanviews',
-                'image_url' => 'https://via.placeholder.com/300x200/375534/ffffff?text=Beach+Resort',
+                'image_url' => 'storage/images/pool.jpg',
+                'facebook_url' => 'https://www.facebook.com/BadianIsla',
             ],
             (object) [
                 'id' => 2,
-                'name' => 'Mountain View Lodge',
-                'description' => 'Cozy mountain retreat with panoramic views',
-                'image_url' => 'https://via.placeholder.com/300x200/375534/ffffff?text=Mountain+Lodge',
+                'name' => 'Tuyom',
+                'description' => 'Serene lodge nestled in nature with cozy accommodations',
+                'image_url' => 'storage/images/tuyom.jpg',
+                'facebook_url' => 'https://www.facebook.com/tuyombyhostelseven',
+            ],
+            (object) [
+                'id' => 3,
+                'name' => 'Marikan Beach Resort',
+                'description' => 'Charming beachfront resort with a relaxing atmosphere',
+                'image_url' => 'storage/images/marika.jpg',
+                'facebook_url' => 'https://www.facebook.com/marikaresort',
+            ],
+            (object) [
+                'id' => 4,
+                'name' => 'Casa De Amor Lambug',
+                'description' => 'Budget-friendly accommodation with a cozy ambiance',
+                'image_url' => 'storage/images/casa.jpg',
+                'facebook_url' => 'https://www.facebook.com/profile.php?id=61565242933257',
             ],
         ]);
 

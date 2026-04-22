@@ -13,6 +13,7 @@ use App\Http\Controllers\Portal\AttractionDetailController;
 use App\Http\Controllers\Portal\ContactController;
 use App\Http\Controllers\Portal\AboutController;
 use App\Http\Controllers\Portal\OperatorController;
+use App\Http\Controllers\Portal\TouristAuthController;
 use App\Http\Controllers\Operator\ProfileController;
 use App\Http\Controllers\Operator\DocumentController;
 use App\Http\Controllers\Operator\ServiceController;
@@ -26,7 +27,10 @@ use App\Http\Controllers\Admin\EmergencyAlertController;
 use App\Http\Controllers\GuideController;
 use App\Http\Controllers\Dashboard\TouristDashboardController;
 use App\Http\Controllers\Tourist\ExploreAttractionController;
+use App\Http\Controllers\Tourist\ExploreActivityController;
+use App\Http\Controllers\Tourist\ExploreAccommodationController;
 use App\Http\Controllers\Tourist\OperatorListingController;
+use App\Http\Controllers\Tourist\CrowdIdentifierController;
 use App\Http\Controllers\StaffArrivalidateController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Auth\RegisteredUserController;
@@ -62,6 +66,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
         return Inertia::render('portal/auth/Login');
     })->name('login');
     
+    Route::post('login', [TouristAuthController::class, 'login'])->name('login.store');
+    
     Route::get('register', function () {
         return Inertia::render('portal/auth/Register');
     })->name('register');
@@ -75,6 +81,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
     Route::post('password/email', function () {
         return response()->json(['message' => 'Password reset link sent']);
     })->name('password.email');
+    
+    Route::post('logout', [TouristAuthController::class, 'logout'])->middleware('auth')->name('logout');
 });
 
 // Main dashboard - redirects to role-based dashboard
@@ -101,7 +109,10 @@ Route::get('tourist-dashboard', [TouristDashboardController::class, 'index'])
 // Tourist Explore Routes
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('tourist/attractions', [ExploreAttractionController::class, 'index'])->name('tourist.attractions');
+    Route::get('tourist/activities', [ExploreActivityController::class, 'index'])->name('tourist.activities');
+    Route::get('tourist/accommodations', [ExploreAccommodationController::class, 'index'])->name('tourist.accommodations');
     Route::get('tourist/operators', [OperatorListingController::class, 'index'])->name('tourist.operators');
+    Route::get('tourist/crowd-identifier', [CrowdIdentifierController::class, 'index'])->name('tourist.crowd-identifier');
 });
 
 Route::get('operator-dashboard', function () {

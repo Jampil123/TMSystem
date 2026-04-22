@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attraction;
+use App\Models\Service;
 use App\Models\User;
 use Inertia\Inertia;
 
@@ -11,15 +12,41 @@ class TouristDashboardController extends Controller
 {
     public function index()
     {
-        // Mock accommodation data
-        $accommodation = (object) [
-            'id' => 1,
-            'name' => 'Badian Cove Beach Resort',
-            'description' => 'Experience the ultimate tropical paradise at Badian Cove Beach Resort. Nestled along pristine white sandy beaches with crystal-clear turquoise waters.',
-            'location' => 'Badian, Cebu',
-            'rating' => 4.8,
-            'image_url' => 'https://via.placeholder.com/600x400/375534/ffffff?text=Badian+Cove+Resort',
-        ];
+        // Get the first approved accommodation from database
+        $accommodation = Service::where('service_type', 'Accommodation')
+            ->where('status', 'Approved')
+            ->with('accommodation', 'touristSpot')
+            ->first();
+
+        $featuredAccommodation = null;
+        if ($accommodation) {
+            $featuredAccommodation = [
+                'id' => $accommodation->service_id,
+                'title' => $accommodation->service_name,
+                'description' => $accommodation->description ?? 'Discover our beautiful accommodation.',
+                'location' => $accommodation->touristSpot?->location ?? 'Location not specified',
+                'rating' => $accommodation->touristSpot?->rating ?? 0,
+                'image' => $accommodation->touristSpot?->image_url ?? 'https://via.placeholder.com/600x400/375534/ffffff?text=Accommodation',
+                'price' => '₱' . number_format($accommodation->accommodation?->price_per_night ?? 0, 2) . '/night',
+                'guides' => [
+                    ['id' => 1, 'name' => 'Room Type', 'role' => $accommodation->accommodation?->room_type ?? 'Standard'],
+                ],
+            ];
+        } else {
+            // Fallback mock data if no accommodations in database
+            $featuredAccommodation = [
+                'id' => 1,
+                'title' => 'Badian Cove Beach Resort',
+                'description' => 'Experience the ultimate tropical paradise at Badian Cove Beach Resort. Nestled along pristine white sandy beaches with crystal-clear turquoise waters.',
+                'location' => 'Badian, Cebu',
+                'rating' => 4.8,
+                'image' => 'https://via.placeholder.com/600x400/375534/ffffff?text=Badian+Cove+Resort',
+                'price' => '₱3,500/night',
+                'guides' => [
+                    ['id' => 1, 'name' => 'Room Type', 'role' => 'Deluxe Suite'],
+                ],
+            ];
+        }
 
         $attractions = Attraction::where('status', 'active')
             ->select('id', 'name', 'location', 'rating', 'entry_fee', 'image_url', 'latitude', 'longitude')
@@ -46,18 +73,6 @@ class TouristDashboardController extends Controller
                 'email' => $operator->email,
                 'username' => $operator->username,
             ]);
-
-        $featuredAccommodation = $accommodation ? [
-            'id' => $accommodation->id,
-            'title' => $accommodation->name,
-            'description' => $accommodation->description ?? 'Discover our beautiful accommodation.',
-            'location' => $accommodation->location ?? 'Location not specified',
-            'rating' => $accommodation->rating ?? 0,
-            'image' => $accommodation->image_url ?? 'https://via.placeholder.com/600x400/375534/ffffff?text=Accommodation',
-            'guides' => [
-                ['id' => 1, 'name' => 'Tour Guide', 'role' => '4.5 reviews'],
-            ],
-        ] : null;
 
         return Inertia::render('dashboards/tourist-dashboard', [
             'featuredAccommodation' => $featuredAccommodation,

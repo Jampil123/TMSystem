@@ -134,9 +134,9 @@ export default function PortalHeader({ activities = [], attractions = [] }: Port
                             Contact Us
                         </Link>
                     </div>
-                    <a href="/login" className="px-6 py-2 bg-[#0F2A1D] hover:bg-[#375534] text-white rounded-lg transition font-semibold">
+                    <Link href="/portal/register" className="px-6 py-2 bg-[#0F2A1D] hover:bg-[#375534] text-white rounded-lg transition font-semibold">
                         Register
-                    </a>
+                    </Link>
                 </div>
             </div>
         </nav>

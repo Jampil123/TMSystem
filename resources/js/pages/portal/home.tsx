@@ -39,6 +39,7 @@ interface Accommodation {
     image_url: string | null;
     rating: number | null;
     status: string;
+    facebook_url?: string;
 }
 
 interface PortalHomeProps {
@@ -51,6 +52,7 @@ export default function PortalHome({ attractions = [], activities = [], accommod
     const [likedDestinations, setLikedDestinations] = useState<number[]>([]);
     const [likedActivities, setLikedActivities] = useState<number[]>([]);
     const [selectedCategory, setSelectedCategory] = useState('all');
+    const [searchTerm, setSearchTerm] = useState('');
     const [searchData, setSearchData] = useState({
         origin: '',
         destination: '',
@@ -104,6 +106,7 @@ export default function PortalHome({ attractions = [], activities = [], accommod
         rating: accommodation.rating || 0,
         reviews: 0,
         pricePerNight: 0,
+        facebook_url: accommodation.facebook_url,
     }));
 
     const categories = [
@@ -119,6 +122,16 @@ export default function PortalHome({ attractions = [], activities = [], accommod
     const filteredDestinations = selectedCategory === 'all' 
         ? destinations 
         : destinations.filter(d => d.category === selectedCategory);
+
+    const searchFilteredActivities = adventureCards.filter(a =>
+        a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const searchFilteredDestinations = filteredDestinations.filter(d =>
+        d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        d.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     const features = [
         {
@@ -140,24 +153,24 @@ export default function PortalHome({ attractions = [], activities = [], accommod
 
     const testimonials = [
         {
-            name: 'Sarah Johnson',
+            name: 'Queny Waskin',
             role: 'Travel Blogger',
-            image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
+            image: 'storage/images/queny.jpg',
             text: 'Absolutely incredible experience! The platform made planning my entire trip so easy.',
             rating: 5,
         },
         {
-            name: 'Michael Chen',
+            name: 'Kian Victorillo',
             role: 'Adventure Enthusiast',
-            image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
+            image: 'storage/images/kian.jpg',
             text: 'Best travel portal I\'ve used. Great deals and authentic local experiences!',
             rating: 5,
         },
         {
-            name: 'Emma Williams',
-            role: 'Family Traveler',
-            image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop',
-            text: 'Perfect for family trips. Easy to navigate and found amazing family-friendly activities.',
+            name: 'Phil Gomez',
+            role: 'Solo Traveler',
+            image: 'storage/images/john.jpg',
+            text: 'Perfect for solo trips. Easy to navigate and found amazing solo-friendly activities.',
             rating: 4,
         },
     ];
@@ -169,31 +182,32 @@ export default function PortalHome({ attractions = [], activities = [], accommod
             {/* Portal Header */}
             <PortalHeader activities={activities} attractions={attractions} />
 
-            {/* Hero & Main Content Section - All in One */}
+            {/* Hero Section with Search Bar */}
             <div className="relative bg-gradient-to-b from-[#375534] to-[#E3EED4] dark:from-[#375534] dark:to-[#0F2A1D] overflow-hidden">
                 {/* Background Image */}
                 <div
                     className="absolute inset-0 w-full opacity-40"
                     style={{
-                        backgroundImage: 'url("/images/background.jpg")',
+                        backgroundImage: 'url("storage/images/back.jpg")',
                         backgroundSize: 'cover',
                         backgroundPosition: 'center top',
-                        height: '400px',
+                        height: 'auto',
                     }}
                 />
 
                 {/* Main Content Container */}
-                <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                     {/* Heading */}
-                    <div className="text-center mb-8 pt-8">
-                        <h2 className="text-6xl md:text-7xl font-bold text-white drop-shadow-lg">
-                            Nature, Thrills, and Memories – Welcome to Badian!
-                        </h2>
+                    <div className="text-center mb-10 pt-8 mt-5">
+                        <h1 className="text-5xl md:text-7xl font-bold text-white drop-shadow-lg mb-4">
+                            Nature, Thrills, and Memories
+                        </h1>
+                        <p className="text-xl text-[#E3EED4] text-white font-medium drop-shadow-md">Welcome to Badian - Your Gateway to Adventure!</p>
                     </div>
 
-                    {/* Badian Travel Information */}
-                    <div className="bg-white rounded-3xl shadow-2xl p-8 mb-12">
-                        <div className="max-w-4xl">
+                    {/* Travel Info Card */}
+                    <div className="bg-white rounded-3xl shadow-2xl mt-20 p-8 border-l-4 border-[#375534]">
+                        <div className="max-w-6xl">
                             <div className="flex items-start gap-4 mb-4">
                                 <div className="w-12 h-12 rounded-full bg-[#375534] flex items-center justify-center flex-shrink-0">
                                     <MapPin className="w-6 h-6 text-white" />
@@ -202,179 +216,180 @@ export default function PortalHome({ attractions = [], activities = [], accommod
                                     <h3 className="text-2xl md:text-3xl font-bold text-[#0F2A1D] mb-3">
                                         Badian, Cebu Travel Information
                                     </h3>
-                                    <p className="text-[#6B8071] leading-relaxed text-base">
-                                        Welcome to the Municipality of Badian, we would like to offer tourists and backpackers a starting point for exploring the town and surrounding sights. Let us introduce you to some of the tourist resorts and accommodation available here in Badian.
-                                    </p>
+                                    <p className="text-[#6B8071] leading-relaxed text-base text-justify">
+                                        Badian, located in the southwestern part of Cebu in the Philippines, is a popular eco-tourism destination known for its natural beauty, adventure activities, and relaxing coastal environment. It is best known for Kawasan Falls, famous for its vibrant turquoise waters and canyoneering experiences that attract thrill-seekers and nature lovers. Badian also serves as a gateway to nearby attractions like Moalboal, where visitors can enjoy snorkeling and the world-renowned sardine run. With its serene beaches, welcoming local culture, fresh seafood, and convenient access from Cebu City, Badian offers a well-rounded travel experience that combines adventure, relaxation, and cultural immersion while promoting sustainable tourism practices.                                    </p>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    {/* Badian Tourist Adventures */}
-                    <div className="mb-12">
-                        <h3 className="text-3xl md:text-4xl font-bold text-white mb-8 drop-shadow-lg text-center">Badian Tourist Adventures</h3>
-                        {/* Activities Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-12">
-                            {adventureCards.map((activity) => (
-                                <div
-                                    key={activity.id}
-                                    className="group flex flex-col rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all transform hover:scale-105 cursor-pointer bg-white dark:bg-[#375534]/30"
-                                >
-                                    {/* Image Section */}
-                                    <div className="relative w-full h-48 overflow-hidden bg-gray-200 flex-shrink-0">
-                                        <img
-                                            src={activity.image}
-                                            alt={activity.name}
-                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                                        />
-                                    </div>
-
-                                    {/* Content Section */}
-                                    <div className="flex flex-col justify-between p-6 w-full">
-                                        <div>
-                                            <h4 className="text-lg font-bold text-[#0F2A1D] dark:text-[#E3EED4] mb-2">
-                                                {activity.name}
-                                            </h4>
-                                            <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-4 line-clamp-3">
-                                                {activity.description}
-                                            </p>
-
-                                            {/* Activity Details */}
-                                            <div className="grid grid-cols-2 gap-3 mb-4 text-xs">
-                                                <div className="flex items-center gap-2 text-[#6B8071] dark:text-[#AEC3B0]">
-                                                    <Clock className="w-4 h-4 text-[#375534] dark:text-[#AEC3B0]" />
-                                                    <span>{activity.duration}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-[#6B8071] dark:text-[#AEC3B0]">
-                                                    <TrendingUp className="w-4 h-4 text-[#375534] dark:text-[#AEC3B0]" />
-                                                    <span className="capitalize">{activity.difficulty}</span>
-                                                </div>
-                                                {activity.maxParticipants && (
-                                                    <div className="flex items-center gap-2 text-[#6B8071] dark:text-[#AEC3B0]">
-                                                        <Users className="w-4 h-4 text-[#375534] dark:text-[#AEC3B0]" />
-                                                        <span>Max {activity.maxParticipants}</span>
-                                                    </div>
-                                                )}
-                                                {activity.price > 0 && (
-                                                    <div className="flex items-center gap-2 text-[#6B8071] dark:text-[#AEC3B0]">
-                                                        <Zap className="w-4 h-4 text-[#375534] dark:text-[#AEC3B0]" />
-                                                        <span>₱{parseFloat(activity.price.toString()).toFixed(2)}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Rating */}
-                                            {activity.rating && (
-                                                <div className="flex items-center gap-2 mb-4">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <Star
-                                                            key={i}
-                                                            className={`w-4 h-4 ${
-                                                                i < Math.floor(activity.rating!)
-                                                                    ? 'fill-yellow-400 text-yellow-400'
-                                                                    : 'text-gray-300 dark:text-gray-600'
-                                                            }`}
-                                                        />
-                                                    ))}
-                                                    <span className="text-sm font-medium text-[#0F2A1D] dark:text-[#E3EED4]">{activity.rating}/5</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Like Button */}
-                                        <button
-                                            onClick={() => toggleActivityLike(activity.id)}
-                                            className={`self-start mt-3 p-2.5 rounded-full transition-all ${
-                                                likedActivities.includes(activity.id)
-                                                    ? 'bg-red-500 text-white'
-                                                    : 'bg-[#375534]/20 text-[#375534] dark:bg-[#AEC3B0]/20 dark:text-[#AEC3B0] hover:bg-[#375534]/30'
-                                            }`}
-                                            title="Like this activity"
-                                        >
-                                            <Heart className={`w-5 h-5 ${likedActivities.includes(activity.id) ? 'fill-current' : ''}`} />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
+                            
+                           
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Category Filter Section */}
-            <section className="bg-gradient-to-r from-[#E3EED4] to-white dark:from-[#0F2A1D] dark:to-[#375534]/20 py-16 px-4">
+        
+
+            {/* Featured Adventures Section */}
+            <section className="bg-white dark:bg-[#0F2A1D] py-20 px-4">
                 <div className="max-w-7xl mx-auto">
-                    <div className="mb-10">
-                        <h2 className="text-3xl md:text-4xl font-bold text-[#0F2A1D] dark:text-[#E3EED4] mb-2">
-                            Badian Tourist Attractions
+                    <div className="text-center mb-12">
+                        <h2 className="text-4xl md:text-5xl font-bold text-[#0F2A1D] dark:text-[#E3EED4] mb-4">
+                            Featured Adventures
                         </h2>
-                        <p className="text-[#6B8071] dark:text-[#AEC3B0]">
-                            Discover amazing tourist destinations and top-rated accommodations
+                        <p className="text-lg text-[#6B8071] dark:text-[#AEC3B0]">
+                            Experience the best of what Badian has to offer
                         </p>
                     </div>
-                    <div className="flex items-center gap-3 overflow-x-auto pb-4">
-                        {categories.map((cat) => (
-                            <button
-                                key={cat.id}
-                                onClick={() => setSelectedCategory(cat.id)}
-                                className={`px-6 py-3 rounded-full font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
-                                    selectedCategory === cat.id
-                                        ? 'bg-[#375534] text-white shadow-lg transform scale-105'
-                                        : 'bg-white dark:bg-[#375534]/30 text-[#0F2A1D] dark:text-[#E3EED4] border-2 border-[#AEC3B0]/40 dark:border-[#375534]/40 hover:border-[#375534]'
-                                }`}
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {searchFilteredActivities.map((activity) => (
+                            <div
+                                key={activity.id}
+                                className="group flex flex-col rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 bg-white dark:bg-[#375534]/30 border-2 border-[#AEC3B0]/20 dark:border-[#375534]/40"
                             >
-                                <span>{cat.icon}</span>
-                                {cat.label}
-                            </button>
+                                {/* Image Section with Badge */}
+                                <div className="relative w-full h-56 overflow-hidden bg-gray-200 flex-shrink-0">
+                                    <img
+                                        src={activity.image}
+                                        alt={activity.name}
+                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                    />
+                                    <div className="absolute top-3 left-3 bg-[#375534] text-white px-3 py-1 rounded-full text-xs font-bold">
+                                        Featured
+                                    </div>
+                                    {activity.rating && activity.rating >= 4.5 && (
+                                        <div className="absolute top-3 right-3 bg-yellow-400 text-[#0F2A1D] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                            <Star className="w-3 h-3 fill-current" /> Top Rated
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Content Section */}
+                                <div className="p-6">
+                                    <h4 className="text-xl font-bold text-[#0F2A1D] dark:text-[#E3EED4] mb-2">
+                                        {activity.name}
+                                    </h4>
+                                    <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] line-clamp-2">
+                                        {activity.description}
+                                    </p>
+                                </div>
+                            </div>
                         ))}
                     </div>
-                    <div className="grid grid-cols-1 gap-6">
-                        {filteredDestinations.map((dest) => (
+                </div>
+            </section>
+
+            {/* Category Filter & Attractions Section */}
+            <section className="bg-gradient-to-r from-[#E3EED4] to-white dark:from-[#0F2A1D] dark:to-[#375534]/20 py-20 px-4">
+                <div className="max-w-7xl mx-auto">
+                    <div className="mb-12">
+                        <h2 className="text-4xl md:text-5xl font-bold text-[#0F2A1D] dark:text-[#E3EED4] mb-2">
+                            Explore Attractions
+                        </h2>
+                        <p className="text-lg text-[#6B8071] dark:text-[#AEC3B0]">
+                            Discover amazing tourist destinations and natural wonders
+                        </p>
+                    </div>
+
+                    {/* Category Filters */}
+                    <div className="mb-12">
+                        <div className="flex items-center gap-3 overflow-x-auto pb-4 scrollbar-hide">
+                            {categories.map((cat) => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => setSelectedCategory(cat.id)}
+                                    className={`px-6 py-3 rounded-full font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
+                                        selectedCategory === cat.id
+                                            ? 'bg-[#375534] text-white shadow-lg transform scale-105'
+                                            : 'bg-white dark:bg-[#375534]/30 text-[#0F2A1D] dark:text-[#E3EED4] border-2 border-[#AEC3B0]/40 dark:border-[#375534]/40 hover:border-[#375534]'
+                                    }`}
+                                >
+                                    <span>{cat.icon}</span>
+                                    {cat.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Attractions Grid - Changed from horizontal to card layout */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {searchFilteredDestinations.map((dest) => (
                             <div
                                 key={dest.id}
-                                className="group flex rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all transform hover:scale-105 cursor-pointer bg-white dark:bg-[#375534]/30"
+                                className="group rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 bg-white dark:bg-[#375534]/30 border-2 border-[#AEC3B0]/20 dark:border-[#375534]/40"
                             >
                                 {/* Image Section */}
-                                <div className="relative w-2/5 h-64 overflow-hidden bg-gray-200 flex-shrink-0">
+                                <div className="relative w-full h-64 overflow-hidden bg-gray-200">
                                     <img
                                         src={dest.image}
                                         alt={dest.name}
                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                     />
+                                    <div className="absolute top-3 left-3 bg-[#375534] text-white px-3 py-1 rounded-full text-xs font-bold">
+                                        Attraction
+                                    </div>
+                                    {dest.rating && dest.rating >= 4.5 && (
+                                        <div className="absolute top-3 right-3 bg-yellow-400 text-[#0F2A1D] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                            <Star className="w-3 h-3 fill-current" /> Top Rated
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={() => toggleLike(dest.id)}
+                                        className={`absolute bottom-3 right-3 p-2 rounded-full transition-all ${
+                                            likedDestinations.includes(dest.id)
+                                                ? 'bg-red-500 text-white'
+                                                : 'bg-white/80 text-[#0F2A1D] hover:bg-white'
+                                        }`}
+                                    >
+                                        <Heart className={`w-5 h-5 ${likedDestinations.includes(dest.id) ? 'fill-current' : ''}`} />
+                                    </button>
                                 </div>
 
                                 {/* Content Section */}
-                                <div className="flex flex-col justify-between p-6 w-3/5">
-                                    <div>
-                                        <h4 className="text-lg font-bold text-[#0F2A1D] dark:text-[#E3EED4] mb-2">
-                                            {dest.name}
-                                        </h4>
-                                        <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-3 line-clamp-3">
-                                            {dest.description}
-                                        </p>
-                                        <p className="text-xs text-[#AEC3B0] dark:text-[#6B8071] flex items-center gap-2">
-                                            <MapPin className="w-4 h-4 text-[#375534] dark:text-[#AEC3B0]" />
-                                            {dest.dateRange}
-                                        </p>
-                                    </div>
+                                <div className="p-6">
+                                    <h4 className="text-xl font-bold text-[#0F2A1D] dark:text-[#E3EED4] mb-2">
+                                        {dest.name}
+                                    </h4>
+                                    <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-4 line-clamp-2">
+                                        {dest.description}
+                                    </p>
+                                    <p className="text-xs text-[#AEC3B0] dark:text-[#6B8071] flex items-center gap-2 mb-4">
+                                        <MapPin className="w-4 h-4 text-[#375534] dark:text-[#AEC3B0]" />
+                                        {dest.dateRange}
+                                    </p>
 
-                                    {/* Like Button */}
-                                    <button
-                                        onClick={() => toggleLike(dest.id)}
-                                        className={`self-start mt-3 p-2.5 rounded-full transition-all ${
-                                            likedDestinations.includes(dest.id)
-                                                ? 'bg-red-500 text-white'
-                                                : 'bg-[#375534]/20 text-[#375534] dark:bg-[#AEC3B0]/20 dark:text-[#AEC3B0] hover:bg-[#375534]/30'
-                                        }`}
-                                        title="Like this attraction"
-                                    >
-                                        <Heart className={`w-5 h-5 ${likedDestinations.includes(dest.id) ? 'fill-current' : ''}`} />
+                                    {/* Rating */}
+                                    {dest.rating && (
+                                        <div className="flex items-center gap-2 mb-4">
+                                            {[...Array(5)].map((_, i) => (
+                                                <Star
+                                                    key={i}
+                                                    className={`w-3 h-3 ${
+                                                        i < Math.floor(dest.rating!)
+                                                            ? 'fill-yellow-400 text-yellow-400'
+                                                            : 'text-gray-300 dark:text-gray-600'
+                                                    }`}
+                                                />
+                                            ))}
+                                            <span className="text-xs font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">{dest.rating}/5</span>
+                                        </div>
+                                    )}
+
+                                    {/* Entry Fee */}
+                                    {dest.price && dest.price > 0 && (
+                                        <div className="text-sm font-bold text-[#375534] dark:text-[#E3EED4] mb-4">
+                                            Entry Fee: ₱{parseFloat(dest.price.toString()).toFixed(2)}
+                                        </div>
+                                    )}
+
+                                    <button className="w-full px-4 py-2 bg-gradient-to-r from-[#375534] to-[#0F2A1D] text-white font-semibold rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2 dark:from-[#AEC3B0] dark:to-[#375534] dark:text-[#0F2A1D]">
+                                        Learn More
+                                        <ArrowRight className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
                         ))}
                     </div>
-
                 </div>
             </section>
 
@@ -383,10 +398,10 @@ export default function PortalHome({ attractions = [], activities = [], accommod
                 <div className="max-w-7xl mx-auto">
                     <div className="mb-12">
                         <h2 className="text-4xl md:text-5xl font-bold text-[#0F2A1D] dark:text-[#E3EED4] mb-4">
-                            Badian Tourist Accommodation
+                            Where to Stay
                         </h2>
-                        <p className="text-[#6B8071] dark:text-[#AEC3B0] text-lg">
-                            Discover the perfect place to stay in Badian with a variety of options for every traveler
+                        <p className="text-lg text-[#6B8071] dark:text-[#AEC3B0]">
+                            Discover the perfect place to stay in Badian with options for every traveler and budget
                         </p>
                     </div>
 
@@ -394,7 +409,7 @@ export default function PortalHome({ attractions = [], activities = [], accommod
                         {accommodationCards.map((accommodation) => (
                             <div
                                 key={accommodation.id}
-                                className="group rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all transform hover:scale-105 cursor-pointer bg-white dark:bg-[#375534]/30 border-2 border-[#AEC3B0]/20 dark:border-[#375534]/40"
+                                className="group rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 bg-white dark:bg-[#375534]/30 border-2 border-[#AEC3B0]/20 dark:border-[#375534]/40"
                             >
                                 <div className="relative h-72 overflow-hidden bg-gray-200">
                                     <img
@@ -402,13 +417,6 @@ export default function PortalHome({ attractions = [], activities = [], accommod
                                         alt={accommodation.name}
                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                     />
-                                    {/* Price Tag */}
-                                    {accommodation.pricePerNight > 0 && (
-                                        <div className="absolute top-4 right-4 bg-gradient-to-r from-[#375534] to-[#0F2A1D] px-4 py-2 rounded-full font-bold text-white shadow-lg">
-                                            ${accommodation.pricePerNight}
-                                            <span className="text-xs">/night</span>
-                                        </div>
-                                    )}
                                     {/* Like Button */}
                                     <button
                                         onClick={() => toggleLike(100 + accommodation.id)}
@@ -420,12 +428,15 @@ export default function PortalHome({ attractions = [], activities = [], accommod
                                     >
                                         <Heart className={`w-6 h-6 ${likedDestinations.includes(100 + accommodation.id) ? 'fill-current' : ''}`} />
                                     </button>
+                                    <div className="absolute top-4 right-4 bg-[#375534] text-white px-3 py-1 rounded-full text-xs font-bold">
+                                        Accommodation
+                                    </div>
                                 </div>
                                 <div className="p-6">
-                                    <h4 className="text-xl font-bold text-[#0F2A1D] dark:text-[#E3EED4] mb-2">
+                                    <h4 className="text-lg font-bold text-[#0F2A1D] dark:text-[#E3EED4] mb-2">
                                         {accommodation.name}
                                     </h4>
-                                    <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-4 leading-relaxed">
+                                    <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-4 leading-relaxed line-clamp-2">
                                         {accommodation.description}
                                     </p>
                                     <div className="flex items-center gap-2 mb-4">
@@ -433,7 +444,7 @@ export default function PortalHome({ attractions = [], activities = [], accommod
                                             {[...Array(5)].map((_, i) => (
                                                 <Star
                                                     key={i}
-                                                    className={`w-4 h-4 ${
+                                                    className={`w-3 h-3 ${
                                                         i < Math.floor(accommodation.rating)
                                                             ? 'text-yellow-400 fill-yellow-400'
                                                             : 'text-gray-300'
@@ -441,20 +452,58 @@ export default function PortalHome({ attractions = [], activities = [], accommod
                                                 />
                                             ))}
                                         </div>
-                                        <span className="text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                        <span className="text-xs font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
                                             {accommodation.rating > 0 ? accommodation.rating : 'New'}
                                         </span>
-                                        {accommodation.reviews > 0 && (
-                                            <span className="text-xs text-[#6B8071] dark:text-[#AEC3B0]">
-                                                ({accommodation.reviews} reviews)
-                                            </span>
-                                        )}
                                     </div>
-                                    <button className="w-full py-3 bg-gradient-to-r from-[#375534] to-[#0F2A1D] text-white font-semibold rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 dark:from-[#AEC3B0] dark:to-[#375534] dark:text-[#0F2A1D]">
+                                    <a href={accommodation.facebook_url || '#'} target="_blank" rel="noopener noreferrer" className="w-full py-2 bg-gradient-to-r from-[#375534] to-[#0F2A1D] text-white font-semibold rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2 dark:from-[#AEC3B0] dark:to-[#375534] dark:text-[#0F2A1D] text-sm">
                                         Book Now
                                         <ArrowRight className="w-4 h-4" />
-                                    </button>
+                                    </a>
                                 </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Testimonials Section */}
+            <section className="bg-gradient-to-r from-[#E3EED4] to-white dark:from-[#0F2A1D] dark:to-[#375534]/20 py-20 px-4">
+                <div className="max-w-7xl mx-auto">
+                    <div className="text-center mb-12">
+                        <h2 className="text-4xl md:text-5xl font-bold text-[#0F2A1D] dark:text-[#E3EED4] mb-4">
+                            What Travelers Say
+                        </h2>
+                        <p className="text-lg text-[#6B8071] dark:text-[#AEC3B0]">
+                            Hear from visitors who've experienced the magic of Badian
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {testimonials.map((testimonial, index) => (
+                            <div
+                                key={index}
+                                className="bg-white dark:bg-[#375534]/30 rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all border-2 border-[#AEC3B0]/20 dark:border-[#375534]/40"
+                            >
+                                <div className="flex items-center gap-4 mb-6">
+                                    <img
+                                        src={testimonial.image}
+                                        alt={testimonial.name}
+                                        className="w-16 h-16 rounded-full object-cover border-2 border-[#375534]"
+                                    />
+                                    <div>
+                                        <h4 className="font-bold text-[#0F2A1D] dark:text-[#E3EED4]">{testimonial.name}</h4>
+                                        <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0]">{testimonial.role}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1 mb-4">
+                                    {[...Array(testimonial.rating)].map((_, i) => (
+                                        <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                                    ))}
+                                </div>
+                                <p className="text-[#6B8071] dark:text-[#AEC3B0] italic leading-relaxed">
+                                    "{testimonial.text}"
+                                </p>
                             </div>
                         ))}
                     </div>
@@ -468,7 +517,7 @@ export default function PortalHome({ attractions = [], activities = [], accommod
                         Ready to Start Your Adventure?
                     </h2>
                     <p className="text-[#E3EED4] text-lg mb-10">
-                        Create an account and get exclusive access to deals and personalized recommendations
+                        Create an account and get exclusive access to special deals, personalized recommendations, and early booking discounts
                     </p>
                     <button className="px-10 py-4 bg-white text-[#0F2A1D] font-bold rounded-xl hover:bg-[#E3EED4] transition-all flex items-center gap-3 mx-auto text-lg shadow-lg hover:shadow-2xl">
                         Get Started Now
@@ -477,14 +526,14 @@ export default function PortalHome({ attractions = [], activities = [], accommod
                 </div>
             </section>
 
-            {/* About Badian Section */}
-            <section className="bg-gradient-to-br from-[#E3EED4] to-white dark:from-[#0F2A1D] dark:to-[#375534]/20 py-20 px-4">
+            {/* About Badian Section - Enhanced */}
+            <section className="bg-white dark:bg-[#0F2A1D] py-20 px-4">
                 <div className="max-w-7xl mx-auto">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                         {/* Left - Image */}
-                        <div className="rounded-3xl overflow-hidden shadow-2xl">
+                        <div className="rounded-3xl overflow-hidden shadow-2xl order-last lg:order-first">
                             <img
-                                src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=500&fit=crop"
+                                src="storage/images/canyoneering.jpg"
                                 alt="Badian Cebu"
                                 className="w-full h-full object-cover"
                             />
@@ -502,25 +551,6 @@ export default function PortalHome({ attractions = [], activities = [], accommod
                                 From world-class canyoneering experiences to pristine beaches and lush mountain trails, Badian promises unforgettable memories. Our tourism portal is dedicated to helping you discover the best that Badian has to offer, with curated accommodations, authentic adventures, and insider tips.
                             </p>
 
-                            {/* Key Features */}
-                            <div className="grid grid-cols-2 gap-4 mb-8">
-                                <div className="p-4 rounded-xl bg-white dark:bg-[#375534]/30 border-2 border-[#AEC3B0]/40 dark:border-[#375534]/40">
-                                    <div className="text-2xl font-bold text-[#375534] dark:text-[#E3EED4] mb-2">50+</div>
-                                    <div className="text-sm font-semibold text-[#0F2A1D] dark:text-[#AEC3B0]">Adventure Activities</div>
-                                </div>
-                                <div className="p-4 rounded-xl bg-white dark:bg-[#375534]/30 border-2 border-[#AEC3B0]/40 dark:border-[#375534]/40">
-                                    <div className="text-2xl font-bold text-[#375534] dark:text-[#E3EED4] mb-2">30+</div>
-                                    <div className="text-sm font-semibold text-[#0F2A1D] dark:text-[#AEC3B0]">Accommodations</div>
-                                </div>
-                                <div className="p-4 rounded-xl bg-white dark:bg-[#375534]/30 border-2 border-[#AEC3B0]/40 dark:border-[#375534]/40">
-                                    <div className="text-2xl font-bold text-[#375534] dark:text-[#E3EED4] mb-2">10+</div>
-                                    <div className="text-sm font-semibold text-[#0F2A1D] dark:text-[#AEC3B0]">Scenic Spots</div>
-                                </div>
-                                <div className="p-4 rounded-xl bg-white dark:bg-[#375534]/30 border-2 border-[#AEC3B0]/40 dark:border-[#375534]/40">
-                                    <div className="text-2xl font-bold text-[#375534] dark:text-[#E3EED4] mb-2">24/7</div>
-                                    <div className="text-sm font-semibold text-[#0F2A1D] dark:text-[#AEC3B0]">Support</div>
-                                </div>
-                            </div>
 
                             {/* CTA Button */}
                             <button className="px-8 py-4 bg-gradient-to-r from-[#375534] to-[#0F2A1D] text-white font-bold rounded-xl hover:shadow-lg transition-all flex items-center gap-3 dark:from-[#AEC3B0] dark:to-[#375534] dark:text-[#0F2A1D]">

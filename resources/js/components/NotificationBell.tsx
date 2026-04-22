@@ -117,7 +117,7 @@ export function NotificationBell() {
             >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
-                    <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-[#C84B59] rounded-full">
+                    <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-[#375534] rounded-full">
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}
@@ -132,7 +132,7 @@ export function NotificationBell() {
                             {unreadCount > 0 && (
                                 <button
                                     onClick={markAllAsRead}
-                                    className="text-xs text-[#C84B59] hover:text-[#B03A47] dark:text-[#E89BA3] dark:hover:text-[#C84B59]"
+                                    className="text-xs text-[#375534] hover:text-[#2d4a2a] dark:text-[#AEC3B0] dark:hover:text-[#375534]"
                                 >
                                     Mark all as read
                                 </button>
@@ -191,7 +191,7 @@ export function NotificationBell() {
                                                 {!notification.is_read && (
                                                     <button
                                                         onClick={() => markAsRead(notification.id)}
-                                                        className="text-xs text-[#C84B59] hover:text-[#B03A47] dark:text-[#E89BA3] dark:hover:text-[#C84B59]"
+                                                        className="text-xs text-[#375534] hover:text-[#2d4a2a] dark:text-[#AEC3B0] dark:hover:text-[#375534]"
                                                     >
                                                         Mark as read
                                                     </button>
@@ -213,7 +213,7 @@ export function NotificationBell() {
                     <div className="border-t border-[#AEC3B0]/20 dark:border-[#375534]/40 p-3">
                         <Link
                             href="/staff/notifications"
-                            className="block w-full text-center text-xs font-medium text-[#C84B59] hover:text-[#B03A47] dark:text-[#E89BA3] dark:hover:text-[#C84B59] py-2 rounded hover:bg-[#E3EED4] dark:hover:bg-[#375534]/30 transition"
+                            className="block w-full text-center text-xs font-medium text-[#375534] hover:text-[#2d4a2a] dark:text-[#AEC3B0] dark:hover:text-[#375534] py-2 rounded hover:bg-[#E3EED4] dark:hover:bg-[#375534]/30 transition"
                         >
                             View All
                         </Link>

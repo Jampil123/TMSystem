@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import TouristLayout from '@/layouts/app/tourist-layout';
-import { Mail, Users, ArrowRight } from 'lucide-react';
+import { Mail, ArrowRight } from 'lucide-react';
 
 interface Operator {
     id: number;
@@ -23,21 +23,20 @@ export default function TouristOperators({ operators }: Props) {
         <TouristLayout>
             <Head title="Tour Operators" />
             
-            <div className="min-h-screen bg-[#E3EED4] dark:bg-[#0F2A1D] p-6">
-                <div className="max-w-6xl mx-auto">
+            <div className="min-h-screen bg-gradient-to-br from-[#E3EED4] via-[#E3EED4] to-[#AEC3B0]/20 dark:bg-gradient-to-br dark:from-[#0F2A1D] dark:via-[#0F2A1D] dark:to-[#375534]/20 p-6">
+                <div className="max-w-7xl mx-auto">
                     {/* Header Section */}
-                    <div className="mb-8">
+                    <div className="mb-12">
                         <div className="flex items-center gap-2 mb-4">
-                            <Users className="w-8 h-8 text-[#C84B59]" />
-                            <h1 className="text-4xl font-bold text-[#0F2A1D] dark:text-white">
-                                Tour Operators
+                            <h1 className="text-5xl font-bold text-[#0F2A1D] dark:text-white">
+                                External Operator
                             </h1>
                         </div>
                         <p className="text-lg text-[#6B8071] dark:text-[#AEC3B0] mb-2">
                             Connect with professional tour operators for your travel needs
                         </p>
                         <div className="text-sm text-[#6B8071] dark:text-[#AEC3B0]">
-                            Total Operators: <span className="font-semibold text-[#C84B59]">{operators.total}</span>
+                            Total Operators: <span className="font-semibold text-[#375534]">{operators.total}</span>
                         </div>
                     </div>
 
@@ -51,7 +50,7 @@ export default function TouristOperators({ operators }: Props) {
                                         className="group rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-2"
                                     >
                                         {/* Header Background */}
-                                        <div className="h-24 bg-gradient-to-r from-[#C84B59] to-[#E89BA3] dark:from-[#C84B59] dark:to-[#6B8071]"></div>
+                                        <div className="h-24 bg-gradient-to-r from-[#375534] to-[#AEC3B0] dark:from-[#375534] dark:to-[#6B8071]"></div>
 
                                         {/* Content */}
                                         <div className="px-6 pb-6">
@@ -75,10 +74,10 @@ export default function TouristOperators({ operators }: Props) {
                                             {/* Email */}
                                             <div className="bg-[#E3EED4] dark:bg-[#375534]/30 rounded-lg p-3 mb-4">
                                                 <div className="flex items-start gap-2">
-                                                    <Mail className="w-4 h-4 text-[#C84B59] flex-shrink-0 mt-0.5" />
+                                                    <Mail className="w-4 h-4 text-[#375534] flex-shrink-0 mt-0.5" />
                                                     <a 
                                                         href={`mailto:${operator.email}`}
-                                                        className="text-sm text-[#0F2A1D] dark:text-white hover:text-[#C84B59] dark:hover:text-[#E89BA3] break-all transition-colors"
+                                                        className="text-sm text-[#0F2A1D] dark:text-white hover:text-[#375534] dark:hover:text-[#AEC3B0] break-all transition-colors"
                                                     >
                                                         {operator.email}
                                                     </a>
@@ -86,7 +85,7 @@ export default function TouristOperators({ operators }: Props) {
                                             </div>
 
                                             {/* Contact Button */}
-                                            <button className="w-full px-4 py-3 bg-[#C84B59] text-white font-medium rounded-lg hover:bg-[#B03A47] transition-colors flex items-center justify-center gap-2 group/btn">
+                                            <button className="w-full px-4 py-3 bg-[#375534] text-white font-medium rounded-lg hover:bg-[#2d4a2a] transition-colors flex items-center justify-center gap-2 group/btn">
                                                 <span>Get in Touch</span>
                                                 <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                                             </button>
@@ -110,7 +109,7 @@ export default function TouristOperators({ operators }: Props) {
                                             key={i + 1}
                                             className={`px-3 py-2 rounded-lg transition-colors ${
                                                 operators.current_page === i + 1
-                                                    ? 'bg-[#C84B59] text-white'
+                                                    ? 'bg-[#375534] text-white'
                                                     : 'border border-[#AEC3B0]/40 dark:border-[#375534]/40 text-[#0F2A1D] dark:text-white hover:bg-white dark:hover:bg-[#375534]/30'
                                             }`}
                                         >

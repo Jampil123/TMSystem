@@ -86,7 +86,7 @@ export default function IncidentReporting() {
                         onClick={() => setSelectedTab('active')}
                         className={`py-3 px-4 font-medium border-b-2 transition-colors ${
                             selectedTab === 'active'
-                                ? 'border-[#C84B59] text-[#C84B59]'
+                                ? 'border-[#375534] text-[#375534]'
                                 : 'border-transparent text-[#6B8071] dark:text-[#AEC3B0] hover:text-[#0F2A1D] dark:hover:text-white'
                         }`}
                     >
@@ -96,7 +96,7 @@ export default function IncidentReporting() {
                         onClick={() => setSelectedTab('resolved')}
                         className={`py-3 px-4 font-medium border-b-2 transition-colors ${
                             selectedTab === 'resolved'
-                                ? 'border-[#C84B59] text-[#C84B59]'
+                                ? 'border-[#375534] text-[#375534]'
                                 : 'border-transparent text-[#6B8071] dark:text-[#AEC3B0] hover:text-[#0F2A1D] dark:hover:text-white'
                         }`}
                     >

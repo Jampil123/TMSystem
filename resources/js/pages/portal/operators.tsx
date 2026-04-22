@@ -29,7 +29,7 @@ export default function PortalOperators({ operators }: Props) {
                     {/* Header Section */}
                     <div className="text-center mb-12">
                         <div className="flex items-center justify-center gap-2 mb-4">
-                            <Users className="w-8 h-8 text-[#C84B59]" />
+                            <Users className="w-8 h-8 text-[#375534]" />
                             <h1 className="text-4xl sm:text-5xl font-bold text-[#0F2A1D] dark:text-white">
                                 Our Tour Operators
                             </h1>
@@ -38,7 +38,7 @@ export default function PortalOperators({ operators }: Props) {
                             Connect with professional tour operators who will make your travel experience unforgettable
                         </p>
                         <div className="mt-4 text-sm text-[#6B8071] dark:text-[#AEC3B0]">
-                            Total Operators: <span className="font-semibold text-[#C84B59]">{operators.total}</span>
+                            Total Operators: <span className="font-semibold text-[#375534]">{operators.total}</span>
                         </div>
                     </div>
 
@@ -52,7 +52,7 @@ export default function PortalOperators({ operators }: Props) {
                                         className="group rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-2"
                                     >
                                         {/* Header Background */}
-                                        <div className="h-24 bg-gradient-to-r from-[#C84B59] to-[#E89BA3] dark:from-[#C84B59] dark:to-[#6B8071]"></div>
+                                        <div className="h-24 bg-gradient-to-r from-[#375534] to-[#6B8071] dark:from-[#375534] dark:to-[#AEC3B0]"></div>
 
                                         {/* Content */}
                                         <div className="px-6 pb-6">
@@ -76,10 +76,10 @@ export default function PortalOperators({ operators }: Props) {
                                             {/* Email */}
                                             <div className="bg-[#E3EED4] dark:bg-[#375534]/30 rounded-lg p-3 mb-4">
                                                 <div className="flex items-start gap-2">
-                                                    <Mail className="w-4 h-4 text-[#C84B59] flex-shrink-0 mt-0.5" />
+                                                    <Mail className="w-4 h-4 text-[#375534] flex-shrink-0 mt-0.5" />
                                                     <a 
                                                         href={`mailto:${operator.email}`}
-                                                        className="text-sm text-[#0F2A1D] dark:text-white hover:text-[#C84B59] dark:hover:text-[#E89BA3] break-all transition-colors"
+                                                        className="text-sm text-[#0F2A1D] dark:text-white hover:text-[#375534] dark:hover:text-[#AEC3B0] break-all transition-colors"
                                                     >
                                                         {operator.email}
                                                     </a>
@@ -87,7 +87,7 @@ export default function PortalOperators({ operators }: Props) {
                                             </div>
 
                                             {/* Contact Button */}
-                                            <button className="w-full px-4 py-3 bg-[#C84B59] text-white font-medium rounded-lg hover:bg-[#B03A47] transition-colors flex items-center justify-center gap-2 group/btn">
+                                            <button className="w-full px-4 py-3 bg-[#375534] text-white font-medium rounded-lg hover:bg-[#2a4029] transition-colors flex items-center justify-center gap-2 group/btn">
                                                 <span>Get in Touch</span>
                                                 <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                                             </button>
@@ -111,7 +111,7 @@ export default function PortalOperators({ operators }: Props) {
                                             key={i + 1}
                                             className={`px-3 py-2 rounded-lg transition-colors ${
                                                 operators.current_page === i + 1
-                                                    ? 'bg-[#C84B59] text-white'
+                                                    ? 'bg-[#375534] text-white'
                                                     : 'border border-[#AEC3B0]/40 dark:border-[#375534]/40 text-[#0F2A1D] dark:text-white hover:bg-white dark:hover:bg-[#375534]/30'
                                             }`}
                                         >

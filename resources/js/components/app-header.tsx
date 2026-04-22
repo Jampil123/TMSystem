@@ -114,6 +114,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
 
                                         <div className="flex flex-col space-y-4">
                                             {rightNavItems.map((item) => (
+                                                item.href && (
                                                 <a
                                                     key={item.title}
                                                     href={toUrl(item.href)}
@@ -126,6 +127,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                     )}
                                                     <span>{item.title}</span>
                                                 </a>
+                                                )
                                             ))}
                                         </div>
                                     </div>
@@ -147,6 +149,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         <NavigationMenu className="flex h-full items-stretch">
                             <NavigationMenuList className="flex h-full items-stretch space-x-2">
                                 {mainNavItems.map((item, index) => (
+                                    item.href && (
                                     <NavigationMenuItem
                                         key={index}
                                         className="relative flex h-full items-center"
@@ -171,6 +174,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-white"></div>
                                         )}
                                     </NavigationMenuItem>
+                                    )
                                 ))}
                             </NavigationMenuList>
                         </NavigationMenu>
@@ -187,6 +191,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             </Button>
                             <div className="ml-1 hidden gap-1 lg:flex">
                                 {rightNavItems.map((item) => (
+                                    item.href && (
                                     <TooltipProvider
                                         key={item.title}
                                         delayDuration={0}
@@ -212,6 +217,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
+                                    )
                                 ))}
                             </div>
                         </div>

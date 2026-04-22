@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import TouristLayout from '@/layouts/app/tourist-layout';
-import { MapPin, Star } from 'lucide-react';
+import { MapPin, Star, Sparkles } from 'lucide-react';
 
 interface Accommodation {
     id: number;
@@ -10,6 +10,7 @@ interface Accommodation {
     rating: number;
     image: string;
     type?: string;
+    price?: string;
 }
 
 interface Props {
@@ -25,16 +26,19 @@ export default function ExploreAccommodations({ accommodations }: Props) {
     return (
         <TouristLayout>
             <Head title="Explore Accommodations" />
-            <div className="min-h-screen bg-[#E3EED4] dark:bg-[#0F2A1D] p-6">
+            <div className="min-h-screen bg-gradient-to-br from-[#E3EED4] via-[#E3EED4] to-[#AEC3B0]/20 dark:bg-gradient-to-br dark:from-[#0F2A1D] dark:via-[#0F2A1D] dark:to-[#375534]/20 p-6">
                 <div className="max-w-7xl mx-auto">
-                    {/* Header */}
-                    <div className="mb-8">
-                        <h1 className="text-4xl font-bold text-[#0F2A1D] dark:text-white mb-2">
-                            Explore Accommodations
-                        </h1>
-                        <p className="text-[#6B8071] dark:text-[#AEC3B0]">
-                            Find the perfect place to stay
-                        </p>
+                    {/* Header with Background Accent */}
+                    <div className="mb-12 relative">
+                        <div className="absolute -top-8 -left-6 w-32 h-32 bg-[#375534]/5 dark:bg-[#375534]/10 rounded-full blur-3xl"></div>
+                        <div className="relative">
+                            <h1 className="text-5xl font-bold text-[#0F2A1D] dark:text-white mb-3 bg-gradient-to-r from-[#0F2A1D] to-[#375534] dark:from-white dark:to-[#AEC3B0] bg-clip-text text-transparent">
+                                Explore Accommodations
+                            </h1>
+                            <p className="text-lg text-[#6B8071] dark:text-[#AEC3B0] font-medium">
+                                Find the perfect place to stay for your unforgettable journey
+                            </p>
+                        </div>
                     </div>
 
                     {/* Accommodations Grid */}
@@ -59,7 +63,7 @@ export default function ExploreAccommodations({ accommodations }: Props) {
                                             </span>
                                         </div>
                                         {accommodation.type && (
-                                            <div className="absolute top-3 left-3 bg-[#C84B59] dark:bg-[#C84B59] text-white px-3 py-1 rounded-lg text-xs font-medium">
+                                            <div className="absolute top-3 left-3 bg-[#375534] dark:bg-[#375534] text-white px-3 py-1 rounded-lg text-xs font-medium">
                                                 {accommodation.type}
                                             </div>
                                         )}
@@ -82,8 +86,11 @@ export default function ExploreAccommodations({ accommodations }: Props) {
                                         </div>
 
                                         {/* Footer */}
-                                        <div className="pt-3 border-t border-[#AEC3B0]/20 dark:border-[#375534]/20">
-                                            <button className="w-full px-4 py-2 bg-[#C84B59] dark:bg-[#C84B59] text-white text-sm font-medium rounded-lg hover:bg-[#B03A47] transition-colors">
+                                        <div className="flex items-center justify-between pt-3 border-t border-[#AEC3B0]/20 dark:border-[#375534]/20">
+                                            <span className="text-lg font-bold text-[#375534] dark:text-[#AEC3B0]">
+                                                {accommodation.price || 'Contact'}
+                                            </span>
+                                            <button className="px-4 py-2 bg-[#375534] dark:bg-[#375534] text-white text-sm font-medium rounded-lg hover:bg-[#2d4a2a] transition-colors">
                                                 View Details
                                             </button>
                                         </div>
@@ -109,7 +116,7 @@ export default function ExploreAccommodations({ accommodations }: Props) {
                                     key={i + 1}
                                     className={`px-3 py-2 rounded-lg transition-colors ${
                                         accommodations.current_page === i + 1
-                                            ? 'bg-[#C84B59] text-white'
+                                            ? 'bg-[#375534] text-white'
                                             : 'border border-[#AEC3B0]/40 dark:border-[#375534]/40 text-[#0F2A1D] dark:text-white hover:bg-white dark:hover:bg-[#375534]/30'
                                     }`}
                                 >

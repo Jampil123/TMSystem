@@ -138,7 +138,7 @@ export default function BookingHistory() {
                                     </div>
                                     <div>
                                         <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mb-1">Total Price</p>
-                                        <p className="text-sm font-semibold text-[#C84B59] dark:text-[#E89BA3]">{booking.totalPrice}</p>
+                                        <p className="text-sm font-semibold text-[#375534] dark:text-[#AEC3B0]">{booking.totalPrice}</p>
                                     </div>
                                 </div>
 

@@ -2,55 +2,23 @@ import { Head } from '@inertiajs/react';
 import TouristLayout from '@/layouts/app/tourist-layout';
 import { AlertCircle, Users, TrendingUp, MapPin } from 'lucide-react';
 
-const crowdData = [
-    {
-        id: 1,
-        location: 'Eiffel Tower',
-        crowdLevel: 'Very High',
-        percentage: 95,
-        status: 'Not Recommended',
-        estimated: '12,500 people',
-        color: 'bg-red-500',
-    },
-    {
-        id: 2,
-        location: 'Louvre Museum',
-        crowdLevel: 'High',
-        percentage: 78,
-        status: 'Busy',
-        estimated: '8,000 people',
-        color: 'bg-orange-500',
-    },
-    {
-        id: 3,
-        location: 'Arc de Triomphe',
-        crowdLevel: 'Moderate',
-        percentage: 55,
-        status: 'Manageable',
-        estimated: '4,200 people',
-        color: 'bg-yellow-500',
-    },
-    {
-        id: 4,
-        location: 'Notre-Dame Cathedral',
-        crowdLevel: 'Low',
-        percentage: 32,
-        status: 'Good Time',
-        estimated: '1,800 people',
-        color: 'bg-green-500',
-    },
-    {
-        id: 5,
-        location: 'Sacré-Cœur Basilica',
-        crowdLevel: 'Low',
-        percentage: 28,
-        status: 'Good Time',
-        estimated: '1,200 people',
-        color: 'bg-green-500',
-    },
-];
+interface CrowdItem {
+    id: number;
+    location: string;
+    crowdLevel: string;
+    percentage: number;
+    status: string;
+    estimated: string;
+    color: string;
+    capacity: number;
+    description?: string;
+}
 
-export default function CrowdIdentifier() {
+interface Props {
+    crowdData: CrowdItem[];
+}
+
+export default function CrowdIdentifier({ crowdData }: Props) {
     return (
         <TouristLayout>
             <Head title="Crowd Identifier" />
@@ -80,7 +48,7 @@ export default function CrowdIdentifier() {
                             {/* Header */}
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-3">
-                                    <MapPin className="w-5 h-5 text-[#C84B59]" />
+                                    <MapPin className="w-5 h-5 text-[#375534]" />
                                     <h3 className="text-lg font-semibold text-[#0F2A1D] dark:text-white">{item.location}</h3>
                                 </div>
                                 <span className={`px-3 py-1 rounded-full text-sm font-medium text-white ${item.color}`}>

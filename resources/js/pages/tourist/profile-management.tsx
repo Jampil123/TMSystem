@@ -80,7 +80,7 @@ export default function ProfileManagement() {
                             </div>
                             <div>
                                 <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mb-1">Loyalty Points</p>
-                                <p className="font-semibold text-[#C84B59] dark:text-[#E89BA3]">1,250 points</p>
+                                <p className="font-semibold text-[#375534] dark:text-[#AEC3B0]">1,250 points</p>
                             </div>
                         </div>
                     </div>
@@ -102,7 +102,7 @@ export default function ProfileManagement() {
                                     value={formData.name}
                                     onChange={handleInputChange}
                                     disabled={!isEditing}
-                                    className="w-full px-4 py-2 rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#1a3a2e] text-[#0F2A1D] dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#C84B59]/50"
+                                    className="w-full px-4 py-2 rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#1a3a2e] text-[#0F2A1D] dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#375534]/50"
                                 />
                             </div>
 
@@ -118,7 +118,7 @@ export default function ProfileManagement() {
                                     value={formData.email}
                                     onChange={handleInputChange}
                                     disabled={!isEditing}
-                                    className="w-full px-4 py-2 rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#1a3a2e] text-[#0F2A1D] dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#C84B59]/50"
+                                    className="w-full px-4 py-2 rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#1a3a2e] text-[#0F2A1D] dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#375534]/50"
                                 />
                             </div>
 
@@ -134,7 +134,7 @@ export default function ProfileManagement() {
                                     value={formData.phone}
                                     onChange={handleInputChange}
                                     disabled={!isEditing}
-                                    className="w-full px-4 py-2 rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#1a3a2e] text-[#0F2A1D] dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#C84B59]/50"
+                                    className="w-full px-4 py-2 rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#1a3a2e] text-[#0F2A1D] dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#375534]/50"
                                 />
                             </div>
 
@@ -151,7 +151,7 @@ export default function ProfileManagement() {
                                         value={formData.country}
                                         onChange={handleInputChange}
                                         disabled={!isEditing}
-                                        className="w-full px-4 py-2 rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#1a3a2e] text-[#0F2A1D] dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#C84B59]/50"
+                                        className="w-full px-4 py-2 rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#1a3a2e] text-[#0F2A1D] dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#375534]/50"
                                     />
                                 </div>
                                 <div>
@@ -162,7 +162,7 @@ export default function ProfileManagement() {
                                         value={formData.city}
                                         onChange={handleInputChange}
                                         disabled={!isEditing}
-                                        className="w-full px-4 py-2 rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#1a3a2e] text-[#0F2A1D] dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#C84B59]/50"
+                                        className="w-full px-4 py-2 rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#1a3a2e] text-[#0F2A1D] dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#375534]/50"
                                     />
                                 </div>
                             </div>
@@ -176,7 +176,7 @@ export default function ProfileManagement() {
                                     onChange={handleInputChange}
                                     disabled={!isEditing}
                                     rows={4}
-                                    className="w-full px-4 py-2 rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#1a3a2e] text-[#0F2A1D] dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#C84B59]/50 resize-none"
+                                    className="w-full px-4 py-2 rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#1a3a2e] text-[#0F2A1D] dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#375534]/50 resize-none"
                                 />
                             </div>
                         </div>
@@ -189,19 +189,19 @@ export default function ProfileManagement() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <label className="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" defaultChecked className="w-4 h-4 rounded accent-[#C84B59]" />
+                            <input type="checkbox" defaultChecked className="w-4 h-4 rounded accent-[#375534]" />
                             <span className="text-sm text-[#0F2A1D] dark:text-white">Email notifications for bookings</span>
                         </label>
                         <label className="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" defaultChecked className="w-4 h-4 rounded accent-[#C84B59]" />
+                            <input type="checkbox" defaultChecked className="w-4 h-4 rounded accent-[#375534]" />
                             <span className="text-sm text-[#0F2A1D] dark:text-white">Travel tips and recommendations</span>
                         </label>
                         <label className="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" defaultChecked className="w-4 h-4 rounded accent-[#C84B59]" />
+                            <input type="checkbox" defaultChecked className="w-4 h-4 rounded accent-[#375534]" />
                             <span className="text-sm text-[#0F2A1D] dark:text-white">Special deals and promotions</span>
                         </label>
                         <label className="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" className="w-4 h-4 rounded accent-[#C84B59]" />
+                            <input type="checkbox" className="w-4 h-4 rounded accent-[#375534]" />
                             <span className="text-sm text-[#0F2A1D] dark:text-white">Security alerts</span>
                         </label>
                     </div>

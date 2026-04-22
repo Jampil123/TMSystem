@@ -34,15 +34,11 @@ class RegisteredUserController extends Controller
             return redirect()->back();
         }
 
-        // For approved users (tourist), don't auto-redirect
-        // Let frontend handle showing modal first, then redirect
+        // For approved users (tourist), log them in and redirect to dashboard
         Auth::login($user, $request->boolean('remember'));
 
-        // Return a response that tells frontend to show modal
-        return back()->with([
-            'registration_status' => 'success',
-            'registration_message' => 'Registration successful! Redirecting to dashboard...'
-        ]);
+        // Redirect to tourist dashboard
+        return redirect()->intended(route('tourist.dashboard'));
     }
 }
 

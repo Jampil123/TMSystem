@@ -1,55 +1,46 @@
-import { Phone, MessageCircle } from 'lucide-react';
+import { Phone, MessageCircle, Sparkles } from 'lucide-react';
 import { usePage } from '@inertiajs/react';
 import { NotificationBell } from '@/components/NotificationBell';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { UserMenuContent } from '@/components/user-menu-content';
 import type { SharedData } from '@/types';
 
 export function TouristSidebarHeader() {
     const { auth } = usePage<SharedData>().props;
+    const currentUrl = usePage().url;
+
+    const getPageTitle = () => {
+        if (currentUrl.includes('/accommodations')) {
+            return 'Your Comfort First';
+        } else if (currentUrl.includes('/attractions')) {
+            return 'Discover Destination';
+        } else if (currentUrl.includes('/activities')) {
+            return 'Adventure Awaits';
+        } else if (currentUrl.includes('/operators')) {
+            return 'Meet Our Partners';
+        } else if (currentUrl.includes('/crowd-identifier')) {
+            return 'Crowd Levels';
+        }
+        return 'Welcome';
+    };
 
     return (
-        <header className="flex h-16 shrink-0 items-center justify-end gap-4 border-b border-[#AEC3B0]/40 dark:border-[#375534]/40 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4 bg-white dark:bg-[#0F2A1D]">
+        <header className="flex h-18 shrink-0 items-center justify-between gap-4 border-b border-[#AEC3B0]/40 dark:border-[#375534]/40 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4 bg-white dark:bg-[#0F2A1D]">
+            {/* Left Section - Page Title */}
+            <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-[#375534] dark:text-[#AEC3B0]" />
+                <span className="text-lg font-semibold text-[#375534] dark:text-[#AEC3B0] uppercase tracking-wide">
+                    {getPageTitle()}
+                </span>
+            </div>
+
             {/* Right Section */}
             <div className="flex items-center gap-6">
                 
 
                 {/* Divider */}
-                <div className="h-6 w-px bg-[#AEC3B0]/40 dark:bg-[#375534]/40"></div>
+                <div className="h-5 w-px bg-[#AEC3B0]/40 dark:bg-[#375534]/40"></div>
 
                 {/* Notification Bell */}
                 <NotificationBell />
-
-                {/* Divider */}
-                <div className="h-6 w-px bg-[#AEC3B0]/40 dark:bg-[#375534]/40"></div>
-
-                {/* User Profile Dropdown */}
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#E3EED4] dark:hover:bg-[#375534]/30 transition-colors group cursor-pointer">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#375534] to-[#6B8071] flex items-center justify-center text-white font-semibold text-sm">
-                                {auth.user.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                                <p className="text-sm font-semibold text-[#0F2A1D] dark:text-white">{auth.user.name}</p>
-                                <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0]">Tourist</p>
-                            </div>
-                            <svg className="w-4 h-4 text-[#6B8071] dark:text-[#AEC3B0] group-hover:text-[#0F2A1D] dark:group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                            </svg>
-                        </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                        className="w-56 rounded-lg bg-white dark:bg-[#0F2A1D] border border-[#AEC3B0]/40 dark:border-[#375534]/40"
-                        align="end"
-                    >
-                        <UserMenuContent user={auth.user} />
-                    </DropdownMenuContent>
-                </DropdownMenu>
             </div>
         </header>
     );

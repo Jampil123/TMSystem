@@ -27,7 +27,7 @@ export default function ReportsAnalytics() {
                                 <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-2">Total Spending</p>
                                 <p className="text-3xl font-bold text-[#0F2A1D] dark:text-white">$3,450</p>
                             </div>
-                            <DollarSign className="w-8 h-8 text-[#C84B59]" />
+                            <DollarSign className="w-8 h-8 text-[#375534]" />
                         </div>
                     </div>
 
@@ -77,7 +77,7 @@ export default function ReportsAnalytics() {
                                 <div key={item.label}>
                                     <div className="flex justify-between items-center mb-2">
                                         <span className="text-sm text-[#0F2A1D] dark:text-white font-medium">{item.label}</span>
-                                        <span className="text-sm font-semibold text-[#C84B59] dark:text-[#E89BA3]">{item.amount}</span>
+                                        <span className="text-sm font-semibold text-[#375534] dark:text-[#AEC3B0]">{item.amount}</span>
                                     </div>
                                     <div className="h-3 bg-[#AEC3B0]/20 dark:bg-[#375534]/30 rounded-full overflow-hidden">
                                         <div
@@ -126,13 +126,13 @@ export default function ReportsAnalytics() {
                         ].map((item) => (
                             <div key={item.destination} className="flex items-center justify-between pb-4 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20 last:border-b-0">
                                 <div className="flex items-center gap-4">
-                                    <span className="text-lg font-bold text-[#C84B59]">#{item.rank}</span>
+                                    <span className="text-lg font-bold text-[#375534]">#{item.rank}</span>
                                     <div>
                                         <p className="font-medium text-[#0F2A1D] dark:text-white">{item.destination}</p>
                                         <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0]">{item.visits} visit(s)</p>
                                     </div>
                                 </div>
-                                <p className="font-semibold text-[#C84B59] dark:text-[#E89BA3]">{item.spent}</p>
+                                <p className="font-semibold text-[#375534] dark:text-[#AEC3B0]">{item.spent}</p>
                             </div>
                         ))}
                     </div>

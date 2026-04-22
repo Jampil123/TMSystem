@@ -231,7 +231,7 @@ export default function TouristDashboard({ featuredAccommodation = null, attract
                                 {/* Tabs */}
                                 <div className="border-b border-[#AEC3B0]/20 dark:border-[#375534]/20 mb-6">
                                     <div className="flex gap-8">
-                                        <button className="py-3 border-b-2 border-[#C84B59] text-[#C84B59] dark:text-[#E89BA3] font-medium text-sm">
+                                        <button className="py-3 border-b-2 border-[#375534] text-[#375534] dark:text-[#AEC3B0] font-medium text-sm">
                                             Overview
                                         </button>
                                         <button className="py-3 text-[#6B8071] dark:text-[#AEC3B0] font-medium text-sm hover:text-[#0F2A1D] dark:hover:text-white transition-colors">
@@ -280,7 +280,7 @@ export default function TouristDashboard({ featuredAccommodation = null, attract
                                 <div>
                                     <h3 className="font-semibold text-[#0F2A1D] dark:text-white mb-4">Nearby Places</h3>
                                     <div className="flex gap-4 overflow-x-auto pb-2">
-                                        <button className="px-4 py-2 rounded-full bg-[#C84B59] dark:bg-[#C84B59] text-white font-medium text-sm whitespace-nowrap hover:bg-[#B03A47] transition-colors">
+                                        <button className="px-4 py-2 rounded-full bg-[#375534] dark:bg-[#375534] text-white font-medium text-sm whitespace-nowrap hover:bg-[#2d4a2a] transition-colors">
                                             School
                                         </button>
                                         <button className="px-4 py-2 rounded-full border border-[#AEC3B0]/40 dark:border-[#375534]/40 text-[#6B8071] dark:text-[#AEC3B0] font-medium text-sm whitespace-nowrap hover:bg-[#E3EED4] dark:hover:bg-[#375534]/20 transition-colors">
@@ -311,7 +311,7 @@ export default function TouristDashboard({ featuredAccommodation = null, attract
                                     onClick={() => setSelectedAttraction(place)}
                                     className={`rounded-xl border shadow-sm overflow-hidden transition-all cursor-pointer ${
                                         selectedAttraction?.id === place.id
-                                            ? 'border-[#C84B59] dark:border-[#E89BA3] shadow-md bg-white dark:bg-[#0F2A1D]'
+                                            ? 'border-[#375534] dark:border-[#AEC3B0] shadow-md bg-white dark:bg-[#0F2A1D]'
                                             : 'border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] hover:shadow-md'
                                     }`}
                                 >
@@ -335,7 +335,7 @@ export default function TouristDashboard({ featuredAccommodation = null, attract
                                             <MapPin className="w-3 h-3" />
                                             {place.location}
                                         </p>
-                                        <p className="text-[#C84B59] dark:text-[#E89BA3] font-semibold text-sm">{place.price}</p>
+                                        <p className="text-[#375534] dark:text-[#AEC3B0] font-semibold text-sm">{place.price}</p>
                                     </div>
                                 </div>
                             ))
@@ -375,7 +375,7 @@ export default function TouristDashboard({ featuredAccommodation = null, attract
                                         <span className="font-medium">Email:</span><br />
                                         {operator.email}
                                     </p>
-                                    <button className="w-full bg-[#C84B59] dark:bg-[#C84B59] text-white font-medium text-sm py-2 rounded-lg hover:bg-[#B03A47] transition-colors">
+                                    <button className="w-full bg-[#375534] dark:bg-[#375534] text-white font-medium text-sm py-2 rounded-lg hover:bg-[#2d4a2a] transition-colors">
                                         Contact Operator
                                     </button>
                                 </div>
