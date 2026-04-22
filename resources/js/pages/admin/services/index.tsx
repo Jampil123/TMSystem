@@ -89,9 +89,9 @@ export default function ServiceIndex({ services, filters, statuses, serviceTypes
             <Head title="Service Management" />
             <div className="flex h-full flex-1 flex-col gap-6 p-6 bg-[#E3EED4] dark:bg-[#0F2A1D]">
                 {/* Header */}
-                <div>
-                    <h1 className="text-3xl font-bold text-[#0F2A1D] dark:text-white">Service Management</h1>
-                    <p className="mt-1 text-sm text-[#6B8071] dark:text-[#AEC3B0]">
+                <div className="rounded-2xl bg-[#375534] text-white p-4 rounded-lg">
+                    <h1 className="text-2xl font-bold">Services Management</h1>
+                    <p className="text-[#E3EED4] text-sm mt-1">
                         Review and manage all services submitted by operators
                     </p>
                 </div>
@@ -194,23 +194,23 @@ export default function ServiceIndex({ services, filters, statuses, serviceTypes
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-[#AEC3B0]/20 dark:border-[#375534]/20 bg-[#E3EED4] dark:bg-[#375534]/20">
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] dark:text-white">
+                                <tr className="border-b border-[#AEC3B0]/20 dark:border-[#375534]/20 bg-[#6B9071] dark:bg-[#375534]/20">
+                                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] dark:text-white text-white">
                                         Service Name
                                     </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] dark:text-white">
+                                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] dark:text-white text-white">
                                         Type
                                     </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] dark:text-white">
+                                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] dark:text-white text-white">
                                         Operator
                                     </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] dark:text-white">
+                                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] dark:text-white text-white">
                                         Status
                                     </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] dark:text-white">
+                                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#0F2A1D] dark:text-white text-white">
                                         Created
                                     </th>
-                                    <th className="px-6 py-3 text-right text-sm font-semibold text-[#0F2A1D] dark:text-white">
+                                    <th className="px-6 py-3 text-right text-sm font-semibold text-[#0F2A1D] dark:text-white text-white">
                                         Action
                                     </th>
                                 </tr>
@@ -244,11 +244,6 @@ export default function ServiceIndex({ services, filters, statuses, serviceTypes
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="inline-flex gap-2">
-                                                <ServiceActionButton 
-                                                    serviceId={service.service_id}
-                                                    currentStatus={service.status}
-                                                    compact={true}
-                                                />
                                                 <Link
                                                     href={`/services/${service.service_id}`}
                                                     className="inline-flex items-center gap-2 rounded-lg bg-[#375534] hover:bg-[#2d4429] text-white px-3 py-1 text-xs font-medium transition-colors"
@@ -271,23 +266,6 @@ export default function ServiceIndex({ services, filters, statuses, serviceTypes
                     )}
                 </div>
 
-                {/* Quick Links */}
-                <div className="grid gap-4 md:grid-cols-2">
-                    <Link
-                        href="/services/pending"
-                        className="rounded-lg bg-yellow-100 dark:bg-yellow-900/30 p-4 border border-yellow-300 dark:border-yellow-800 hover:shadow-lg transition-shadow"
-                    >
-                        <h3 className="font-semibold text-yellow-900 dark:text-yellow-300">Pending Services</h3>
-                        <p className="text-sm text-yellow-800 dark:text-yellow-400">Review services awaiting approval</p>
-                    </Link>
-                    <Link
-                        href="/services/approved"
-                        className="rounded-lg bg-green-100 dark:bg-green-900/30 p-4 border border-green-300 dark:border-green-800 hover:shadow-lg transition-shadow"
-                    >
-                        <h3 className="font-semibold text-green-900 dark:text-green-300">Approved Services</h3>
-                        <p className="text-sm text-green-800 dark:text-green-400">View all approved services</p>
-                    </Link>
-                </div>
             </div>
         </AppLayout>
     );

@@ -21,7 +21,6 @@ interface Attraction {
     category: string;
     entry_fee: number | null;
     image_url: string | null;
-    rating: number | null;
     status: string;
     best_time_to_visit?: string | null;
 }
@@ -53,7 +52,6 @@ export default function AttractionManagement({ attractions = [], stats = { total
         category: '',
         entry_fee: '',
         image_url: '',
-        rating: '',
         status: 'active',
         latitude: '9.4619',
         longitude: '123.7473',
@@ -69,7 +67,6 @@ export default function AttractionManagement({ attractions = [], stats = { total
             category: '',
             entry_fee: '',
             image_url: '',
-            rating: '',
             status: 'active',
             latitude: '9.4619',
             longitude: '123.7473',
@@ -88,7 +85,6 @@ export default function AttractionManagement({ attractions = [], stats = { total
             category: attraction.category,
             entry_fee: attraction.entry_fee?.toString() || '',
             image_url: attraction.image_url || '',
-            rating: attraction.rating?.toString() || '',
             status: attraction.status,
             latitude: '9.4619',
             longitude: '123.7473',
@@ -217,7 +213,6 @@ export default function AttractionManagement({ attractions = [], stats = { total
                     category: '',
                     entry_fee: '',
                     image_url: '',
-                    rating: '',
                     status: 'active',
                     latitude: '9.4619',
                     longitude: '123.7473',
@@ -350,7 +345,6 @@ export default function AttractionManagement({ attractions = [], stats = { total
                                     <th className="px-6 py-4 text-left text-sm font-bold text-gray-900 dark:text-white">Location</th>
                                     <th className="px-6 py-4 text-left text-sm font-bold text-gray-900 dark:text-white">Category</th>
                                     <th className="px-6 py-4 text-left text-sm font-bold text-gray-900 dark:text-white">Entry Fee</th>
-                                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-900 dark:text-white">Rating</th>
                                     <th className="px-6 py-4 text-left text-sm font-bold text-gray-900 dark:text-white">Status</th>
                                     <th className="px-6 py-4 text-right text-sm font-bold text-gray-900 dark:text-white">Actions</th>
                                 </tr>
@@ -358,7 +352,7 @@ export default function AttractionManagement({ attractions = [], stats = { total
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                                 {attractions.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="px-6 py-12 text-center">
+                                        <td colSpan={6} className="px-6 py-12 text-center">
                                             <div className="flex flex-col items-center gap-2">
                                                 <Compass className="w-12 h-12 text-gray-300 dark:text-gray-600" />
                                                 <p className="text-gray-500 dark:text-gray-400 font-medium">No attractions found</p>
@@ -386,27 +380,6 @@ export default function AttractionManagement({ attractions = [], stats = { total
                                             </td>
                                             <td className="px-6 py-5 text-gray-700 dark:text-gray-300 text-sm font-medium">
                                                 {attraction.entry_fee ? `₱${parseFloat(attraction.entry_fee.toString()).toFixed(2)}` : '—'}
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                {attraction.rating ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex items-center gap-1">
-                                                            {[...Array(5)].map((_, i) => (
-                                                                <Star
-                                                                    key={i}
-                                                                    className={`w-4 h-4 ${
-                                                                        i < Math.floor(attraction.rating!)
-                                                                            ? 'fill-yellow-400 text-yellow-400'
-                                                                            : 'text-gray-300 dark:text-gray-600'
-                                                                    }`}
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                        <span className="text-gray-700 dark:text-gray-300 text-sm font-medium">{attraction.rating}/5</span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-gray-500 dark:text-gray-400 text-sm">—</span>
-                                                )}
                                             </td>
                                             <td className="px-6 py-5">
                                                 <StatusBadge status={attraction.status} />
@@ -624,38 +597,20 @@ export default function AttractionManagement({ attractions = [], stats = { total
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                                            Rating (0-5)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            name="rating"
-                                            value={formData.rating}
-                                            onChange={handleFormChange}
-                                            placeholder="0.0"
-                                            min="0"
-                                            max="5"
-                                            step="0.1"
-                                            className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#375534] focus:border-transparent dark:bg-[#0F2A1D] dark:text-white transition"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                                            Status *
-                                        </label>
-                                        <select
-                                            name="status"
-                                            value={formData.status}
-                                            onChange={handleFormChange}
-                                            className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#375534] focus:border-transparent dark:bg-[#0F2A1D] dark:text-white transition"
-                                            required
-                                        >
-                                            <option value="active">Active</option>
-                                            <option value="inactive">Inactive</option>
-                                        </select>
-                                    </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                                        Status *
+                                    </label>
+                                    <select
+                                        name="status"
+                                        value={formData.status}
+                                        onChange={handleFormChange}
+                                        className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#375534] focus:border-transparent dark:bg-[#0F2A1D] dark:text-white transition"
+                                        required
+                                    >
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
                                 </div>
 
                                 <div>

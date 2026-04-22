@@ -54,21 +54,18 @@ export default function PendingServices({ services, totalPending }: Props) {
             <Head title="Pending Services" />
             <div className="flex h-full flex-1 flex-col gap-6 p-6 bg-[#E3EED4] dark:bg-[#0F2A1D]">
                 {/* Header */}
-                <div>
-                    <div className="flex items-center gap-3 mb-2">
-                        <Bell className="w-8 h-8 text-yellow-600" />
-                        <h1 className="text-3xl font-bold text-[#0F2A1D] dark:text-white">Pending Services</h1>
+                <div className="rounded-2xl bg-[#375534] text-white p-4 rounded-lg flex justify-between items-center gap-3">
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-3">
+                            <Bell className="w-8 h-8 text-red-600" />
+                            <h1 className="text-2xl font-bold">Pending Services</h1>
+                        </div>
+                        <p className="text-[#E3EED4] text-sm">service awaiting approval</p>
                     </div>
-                    <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0]">
-                        {totalPending} service{totalPending !== 1 ? 's' : ''} awaiting approval
-                    </p>
-                </div>
-
-                {/* Quick Stats */}
-                <div className="rounded-lg bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-800 p-4">
-                    <p className="text-sm font-medium text-yellow-900 dark:text-yellow-300">
-                        <span className="text-2xl font-bold">{totalPending}</span> service{totalPending !== 1 ? 's' : ''} pending review
-                    </p>
+                    <div className="bg-red-600 rounded-lg px-4 py-2 text-center font-bold text-lg whitespace-nowrap">
+                        <div>{totalPending}</div>
+                        <div className="text-xs font-normal">{totalPending !== 1 ? 'services' : 'service'}</div>
+                    </div>
                 </div>
 
                 {/* Search */}

@@ -60,21 +60,18 @@ export default function ApprovedServices({ services, totalApproved }: Props) {
             <Head title="Approved Services" />
             <div className="flex h-full flex-1 flex-col gap-6 p-6 bg-[#E3EED4] dark:bg-[#0F2A1D]">
                 {/* Header */}
-                <div>
-                    <div className="flex items-center gap-3 mb-2">
-                        <CheckCircle className="w-8 h-8 text-green-600" />
-                        <h1 className="text-3xl font-bold text-[#0F2A1D] dark:text-white">Approved Services</h1>
+                <div className="rounded-2xl bg-[#375534] text-white p-4 rounded-lg flex justify-between items-center gap-3">
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-3">
+                            <CheckCircle className="w-8 h-8 text-green-600" />
+                            <h1 className="text-2xl font-bold">Approved Services</h1>
+                        </div>
+                        <p className="text-[#E3EED4] text-sm">live and visible to tourists</p>
                     </div>
-                    <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0]">
-                        {totalApproved} service{totalApproved !== 1 ? 's' : ''} live and visible to tourists
-                    </p>
-                </div>
-
-                {/* Quick Stats */}
-                <div className="rounded-lg bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-800 p-4">
-                    <p className="text-sm font-medium text-green-900 dark:text-green-300">
-                        <span className="text-2xl font-bold">{totalApproved}</span> service{totalApproved !== 1 ? 's' : ''} currently live
-                    </p>
+                    <div className="bg-green-600 rounded-lg px-4 py-2 text-center font-bold text-lg whitespace-nowrap">
+                        <div>{totalApproved}</div>
+                        <div className="text-xs font-normal">{totalApproved !== 1 ? 'services' : 'service'}</div>
+                    </div>
                 </div>
 
                 {/* Search */}
@@ -148,11 +145,6 @@ export default function ApprovedServices({ services, totalApproved }: Props) {
                                     </div>
 
                                     <div className="inline-flex gap-2 flex-shrink-0">
-                                        <ServiceActionButton 
-                                            serviceId={service.service_id}
-                                            currentStatus={service.status}
-                                            compact={true}
-                                        />
                                         <Link
                                             href={`/services/${service.service_id}`}
                                             className="inline-flex items-center gap-2 rounded-lg bg-[#375534] hover:bg-[#2d4429] text-white px-4 py-2 font-medium transition-colors"

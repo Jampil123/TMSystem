@@ -8,6 +8,8 @@ use App\Http\Controllers\Admin\AttractionController;
 use App\Http\Controllers\Admin\OperatorManagementController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\MapController;
+use App\Http\Controllers\Admin\AdminNotificationController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Portal\HomeController;
 use App\Http\Controllers\Portal\AttractionDetailController;
 use App\Http\Controllers\Portal\ContactController;
@@ -310,9 +312,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('admin.emergency-alerts');
 
     // Notifications Page
-    Route::get('notifications', function () {
-        return Inertia::render('notifications');
-    })->name('notifications');
+    Route::get('settings/notifications', [AdminNotificationController::class, 'index'])->name('settings.notifications.index');
+    Route::post('settings/notifications/{notification}/mark-read', [AdminNotificationController::class, 'markAsRead'])->name('settings.notifications.mark-read');
+    Route::post('settings/notifications/{notification}/mark-unread', [AdminNotificationController::class, 'markAsUnread'])->name('settings.notifications.mark-unread');
+    Route::post('settings/notifications/mark-all-as-read', [AdminNotificationController::class, 'markAllAsRead'])->name('settings.notifications.mark-all-as-read');
+    Route::delete('settings/notifications/{notification}', [AdminNotificationController::class, 'destroy'])->name('settings.notifications.destroy');
+    Route::post('settings/notifications/delete-read', [AdminNotificationController::class, 'deleteRead'])->name('settings.notifications.delete-read');
+    Route::post('settings/notifications/delete-old', [AdminNotificationController::class, 'deleteOld'])->name('settings.notifications.delete-old');
+    Route::get('settings/notifications/stats', [AdminNotificationController::class, 'stats'])->name('settings.notifications.stats');
+
+    // Audit Logs Routes
+    Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::get('audit-logs/{auditLog}', [AuditLogController::class, 'show'])->name('audit-logs.show');
+    Route::get('audit-logs/export', [AuditLogController::class, 'export'])->name('audit-logs.export');
+    Route::post('audit-logs/delete-old', [AuditLogController::class, 'deleteAll'])->name('audit-logs.delete-all');
 });
 
 // Guide Registration Routes (Public) - MUST come before admin routes to avoid parameter catching

@@ -19,7 +19,7 @@ interface MockAttraction {
     longitude: number;
     category: string;
     entry_fee: number | null;
-    rating: number;
+    crowd_count: number;
     status: 'active' | 'inactive';
 }
 
@@ -32,7 +32,7 @@ const defaultMockAttractions: MockAttraction[] = [
         longitude: 121.7949,
         category: 'Natural',
         entry_fee: 150,
-        rating: 4.8,
+        crowd_count: 0,
         status: 'active',
     },
     {
@@ -42,7 +42,7 @@ const defaultMockAttractions: MockAttraction[] = [
         longitude: 121.7900,
         category: 'Historical',
         entry_fee: 200,
-        rating: 4.5,
+        crowd_count: 0,
         status: 'active',
     },
     {
@@ -52,7 +52,7 @@ const defaultMockAttractions: MockAttraction[] = [
         longitude: 121.7980,
         category: 'Nature',
         entry_fee: 100,
-        rating: 4.6,
+        crowd_count: 0,
         status: 'active',
     },
     {
@@ -62,7 +62,7 @@ const defaultMockAttractions: MockAttraction[] = [
         longitude: 121.7850,
         category: 'Beach',
         entry_fee: 50,
-        rating: 4.7,
+        crowd_count: 0,
         status: 'active',
     },
     {
@@ -72,7 +72,7 @@ const defaultMockAttractions: MockAttraction[] = [
         longitude: 121.7920,
         category: 'Cultural',
         entry_fee: 75,
-        rating: 4.4,
+        crowd_count: 0,
         status: 'inactive',
     },
     {
@@ -82,7 +82,7 @@ const defaultMockAttractions: MockAttraction[] = [
         longitude: 121.7800,
         category: 'Adventure',
         entry_fee: 300,
-        rating: 4.9,
+        crowd_count: 0,
         status: 'active',
     },
 ];
@@ -114,7 +114,14 @@ const isValidCoordinate = (lat: any, lng: any): boolean => {
     );
 };
 
+// Helper function to ensure crowd_count exists with a default
+const normalizeAttraction = (attraction: any): MockAttraction => ({
+    ...attraction,
+    crowd_count: attraction.crowd_count ?? 0,
+});
+
 export default function MapPage({ attractions = defaultMockAttractions }: PageProps) {
+    const normalizedAttractions = (attractions || defaultMockAttractions).map(normalizeAttraction);
     const [selectedAttraction, setSelectedAttraction] = useState<MockAttraction | null>(null);
     const mapRef = useRef<any>(null);
     const { isLoaded, loadError } = useLoadScript({
@@ -122,7 +129,7 @@ export default function MapPage({ attractions = defaultMockAttractions }: PagePr
     });
 
     const handleMarkerClick = useCallback((attraction: MockAttraction) => {
-        setSelectedAttraction(attraction);
+        setSelectedAttraction(normalizeAttraction(attraction));
         panToAttraction(attraction);
     }, []);
 
@@ -145,7 +152,7 @@ export default function MapPage({ attractions = defaultMockAttractions }: PagePr
     };
 
     const handleAttractionSelectFromList = (attraction: MockAttraction) => {
-        setSelectedAttraction(attraction);
+        setSelectedAttraction(normalizeAttraction(attraction));
         panToAttraction(attraction);
     };
 
@@ -206,22 +213,7 @@ export default function MapPage({ attractions = defaultMockAttractions }: PagePr
             <Head title="Attractions Map" />
 
             <div className="grid gap-6 py-6 px-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="rounded-lg p-3" style={{ backgroundImage: 'linear-gradient(to bottom right, #375534, #0F2A1D)' }}>
-                            <Map className="h-6 w-6 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold" style={{ color: '#0F2A1D' }}>
-                                Attractions Map
-                            </h1>
-                            <p className="text-sm" style={{ color: '#375534' }}>
-                                {attractions.length} attractions across the region
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                
 
                 {/* Main Content */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -261,7 +253,7 @@ export default function MapPage({ attractions = defaultMockAttractions }: PagePr
                                 clickableIcons: false,
                             }}>
                                 {/* Markers for attractions */}
-                                {attractions
+                                {normalizedAttractions
                                     .filter(attraction => isValidCoordinate(attraction.latitude, attraction.longitude))
                                     .map((attraction) => (
                                         <Marker
@@ -308,7 +300,7 @@ export default function MapPage({ attractions = defaultMockAttractions }: PagePr
                                                 Category: {selectedAttraction.category}
                                             </p>
                                             <p style={{ color: '#375534', fontSize: '12px', margin: '4px 0' }}>
-                                                Rating: {selectedAttraction.rating}/5 ⭐
+                                                Crowd Today: {selectedAttraction.crowd_count} visitors
                                             </p>
                                             <p style={{ color: '#375534', fontSize: '12px', margin: '4px 0' }}>
                                                 Entry Fee: {selectedAttraction.entry_fee ? `₱${selectedAttraction.entry_fee}` : 'Free'}
@@ -322,19 +314,19 @@ export default function MapPage({ attractions = defaultMockAttractions }: PagePr
 
                     {/* Attractions Sidebar */}
                     <div className="lg:col-span-1">
-                        <div className="rounded-lg border overflow-hidden shadow-sm" style={{ borderColor: '#AEC3B0', backgroundColor: '#FFFFFF', height: '600px', display: 'flex', flexDirection: 'column' }}>
+                        <div className="rounded-lg border overflow-hidden shadow-sm" style={{ borderColor: '#AEC3B0', backgroundColor: '#ffffff', height: '600px', display: 'flex', flexDirection: 'column' }}>
                             <div className="p-4 border-b" style={{ borderColor: '#AEC3B0' }}>
                                 <h2 className="font-semibold" style={{ color: '#0F2A1D' }}>
                                     Attractions
                                 </h2>
                                 <p className="text-sm" style={{ color: '#375534' }}>
-                                    {attractions.length} locations
+                                    {normalizedAttractions.length} locations
                                 </p>
                             </div>
 
                             {/* Attractions List */}
                             <div style={{ overflowY: 'auto', flex: 1 }}>
-                                {attractions.map((attraction) => (
+                                {normalizedAttractions.map((attraction) => (
                                     <div
                                         key={attraction.id}
                                         onClick={() => handleAttractionSelectFromList(attraction)}
@@ -378,8 +370,8 @@ export default function MapPage({ attractions = defaultMockAttractions }: PagePr
                                                 <span className="font-medium">{attraction.category}</span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span>Rating:</span>
-                                                <span className="font-medium">{attraction.rating}/5</span>
+                                                <span>Crowd Today:</span>
+                                                <span className="font-medium">{attraction.crowd_count} visitors</span>
                                             </div>
 
                                             <div className="flex justify-between">
@@ -420,7 +412,7 @@ export default function MapPage({ attractions = defaultMockAttractions }: PagePr
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div
                                 className="p-3 rounded-lg"
                                 style={{ backgroundColor: '#E3EED4' }}
@@ -438,10 +430,10 @@ export default function MapPage({ attractions = defaultMockAttractions }: PagePr
                                 style={{ backgroundColor: '#E3EED4' }}
                             >
                                 <p className="text-xs" style={{ color: '#6B8071' }}>
-                                    Rating
+                                    Crowd Today
                                 </p>
                                 <p className="font-semibold" style={{ color: '#0F2A1D' }}>
-                                    {selectedAttraction.rating}/5 ⭐
+                                    {selectedAttraction.crowd_count} visitors
                                 </p>
                             </div>
 
@@ -456,8 +448,6 @@ export default function MapPage({ attractions = defaultMockAttractions }: PagePr
                                     {selectedAttraction.entry_fee ? `₱${selectedAttraction.entry_fee}` : 'Free'}
                                 </p>
                             </div>
-
-
                         </div>
                     </div>
                 )}
