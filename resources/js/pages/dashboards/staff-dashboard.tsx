@@ -1,10 +1,31 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { LogIn, Users, Maximize2, CheckCircle, AlertTriangle, AlertCircle, QrCode as QrCodeIcon, TrendingUp, Check, X, Clock, MapPin, UserCheck, Plus } from 'lucide-react';
+import { LogIn, Users, Maximize2, CheckCircle, AlertTriangle, AlertCircle, QrCode as QrCodeIcon, TrendingUp, Check, X, Clock, MapPin, UserCheck, Plus, Building2, Camera, StopCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import QrScanner from 'qr-scanner';
 import WalkInModal from '@/components/staff/walk-in-modal';
 import type { BreadcrumbItem } from '@/types';
+
+interface CapacityRule {
+    max_visitors: number;
+    warning_threshold_percent: number;
+    critical_threshold_percent: number;
+    max_guests_per_guide: number;
+    max_daily_visitors: number;
+}
+
+interface Attraction {
+    id: number;
+    name: string;
+    location: string | null;
+    category: string | null;
+}
+
+interface Props {
+    attraction: Attraction;
+    capacityRule: CapacityRule;
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Entrance Staff Dashboard', href: '/staff-dashboard' },
@@ -18,77 +39,31 @@ const stats = {
     guidesAssigned: 12,
 };
 
-// Mock booking database for scan simulation
-const mockBookings: Record<string, any> = {
-    'BK-001-2026': {
-        id: 'BK-001-2026',
-        bookingCode: 'BK-001-2026',
-        guestCount: 8,
-        guide: 'Maria Garcia',
-        visitDate: '2026-03-05',
-        arrivalStatus: 'pending',
-        guideCertificateValid: true,
-        bookingApproved: true,
-        alreadyUsed: false,
-    },
-    'BK-002-2026': {
-        id: 'BK-002-2026',
-        bookingCode: 'BK-002-2026',
-        guestCount: 12,
-        guide: 'Juan Santos',
-        visitDate: '2026-03-05',
-        arrivalStatus: 'pending',
-        guideCertificateValid: true,
-        bookingApproved: true,
-        alreadyUsed: false,
-    },
-    'BK-INVALID-001': {
-        id: 'BK-INVALID-001',
-        bookingCode: 'BK-INVALID-001',
-        guestCount: 6,
-        guide: 'Ana Cruz',
-        visitDate: '2026-03-04', // Past date
-        arrivalStatus: 'pending',
-        guideCertificateValid: false, // Expired cert
-        bookingApproved: false,
-        alreadyUsed: false,
-    },
-    'BK-USED-001': {
-        id: 'BK-USED-001',
-        bookingCode: 'BK-USED-001',
-        guestCount: 5,
-        guide: 'Carlos Mendoza',
-        visitDate: '2026-03-05',
-        arrivalStatus: 'pending',
-        guideCertificateValid: true,
-        bookingApproved: true,
-        alreadyUsed: true, // Already logged
-    },
-};
 
-const recentlyLoggedArrivals = [
-    { id: 1, bookingCode: 'BK-001-2026', guestCount: 8, guide: 'Maria Garcia', loggedTime: '09:45 AM', staffId: 'STAFF-001', status: 'Logged' },
-    { id: 2, bookingCode: 'BK-002-2026', guestCount: 12, guide: 'Juan Santos', loggedTime: '09:32 AM', staffId: 'STAFF-002', status: 'Logged' },
-    { id: 3, bookingCode: 'BK-004-2026', guestCount: 15, guide: 'Sofia Rodriguez', loggedTime: '09:18 AM', staffId: 'STAFF-001', status: 'Logged' },
-];
 
-export default function StaffDashboard() {
+export default function StaffDashboard({ attraction, capacityRule }: Props) {
     const [entryMode, setEntryMode] = useState<'qr' | 'walk-in'>('qr');
     const [showWalkInModal, setShowWalkInModal] = useState(false);
     const [services, setServices] = useState<any[]>([]);
     const [guides, setGuides] = useState<any[]>([]);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const scannerRef = useRef<QrScanner | null>(null);
     const [scanInput, setScanInput] = useState('');
     const [scannedBooking, setScannedBooking] = useState<any>(null);
+    const [scanResult, setScanResult] = useState<'success' | 'error' | null>(null);
     const [scanError, setScanError] = useState('');
-    const [verificationIssues, setVerificationIssues] = useState<string[]>([]);
-    const [loggedArrivals, setLoggedArrivals] = useState(recentlyLoggedArrivals);
+    const [isCameraActive, setIsCameraActive] = useState(false);
+    const [cameraError, setCameraError] = useState('');
+    const [scannedQRCodes, setScannedQRCodes] = useState<Set<string>>(new Set());
+    const [processingCode, setProcessingCode] = useState<string | null>(null);
+    const [loggedArrivals, setLoggedArrivals] = useState<any[]>([]);
     
     // Real-time capacity monitoring state
     const [currentVisitors, setCurrentVisitors] = useState(0);
-    const [maximumCapacity, setMaximumCapacity] = useState(350);
+    const [maximumCapacity, setMaximumCapacity] = useState(capacityRule.max_visitors);
     const [capacityPercentage, setCapacityPercentage] = useState(0);
     const [capacityStatus, setCapacityStatus] = useState('SAFE');
-    const [remainingCapacity, setRemainingCapacity] = useState(350);
+    const [remainingCapacity, setRemainingCapacity] = useState(capacityRule.max_visitors);
     const [isAtCapacity, setIsAtCapacity] = useState(false);
     const [previousCapacityStatus, setPreviousCapacityStatus] = useState<string | null>(null);
     
@@ -115,15 +90,22 @@ export default function StaffDashboard() {
             
             if (data.success) {
                 const visitorData = data.data;
-                setCurrentVisitors(visitorData.current_visitors);
-                setMaximumCapacity(visitorData.maximum_capacity);
-                setCapacityPercentage(visitorData.capacity_percentage);
-                setRemainingCapacity(visitorData.remaining_capacity);
+                const currentCount = visitorData.current_visitors;
+
+                // Always use the capacity from the attraction's capacity rule (prop),
+                // NOT from the API which returns a global/default value.
+                const maxCap = capacityRule.max_visitors;
+                const percentage = maxCap > 0 ? (currentCount / maxCap) * 100 : 0;
+                const remaining = Math.max(0, maxCap - currentCount);
+
+                setCurrentVisitors(currentCount);
+                setMaximumCapacity(maxCap);
+                setCapacityPercentage(percentage);
+                setRemainingCapacity(remaining);
                 
-                // Determine capacity status based on percentage
-                // 0-80%: Normal, 81-99%: Warning, 100%: Full
+                // Determine capacity status based on percentage from capacity rule
                 let newStatus = 'SAFE';
-                if (visitorData.capacity_percentage >= 100) {
+                if (percentage >= capacityRule.critical_threshold_percent) {
                     newStatus = 'FULL';
                     setCapacityStatus('FULL');
                     setIsAtCapacity(true);
@@ -136,15 +118,15 @@ export default function StaffDashboard() {
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
                                     type: 'capacity_critical',
-                                    current_visitors: visitorData.current_visitors,
-                                    maximum_capacity: visitorData.maximum_capacity,
+                                    current_visitors: currentCount,
+                                    maximum_capacity: maxCap,
                                 })
                             });
                         } catch (err) {
                             console.error('Error creating capacity critical notification:', err);
                         }
                     }
-                } else if (visitorData.capacity_percentage > 80) {
+                } else if (percentage >= capacityRule.warning_threshold_percent) {
                     newStatus = 'WARNING';
                     setCapacityStatus('WARNING');
                     setIsAtCapacity(false);
@@ -157,9 +139,9 @@ export default function StaffDashboard() {
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
                                     type: 'capacity_warning',
-                                    current_visitors: visitorData.current_visitors,
-                                    maximum_capacity: visitorData.maximum_capacity,
-                                    capacity_percentage: visitorData.capacity_percentage,
+                                    current_visitors: currentCount,
+                                    maximum_capacity: maxCap,
+                                    capacity_percentage: percentage,
                                 })
                             });
                         } catch (err) {
@@ -263,79 +245,147 @@ export default function StaffDashboard() {
         };
     }, []);
 
-    // Handle QR code scan (simulated)
-    const handleScan = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-            const code = scanInput.trim();
-            setScanError('');
-            setVerificationIssues([]);
+    // Cleanup camera scanner on unmount
+    useEffect(() => {
+        return () => { stopScanner(); };
+    }, []);
 
-            // CAPACITY THRESHOLD CHECK - Block entry if at maximum capacity (100%)
-            if (isAtCapacity && capacityPercentage >= 100) {
-                setScanError('🚫 Maximum visitor capacity reached. Entry temporarily closed.');
-                setScannedBooking(null);
-                setScanInput('');
-                return;
+    // Start camera scanner
+    const startScanner = async () => {
+        setCameraError('');
+        try {
+            if (!navigator.mediaDevices?.getUserMedia) {
+                throw new Error('Camera API not supported in this browser.');
             }
+            setIsCameraActive(true);
+            await new Promise(resolve => setTimeout(resolve, 300));
+            if (!videoRef.current) throw new Error('Video element not ready.');
 
-            const booking = mockBookings[code];
-            
-            if (!booking) {
-                setScanError('❌ Booking not found. Please scan a valid QR code.');
-                setScannedBooking(null);
-                setScanInput('');
-                return;
-            }
-
-            // Validate booking
-            const issues: string[] = [];
-            
-            if (booking.visitDate !== '2026-03-05') {
-                issues.push('Invalid visit date - booking is for a different date');
-            }
-            
-            if (!booking.bookingApproved) {
-                issues.push('Booking not approved - contact administrator');
-            }
-            
-            if (booking.alreadyUsed) {
-                issues.push('Booking already used - cannot log duplicate entry');
-            }
-            
-            if (!booking.guideCertificateValid) {
-                issues.push('Guide certificate expired - guide cannot lead tours');
-            }
-
-            setVerificationIssues(issues);
-            setScannedBooking(booking);
-            setScanInput('');
+            let lastCode: string | null = null;
+            const scanner = new QrScanner(
+                videoRef.current,
+                (result: any) => {
+                    if (result?.data) {
+                        const code = result.data.trim();
+                        if (code === lastCode) return;
+                        lastCode = code;
+                        scanner.stop();
+                        handleScanResult(code).finally(() => {
+                            scanner.start();
+                            lastCode = null;
+                        });
+                    }
+                },
+                {
+                    preferredCamera: 'environment',
+                    maxScansPerSecond: 5,
+                    highlightCodeOutline: true,
+                    returnDetailedScanResult: true,
+                    onDecodeError: () => {},
+                }
+            );
+            scannerRef.current = scanner;
+            await scanner.start();
+        } catch (err: any) {
+            setIsCameraActive(false);
+            let msg = 'Camera error: ' + (err.message || 'Unknown error');
+            if (err.name === 'NotAllowedError') msg = '📱 Camera permission denied. Please allow camera access in your browser settings.';
+            else if (err.name === 'NotFoundError') msg = '📵 No camera found on this device.';
+            else if (err.name === 'NotReadableError') msg = '⚠️ Camera is busy or in use by another app.';
+            setCameraError(msg);
+            if (scannerRef.current) { try { scannerRef.current.destroy(); } catch {} scannerRef.current = null; }
         }
     };
 
-    // Confirm arrival logging
-    const handleConfirmArrival = () => {
-        if (scannedBooking && verificationIssues.length === 0) {
-            const newLogEntry = {
-                id: loggedArrivals.length + 1,
-                bookingCode: scannedBooking.bookingCode,
-                guestCount: scannedBooking.guestCount,
-                guide: scannedBooking.guide,
-                loggedTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-                staffId: 'STAFF-001',
-                status: 'Logged',
-            };
-            setLoggedArrivals([newLogEntry, ...loggedArrivals]);
-            setScannedBooking(null);
-            setScanError('✅ Arrival successfully logged!');
-            setTimeout(() => setScanError(''), 3000);
+    // Stop camera scanner
+    const stopScanner = () => {
+        if (scannerRef.current) {
+            try { scannerRef.current.stop(); scannerRef.current.destroy(); } catch {}
+            scannerRef.current = null;
+        }
+        setIsCameraActive(false);
+    };
+
+    // Handle QR scan result (from camera or manual entry)
+    const handleScanResult = async (code: string): Promise<void> => {
+        const cleanCode = code.trim();
+        if (!cleanCode) return;
+
+        if (isAtCapacity) {
+            setScanResult('error');
+            setScanError('🚫 Maximum visitor capacity reached. Entry temporarily closed.');
+            return;
+        }
+        if (processingCode === cleanCode) return;
+        if (scannedQRCodes.has(cleanCode)) {
+            setScanResult('error');
+            setScanError('❌ This QR code has already been scanned today.');
+            return;
+        }
+
+        setProcessingCode(cleanCode);
+        setScanResult(null);
+        setScanError('');
+        setScannedBooking(null);
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            // Step 1: Validate QR code
+            const validateRes = await fetch('/staff/api/validate-booking', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken || '' },
+                body: JSON.stringify({ booking_code: cleanCode }),
+            });
+            const validateData = await validateRes.json();
+
+            if (!validateData.success) {
+                setScanResult('error');
+                setScanError(validateData.message || 'Invalid or unrecognized QR code.');
+                return;
+            }
+
+            // Step 2: Log the arrival
+            const logRes = await fetch('/staff/api/log-arrival', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken || '' },
+                body: JSON.stringify({
+                    qr_token: cleanCode,
+                    guest_name: validateData.booking?.first_guest_name,
+                    guide_id: null,
+                    arrival_time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+                }),
+            });
+            const logData = await logRes.json();
+
+            if (logData.success) {
+                setScannedQRCodes(prev => new Set([...prev, cleanCode]));
+                setScanResult('success');
+                setScannedBooking(logData.data);
+                fetchTodayStats();
+                fetchRecentArrivals();
+                fetchCapacityStatus();
+                setTimeout(() => {
+                    setScanResult(null);
+                    setScannedBooking(null);
+                }, 4000);
+            } else {
+                setScanResult('error');
+                setScanError(logData.message || 'Failed to log arrival.');
+            }
+        } catch (err: any) {
+            setScanResult('error');
+            setScanError(`Error: ${err.message || 'Unable to process QR code'}`);
+        } finally {
+            setProcessingCode(null);
         }
     };
 
     // Clear scan
     const handleClearScan = () => {
         setScannedBooking(null);
+        setScanResult(null);
         setScanError('');
-        setVerificationIssues([]);
         setScanInput('');
     };
 
@@ -343,6 +393,36 @@ export default function StaffDashboard() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Entrance Staff Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-6 p-6 bg-[#E3EED4] dark:bg-[#0F2A1D]">
+
+                {/* Attraction Banner */}
+                <div className="flex items-center justify-between rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm px-6 py-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#375534] to-[#0F2A1D] flex items-center justify-center">
+                            <Building2 className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] font-medium">Assigned Attraction</p>
+                            <p className="text-base font-bold text-[#0F2A1D] dark:text-white">{attraction.name}</p>
+                            {attraction.location && (
+                                <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] flex items-center gap-1 mt-0.5">
+                                    <MapPin className="w-3 h-3" />{attraction.location}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="text-right hidden sm:block">
+                            <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0]">Max Capacity</p>
+                            <p className="text-lg font-bold text-[#0F2A1D] dark:text-white">{capacityRule.max_visitors}</p>
+                        </div>
+                        <button
+                            onClick={() => router.get('/staff/select-attraction')}
+                            className="text-xs px-3 py-2 rounded-lg border border-[#AEC3B0]/60 text-[#375534] dark:text-[#AEC3B0] hover:bg-[#E3EED4] dark:hover:bg-[#1a3a2a] transition-colors"
+                        >
+                            Change Attraction
+                        </button>
+                    </div>
+                </div>
                
                 {/* Statistics Cards */}
                 <div className="grid gap-6 md:grid-cols-4">
@@ -478,194 +558,181 @@ export default function StaffDashboard() {
                         <div className="p-8 space-y-6">
                             {entryMode === 'qr' ? (
                                 <>
-                                    {/* QR Scanner Input */}
+                                    {/* Scanning animation keyframes */}
+                                    <style>{`
+                                        @keyframes scanLine { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
+                                        .scan-line { animation: scanLine 2s ease-in-out infinite; }
+                                    `}</style>
+
+                                    {/* Capacity block warning */}
+                                    {isAtCapacity && (
+                                        <div className="p-3 rounded-lg bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 flex items-center gap-3">
+                                            <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+                                            <p className="text-red-800 dark:text-red-300 font-medium text-sm">🚫 Maximum capacity reached. Entry temporarily closed.</p>
+                                        </div>
+                                    )}
+
+                                    {/* Camera Scanner */}
                                     <div>
-                                        <label className="block text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4] mb-3">QR Code Scanner</label>
+                                        <label className="block text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4] mb-2 flex items-center gap-2">
+                                            <Camera className="w-4 h-4" /> Camera Scanner
+                                        </label>
+
+                                        {/* Video viewport */}
+                                        <div className="relative rounded-lg overflow-hidden bg-black mx-auto" style={{ aspectRatio: '4/3', maxWidth: '260px' }}>
+                                            <video
+                                                ref={videoRef}
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                className={`transition-all duration-500 ${isCameraActive ? 'ring-2 ring-green-500' : 'ring-2 ring-gray-400'}`}
+                                                playsInline muted autoPlay
+                                            />
+
+                                            {/* Scanning overlay */}
+                                            {isCameraActive && (
+                                                <>
+                                                    <div className="absolute inset-0 pointer-events-none" style={{
+                                                        background: 'linear-gradient(180deg,rgba(0,0,0,0.35) 0%,rgba(0,0,0,0.08) 40%,rgba(0,0,0,0.08) 60%,rgba(0,0,0,0.35) 100%)'
+                                                    }} />
+                                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                        <div className="relative" style={{ width: '60%', aspectRatio: '1', maxWidth: '200px' }}>
+                                                            {/* Corner TL */}
+                                                            <div className="absolute top-0 left-0 w-6 h-6">
+                                                                <div className="absolute top-0 left-0 w-full h-1 bg-green-400 rounded-full" />
+                                                                <div className="absolute top-0 left-0 w-1 h-full bg-green-400 rounded-full" />
+                                                            </div>
+                                                            {/* Corner TR */}
+                                                            <div className="absolute top-0 right-0 w-6 h-6">
+                                                                <div className="absolute top-0 right-0 w-full h-1 bg-green-400 rounded-full" />
+                                                                <div className="absolute top-0 right-0 w-1 h-full bg-green-400 rounded-full" />
+                                                            </div>
+                                                            {/* Corner BL */}
+                                                            <div className="absolute bottom-0 left-0 w-6 h-6">
+                                                                <div className="absolute bottom-0 left-0 w-full h-1 bg-green-400 rounded-full" />
+                                                                <div className="absolute bottom-0 left-0 w-1 h-full bg-green-400 rounded-full" />
+                                                            </div>
+                                                            {/* Corner BR */}
+                                                            <div className="absolute bottom-0 right-0 w-6 h-6">
+                                                                <div className="absolute bottom-0 right-0 w-full h-1 bg-green-400 rounded-full" />
+                                                                <div className="absolute bottom-0 right-0 w-1 h-full bg-green-400 rounded-full" />
+                                                            </div>
+                                                            {/* Scan line */}
+                                                            <div className="scan-line absolute w-full h-0.5 bg-gradient-to-r from-transparent via-green-400 to-transparent rounded-full"
+                                                                style={{ boxShadow: '0 0 8px rgba(74,222,128,0.8)' }} />
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {/* Idle placeholder */}
+                                            {!isCameraActive && (
+                                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                                    <div className="text-center">
+                                                        <QrCodeIcon className="h-10 w-10 text-white/60 mx-auto mb-2" />
+                                                        <p className="text-white text-sm font-semibold">Start camera to scan</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Camera error */}
+                                        {cameraError && (
+                                            <div className="mt-2 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-200 rounded-lg text-sm">
+                                                {cameraError}
+                                            </div>
+                                        )}
+
+                                        {/* Camera toggle */}
+                                        <div className="mt-3">
+                                            {isCameraActive ? (
+                                                <button onClick={stopScanner}
+                                                    className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm">
+                                                    <StopCircle className="h-4 w-4" /> Stop Camera
+                                                </button>
+                                            ) : (
+                                                <button onClick={startScanner} disabled={isAtCapacity}
+                                                    className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm">
+                                                    <Camera className="h-4 w-4" /> 📱 Start Camera
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Manual Entry */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4] mb-2">Manual Entry</label>
                                         <div className="relative">
                                             <input
                                                 type="text"
                                                 value={scanInput}
                                                 onChange={(e) => setScanInput(e.target.value)}
-                                                onKeyDown={handleScan}
-                                                placeholder="Scan booking QR code here... (Try: BK-001-2026, BK-002-2026, BK-INVALID-001, BK-USED-001)"
-                                                className="w-full px-4 py-3 border-2 border-[#AEC3B0]/40 dark:border-[#375534]/40 rounded-lg bg-white dark:bg-[#0F2A1D] text-[#0F2A1D] dark:text-white placeholder:text-[#6B8071] dark:placeholder:text-[#AEC3B0] focus:border-[#6B8071] focus:outline-none"
-                                                autoFocus
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && scanInput.trim()) {
+                                                        const code = scanInput.trim();
+                                                        setScanInput('');
+                                                        handleScanResult(code);
+                                                    }
+                                                }}
+                                                placeholder="Enter booking code and press ENTER..."
+                                                disabled={isAtCapacity || !!processingCode}
+                                                className="w-full px-4 py-3 border-2 border-[#AEC3B0]/40 dark:border-[#375534]/40 rounded-lg bg-white dark:bg-[#0F2A1D] text-[#0F2A1D] dark:text-white placeholder:text-[#6B8071] dark:placeholder:text-[#AEC3B0] focus:border-[#6B8071] focus:outline-none disabled:opacity-50"
                                             />
                                             <QrCodeIcon className="absolute right-4 top-3.5 w-5 h-5 text-[#6B8071]" />
                                         </div>
-                                        <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mt-2">Press ENTER to scan</p>
+                                        <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mt-1">
+                                            {processingCode ? '⏳ Processing...' : 'Press ENTER to validate and log arrival'}
+                                        </p>
                                     </div>
 
-                            {/* Alert Messages */}
-                            {scanError && (
-                                <div className={`p-4 rounded-lg flex items-start gap-3 ${
-                                    scanError.includes('✅') 
-                                        ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700'
-                                        : 'bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700'
-                                }`}>
-                                    {scanError.includes('✅') ? (
-                                        <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                                    ) : (
-                                        <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                                    )}
-                                    <p className={scanError.includes('✅') ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}>
-                                        {scanError}
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Booking Details - After Scan */}
-                            {scannedBooking && (
-                                <div className="space-y-4">
-                                    {/* Booking Info */}
-                                    <div className="p-4 rounded-lg bg-[#E3EED4]/50 dark:bg-[#375534]/30 border border-[#AEC3B0]/40 dark:border-[#375534]/40">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <p className="text-xs font-medium text-[#6B8071] dark:text-[#AEC3B0]">Booking Code</p>
-                                                <p className="text-lg font-semibold text-[#0F2A1D] dark:text-white">{scannedBooking.bookingCode}</p>
+                                    {/* Success result */}
+                                    {scanResult === 'success' && scannedBooking && (
+                                        <div className="rounded-lg border p-4 bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+                                                <p className="font-semibold text-green-900 dark:text-green-300">✅ Arrival Logged Successfully</p>
                                             </div>
-                                            <div>
-                                                <p className="text-xs font-medium text-[#6B8071] dark:text-[#AEC3B0]">Visit Date</p>
-                                                <p className="text-lg font-semibold text-[#0F2A1D] dark:text-white">{scannedBooking.visitDate}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Guest & Guide Info */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="p-4 rounded-lg bg-white dark:bg-[#0F2A1D] border border-[#AEC3B0]/40 dark:border-[#375534]/40">
-                                            <div className="flex items-start gap-3">
-                                                <Users className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
-                                                <div>
-                                                    <p className="text-xs font-medium text-[#6B8071] dark:text-[#AEC3B0]">Guest Count</p>
-                                                    <p className="text-2xl font-bold text-[#0F2A1D] dark:text-white">{scannedBooking.guestCount}</p>
-                                                    <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mt-1">tourists</p>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="bg-white dark:bg-slate-800 p-3 rounded-lg">
+                                                    <p className="text-xs text-[#6B8071] dark:text-gray-400 mb-1">Guest Name</p>
+                                                    <p className="font-semibold text-sm text-[#0F2A1D] dark:text-white">{scannedBooking.guest_name || 'Group'}</p>
+                                                </div>
+                                                <div className="bg-white dark:bg-slate-800 p-3 rounded-lg">
+                                                    <p className="text-xs text-[#6B8071] dark:text-gray-400 mb-1">Arrival Time</p>
+                                                    <p className="font-mono font-bold text-sm text-[#0F2A1D] dark:text-white">{scannedBooking.arrival_time}</p>
+                                                </div>
+                                                <div className="bg-white dark:bg-slate-800 p-3 rounded-lg">
+                                                    <p className="text-xs text-[#6B8071] dark:text-gray-400 mb-1 flex items-center gap-1"><Users className="w-3 h-3" /> Total Guests</p>
+                                                    <p className="font-bold text-blue-600 dark:text-blue-400">{scannedBooking.total_guests}</p>
+                                                </div>
+                                                <div className="bg-white dark:bg-slate-800 p-3 rounded-lg">
+                                                    <p className="text-xs text-[#6B8071] dark:text-gray-400 mb-1 flex items-center gap-1"><UserCheck className="w-3 h-3" /> Guide</p>
+                                                    <p className="font-semibold text-sm text-[#0F2A1D] dark:text-white">{scannedBooking.guide_name || 'N/A'}</p>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div className="p-4 rounded-lg bg-white dark:bg-[#0F2A1D] border border-[#AEC3B0]/40 dark:border-[#375534]/40">
-                                            <div className="flex items-start gap-3">
-                                                <UserCheck className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                                                <div>
-                                                    <p className="text-xs font-medium text-[#6B8071] dark:text-[#AEC3B0]">Assigned Guide</p>
-                                                    <p className="text-sm font-bold text-[#0F2A1D] dark:text-white">{scannedBooking.guide}</p>
-                                                    <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mt-1">1 guide per group</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Verification Checklist */}
-                                    <div className="space-y-2">
-                                        <p className="text-sm font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">Booking Verification</p>
-                                        <div className="space-y-2">
-                                            <div className={`flex items-center gap-3 p-3 rounded-lg ${
-                                                scannedBooking.visitDate === '2026-03-05'
-                                                    ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700'
-                                                    : 'bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700'
-                                            }`}>
-                                                {scannedBooking.visitDate === '2026-03-05' ? (
-                                                    <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
-                                                ) : (
-                                                    <X className="w-5 h-5 text-red-600 dark:text-red-400" />
-                                                )}
-                                                <span className={scannedBooking.visitDate === '2026-03-05' ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}>
-                                                    Valid visit date
-                                                </span>
-                                            </div>
-
-                                            <div className={`flex items-center gap-3 p-3 rounded-lg ${
-                                                scannedBooking.bookingApproved
-                                                    ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700'
-                                                    : 'bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700'
-                                            }`}>
-                                                {scannedBooking.bookingApproved ? (
-                                                    <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
-                                                ) : (
-                                                    <X className="w-5 h-5 text-red-600 dark:text-red-400" />
-                                                )}
-                                                <span className={scannedBooking.bookingApproved ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}>
-                                                    Booking approved
-                                                </span>
-                                            </div>
-
-                                            <div className={`flex items-center gap-3 p-3 rounded-lg ${
-                                                !scannedBooking.alreadyUsed
-                                                    ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700'
-                                                    : 'bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700'
-                                            }`}>
-                                                {!scannedBooking.alreadyUsed ? (
-                                                    <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
-                                                ) : (
-                                                    <X className="w-5 h-5 text-red-600 dark:text-red-400" />
-                                                )}
-                                                <span className={!scannedBooking.alreadyUsed ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}>
-                                                    Not already used
-                                                </span>
-                                            </div>
-
-                                            <div className={`flex items-center gap-3 p-3 rounded-lg ${
-                                                scannedBooking.guideCertificateValid
-                                                    ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700'
-                                                    : 'bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700'
-                                            }`}>
-                                                {scannedBooking.guideCertificateValid ? (
-                                                    <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
-                                                ) : (
-                                                    <X className="w-5 h-5 text-red-600 dark:text-red-400" />
-                                                )}
-                                                <span className={scannedBooking.guideCertificateValid ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}>
-                                                    Guide certificate valid
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Error Alerts */}
-                                    {verificationIssues.length > 0 && (
-                                        <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700">
-                                            <div className="flex items-start gap-3 mb-2">
-                                                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                                                <p className="font-semibold text-red-800 dark:text-red-300">Verification Issues</p>
-                                            </div>
-                                            <ul className="space-y-1 ml-8">
-                                                {verificationIssues.map((issue, idx) => (
-                                                    <li key={idx} className="text-sm text-red-700 dark:text-red-300 list-disc">
-                                                        {issue}
-                                                    </li>
-                                                ))}
-                                            </ul>
+                                            <p className="text-center text-xs text-green-700 dark:text-green-400 mt-3">📱 Ready to scan next QR code...</p>
                                         </div>
                                     )}
 
-                                    {/* Action Buttons */}
-                                    <div className="flex gap-3 pt-4">
-                                        {verificationIssues.length === 0 && (
-                                            <button
-                                                onClick={handleConfirmArrival}
-                                                className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:shadow-lg transition-shadow font-semibold flex items-center justify-center gap-2"
-                                            >
-                                                <CheckCircle className="w-5 h-5" />
-                                                Confirm & Log Arrival
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={handleClearScan}
-                                            className="flex-1 px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-semibold"
-                                        >
-                                            Clear & Rescan
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
+                                    {/* Error result */}
+                                    {scanResult === 'error' && scanError && (
+                                        <div className="rounded-lg border p-4 bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700">
+                                            <div className="flex items-start gap-3">
+                                                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                                                <div>
+                                                    <p className="font-semibold text-red-900 dark:text-red-300 mb-1">Scan Failed</p>
+                                                    <p className="text-sm text-red-700 dark:text-red-400">{scanError}</p>
+                                                    <button onClick={handleClearScan} className="mt-2 text-xs text-red-600 dark:text-red-400 underline">Clear & Try Again</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
 
-                            {!scannedBooking && !scanError && (
-                                <div className="flex flex-col items-center justify-center py-8 text-center text-[#6B8071] dark:text-[#AEC3B0]">
-                                    <QrCodeIcon className="w-12 h-12 mb-3 opacity-50" />
-                                    <p className="font-medium">Ready to scan</p>
-                                    <p className="text-xs mt-1">Point camera at QR code or type booking code</p>
-                                </div>
-                            )}
+                                    {/* Idle state */}
+                                    {!scanResult && !isCameraActive && (
+                                        <div className="flex flex-col items-center justify-center py-4 text-center text-[#6B8071] dark:text-[#AEC3B0]">
+                                            <QrCodeIcon className="w-8 h-8 mb-2 opacity-40" />
+                                            <p className="text-sm">Start camera or enter a booking code manually</p>
+                                        </div>
+                                    )}
                                 </>
                             ) : (
                                 <>

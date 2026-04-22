@@ -79,15 +79,35 @@ const mockArrivals: ArrivalLog[] = [
     },
 ];
 
-export default function Arrivals() {
-    const [maximumCapacity, setMaximumCapacity] = useState(350);
+interface CapacityRule {
+    max_visitors: number;
+    warning_threshold_percent: number;
+    critical_threshold_percent: number;
+    max_guests_per_guide: number;
+    max_daily_visitors: number;
+}
+
+interface Attraction {
+    id: number;
+    name: string;
+    location: string | null;
+    category: string | null;
+}
+
+interface Props {
+    attraction: Attraction;
+    capacityRule: CapacityRule;
+}
+
+export default function Arrivals({ attraction, capacityRule }: Props) {
+    const [maximumCapacity, setMaximumCapacity] = useState(capacityRule.max_visitors);
     const [arrivals, setArrivals] = useState<ArrivalLog[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'verified' | 'pending' | 'rejected'>('all');
     const [currentVisitors, setCurrentVisitors] = useState(0);
     const [capacityStatus, setCapacityStatus] = useState<'SAFE' | 'WARNING' | 'CRITICAL'>('SAFE');
     const [capacityPercentage, setCapacityPercentage] = useState(0);
-    const [remainingCapacity, setRemainingCapacity] = useState(0);
+    const [remainingCapacity, setRemainingCapacity] = useState(capacityRule.max_visitors);
     const [loading, setLoading] = useState(true);
     const [showWalkInModal, setShowWalkInModal] = useState(false);
     const [services, setServices] = useState<any[]>([]);
@@ -100,12 +120,23 @@ export default function Arrivals() {
             const data = await response.json();
             
             if (data.success) {
-                const visitorData = data.data;
-                setCurrentVisitors(visitorData.current_visitors);
-                setMaximumCapacity(visitorData.maximum_capacity);
-                setCapacityPercentage(visitorData.capacity_percentage);
-                setCapacityStatus(visitorData.capacity_status);
-                setRemainingCapacity(visitorData.remaining_capacity);
+                const currentCount = data.data.current_visitors;
+                const maxCap = capacityRule.max_visitors;
+                const percentage = maxCap > 0 ? (currentCount / maxCap) * 100 : 0;
+                const remaining = Math.max(0, maxCap - currentCount);
+
+                setCurrentVisitors(currentCount);
+                setMaximumCapacity(maxCap);
+                setCapacityPercentage(percentage);
+                setRemainingCapacity(remaining);
+
+                if (percentage >= capacityRule.critical_threshold_percent) {
+                    setCapacityStatus('CRITICAL');
+                } else if (percentage >= capacityRule.warning_threshold_percent) {
+                    setCapacityStatus('WARNING');
+                } else {
+                    setCapacityStatus('SAFE');
+                }
             }
         } catch (error) {
             console.error('Error fetching visitor count:', error);
@@ -188,16 +219,27 @@ export default function Arrivals() {
                 console.error('Failed to fetch arrivals:', arrivalsResponse.statusText);
             }
             
-            // Process visitor count
+            // Process visitor count — always use prop-based capacity rule
             if (visitorResponse.ok) {
                 const visitorData = await visitorResponse.json();
                 if (visitorData.success) {
-                    const data = visitorData.data;
-                    setCurrentVisitors(data.current_visitors);
-                    setMaximumCapacity(data.maximum_capacity);
-                    setCapacityPercentage(data.capacity_percentage);
-                    setCapacityStatus(data.capacity_status);
-                    setRemainingCapacity(data.remaining_capacity);
+                    const currentCount = visitorData.data.current_visitors;
+                    const maxCap = capacityRule.max_visitors;
+                    const percentage = maxCap > 0 ? (currentCount / maxCap) * 100 : 0;
+                    const remaining = Math.max(0, maxCap - currentCount);
+
+                    setCurrentVisitors(currentCount);
+                    setMaximumCapacity(maxCap);
+                    setCapacityPercentage(percentage);
+                    setRemainingCapacity(remaining);
+
+                    if (percentage >= capacityRule.critical_threshold_percent) {
+                        setCapacityStatus('CRITICAL');
+                    } else if (percentage >= capacityRule.warning_threshold_percent) {
+                        setCapacityStatus('WARNING');
+                    } else {
+                        setCapacityStatus('SAFE');
+                    }
                 }
             }
         } catch (error) {

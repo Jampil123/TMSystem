@@ -37,6 +37,7 @@ use App\Http\Controllers\StaffArrivalidateController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Dashboard\OperatorDashboardController;
+use App\Http\Controllers\Staff\StaffAttractionController;
 
 Route::redirect('/', '/login')->name('home');
 
@@ -98,7 +99,7 @@ Route::get('dashboard', function () {
         'External Operator' => redirect()->route('operator.dashboard'),
         'LGU Officer' => redirect()->route('lgu-dot.dashboard'),
         'Tourism Officer' => redirect()->route('lgu-dot.dashboard'),
-        'Tourism Staff' => redirect()->route('staff.dashboard'),
+        'Tourism Staff' => redirect()->route('staff.select-attraction'),
         'Admin' => redirect()->route('lgu-dot.dashboard'),
         default => Inertia::render('dashboard'),
     };
@@ -216,9 +217,13 @@ Route::get('lgu-dot-dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('lgu-dot.dashboard');
 
-Route::get('staff-dashboard', function () {
-    return Inertia::render('dashboards/staff-dashboard');
-})->middleware(['auth', 'verified'])->name('staff.dashboard');
+Route::get('staff-dashboard', [StaffAttractionController::class, 'dashboard'])
+    ->middleware(['auth', 'verified'])->name('staff.dashboard');
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('staff/select-attraction', [StaffAttractionController::class, 'selectAttraction'])->name('staff.select-attraction');
+    Route::post('staff/select-attraction', [StaffAttractionController::class, 'storeSelectedAttraction'])->name('staff.select-attraction.store');
+});
 
 // Staff Features Routes
 Route::middleware(['auth', 'verified'])->prefix('staff')->name('staff.')->group(function () {
@@ -226,17 +231,13 @@ Route::middleware(['auth', 'verified'])->prefix('staff')->name('staff.')->group(
         return Inertia::render('staff/qr-scanner');
     })->name('qr-scanner');
 
-    Route::get('arrivals', function () {
-        return Inertia::render('staff/arrivals');
-    })->name('arrivals');
+    Route::get('arrivals', [StaffAttractionController::class, 'arrivals'])->name('arrivals');
 
     Route::get('guide-verification', function () {
         return Inertia::render('staff/guide-verification');
     })->name('guide-verification');
 
-    Route::get('visitor-counter', function () {
-        return Inertia::render('staff/visitor-counter');
-    })->name('visitor-counter');
+    Route::get('visitor-counter', [StaffAttractionController::class, 'visitorCounter'])->name('visitor-counter');
 
     Route::get('entry-logs', function () {
         return Inertia::render('staff/entry-logs');
@@ -250,9 +251,7 @@ Route::middleware(['auth', 'verified'])->prefix('staff')->name('staff.')->group(
         return Inertia::render('staff/notifications');
     })->name('notifications');
 
-    Route::get('reports', function () {
-        return Inertia::render('staff/reports');
-    })->name('reports');
+    Route::get('reports', [StaffAttractionController::class, 'reportsPage'])->name('reports');
 
     // Staff API Endpoints for arrival logging
     Route::post('api/validate-booking', [StaffArrivalidateController::class, 'validateBooking'])->name('api.validate-booking');
@@ -262,6 +261,7 @@ Route::middleware(['auth', 'verified'])->prefix('staff')->name('staff.')->group(
     Route::post('api/deny-arrival', [StaffArrivalidateController::class, 'denyArrival'])->name('api.deny-arrival');
     Route::get('api/arrivals-today', [StaffArrivalidateController::class, 'getTodayArrivals'])->name('api.arrivals-today');
     Route::post('api/log-walk-in', [StaffArrivalidateController::class, 'logWalkInWithQR'])->name('api.log-walk-in');
+    Route::get('api/reports', [StaffAttractionController::class, 'reportsApi'])->name('api.reports');
 });
 
 // Admin-only user and attraction management routes

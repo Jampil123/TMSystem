@@ -25,12 +25,32 @@ interface Arrival {
     status: string;
 }
 
-export default function VisitorCounter() {
-    const [maximumCapacity, setMaximumCapacity] = useState(350);
+interface CapacityRule {
+    max_visitors: number;
+    warning_threshold_percent: number;
+    critical_threshold_percent: number;
+    max_guests_per_guide: number;
+    max_daily_visitors: number;
+}
+
+interface Attraction {
+    id: number;
+    name: string;
+    location: string | null;
+    category: string | null;
+}
+
+interface Props {
+    attraction: Attraction;
+    capacityRule: CapacityRule;
+}
+
+export default function VisitorCounter({ attraction, capacityRule }: Props) {
+    const [maximumCapacity, setMaximumCapacity] = useState(capacityRule.max_visitors);
     const [currentVisitors, setCurrentVisitors] = useState(0);
     const [previousVisitors, setPreviousVisitors] = useState(0);
     const [capacityPercentage, setCapacityPercentage] = useState(0);
-    const [remainingCapacity, setRemainingCapacity] = useState(350);
+    const [remainingCapacity, setRemainingCapacity] = useState(capacityRule.max_visitors);
     const [capacityHistory, setCapacityHistory] = useState<CapacityRecord[]>([]);
     const [recentArrivals, setRecentArrivals] = useState<Arrival[]>([]);
     const [capacityLoading, setCapacityLoading] = useState(true);
@@ -42,11 +62,16 @@ export default function VisitorCounter() {
             const response = await fetch('/staff/api/visitor-count');
             const data = await response.json();
             if (data.success) {
+                const currentCount = data.data.current_visitors;
+                const maxCap = capacityRule.max_visitors;
+                const percentage = maxCap > 0 ? (currentCount / maxCap) * 100 : 0;
+                const remaining = Math.max(0, maxCap - currentCount);
+
                 setPreviousVisitors(currentVisitors);
-                setCurrentVisitors(data.data.current_visitors);
-                setMaximumCapacity(data.data.maximum_capacity);
-                setCapacityPercentage(data.data.capacity_percentage);
-                setRemainingCapacity(data.data.remaining_capacity);
+                setCurrentVisitors(currentCount);
+                setMaximumCapacity(maxCap);
+                setCapacityPercentage(percentage);
+                setRemainingCapacity(remaining);
                 setCapacityLoading(false);
             }
         } catch (error) {
@@ -101,8 +126,8 @@ export default function VisitorCounter() {
     }, []);
 
     const visitorChange = currentVisitors - previousVisitors;
-    const isWarning = capacityPercentage > 70;
-    const isCritical = capacityPercentage >= 100;
+    const isWarning = capacityPercentage >= capacityRule.warning_threshold_percent;
+    const isCritical = capacityPercentage >= capacityRule.critical_threshold_percent;
 
     const getCapacityStatus = () => {
         if (isCritical) return { text: 'CRITICAL', color: 'bg-red-500', bgColor: 'bg-red-50', textColor: 'text-red-700', border: 'border-red-200' };
@@ -216,15 +241,15 @@ export default function VisitorCounter() {
                         <div className="grid grid-cols-3 gap-2 text-xs">
                             <div className="text-center">
                                 <p className="text-gray-500 dark:text-gray-400">Safe Zone</p>
-                                <p className="font-semibold text-green-600 dark:text-green-400">0-60%</p>
+                                <p className="font-semibold text-green-600 dark:text-green-400">0–{capacityRule.warning_threshold_percent}%</p>
                             </div>
                             <div className="text-center">
                                 <p className="text-gray-500 dark:text-gray-400">Warning Zone</p>
-                                <p className="font-semibold text-yellow-600 dark:text-yellow-400">60-85%</p>
+                                <p className="font-semibold text-yellow-600 dark:text-yellow-400">{capacityRule.warning_threshold_percent}–{capacityRule.critical_threshold_percent}%</p>
                             </div>
                             <div className="text-center">
                                 <p className="text-gray-500 dark:text-gray-400">Critical Zone</p>
-                                <p className="font-semibold text-red-600 dark:text-red-400">85-100%</p>
+                                <p className="font-semibold text-red-600 dark:text-red-400">{capacityRule.critical_threshold_percent}–100%</p>
                             </div>
                         </div>
                     </div>
@@ -295,7 +320,8 @@ export default function VisitorCounter() {
                         ) : (
                             capacityHistory.map((record, idx) => {
                                 const height = (record.count / maximumCapacity) * 100;
-                                const color = (record.count / maximumCapacity) > 0.85 ? 'bg-red-500' : (record.count / maximumCapacity) > 0.6 ? 'bg-yellow-500' : 'bg-green-500';
+                                const pct = (record.count / maximumCapacity) * 100;
+                                const color = pct >= capacityRule.critical_threshold_percent ? 'bg-red-500' : pct >= capacityRule.warning_threshold_percent ? 'bg-yellow-500' : 'bg-green-500';
                                 return (
                                     <div key={idx} className="flex items-end gap-3 h-8">
                                         <span className="w-12 text-xs font-medium text-gray-600 dark:text-gray-400">{record.time}</span>
