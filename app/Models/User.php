@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable
@@ -134,5 +135,25 @@ class User extends Authenticatable
     public function approvedServices()
     {
         return $this->hasMany(Service::class, 'approved_by');
+    }
+
+    /**
+     * Override the default notifications relationship to use the
+     * `laravel_notifications` table (the default `notifications` table is
+     * reserved for the staff QR-scanning event system with incompatible columns).
+     */
+    public function notifications(): MorphMany
+    {
+        return $this->morphMany(UserNotification::class, 'notifiable')->latest();
+    }
+
+    /**
+     * Unread notifications using the custom table.
+     */
+    public function unreadNotifications(): MorphMany
+    {
+        return $this->morphMany(UserNotification::class, 'notifiable')
+            ->whereNull('read_at')
+            ->latest();
     }
 }

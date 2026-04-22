@@ -190,12 +190,6 @@ export function AppSidebar() {
         },
         {
             section: 'System',
-            title: 'Alerts',
-            href: '/operator/alerts',
-            icon: Bell,
-        },
-        {
-            section: 'System',
             title: 'Notifications',
             href: '/operator/notifications',
             icon: Bell,

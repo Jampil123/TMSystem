@@ -21,6 +21,7 @@ use App\Http\Controllers\Operator\DocumentController;
 use App\Http\Controllers\Operator\ServiceController;
 use App\Http\Controllers\Operator\GuestSubmissionController;
 use App\Http\Controllers\Operator\AlertController;
+use App\Http\Controllers\Operator\NotificationController as OperatorNotificationController;
 use App\Http\Controllers\Admin\GuideManagementController;
 use App\Http\Controllers\Admin\GuideAvailabilityController;
 use App\Http\Controllers\Admin\CapacityRuleController;
@@ -190,6 +191,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::delete('operator/guest-submission/{id}', [GuestSubmissionController::class, 'destroy'])
         ->name('operator.guest-submission.destroy');
+});
+
+// Operator Notifications
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('operator/notifications', [OperatorNotificationController::class, 'index'])
+        ->name('operator.notifications');
+    Route::post('operator/notifications/mark-all-read', [OperatorNotificationController::class, 'markAllRead'])
+        ->name('operator.notifications.mark-all-read');
+    Route::post('operator/notifications/{id}/mark-read', [OperatorNotificationController::class, 'markRead'])
+        ->name('operator.notifications.mark-read');
+    Route::delete('operator/notifications/{id}', [OperatorNotificationController::class, 'destroy'])
+        ->name('operator.notifications.destroy');
+    Route::get('operator/notifications/unread-count', [OperatorNotificationController::class, 'unreadCount'])
+        ->name('operator.notifications.unread-count');
 });
 
 // Operator Alerts Routes

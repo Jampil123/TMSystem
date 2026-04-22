@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { ArrowLeft, Users, Calendar, MapPin, QrCode, Eye, Download, Trash2, Info, CheckCircle, AlertCircle, Clock, Printer } from 'lucide-react';
