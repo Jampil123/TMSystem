@@ -82,11 +82,16 @@ class GuideAssignmentService
             }
         }
 
-        // Rule 7: Check expertise/specialty match
+        // Rule 7: Check expertise/specialty match (OPTIONAL - only filter if guide has specialties)
         if (isset($filters['service_type'])) {
-            if (!$this->matchesSpecialty($guide, $filters['service_type'])) {
-                return false;
+            $specialties = $guide->specialty_areas ?? [];
+            // Only enforce specialty match if guide has specialties defined
+            if (!empty($specialties)) {
+                if (!$this->matchesSpecialty($guide, $filters['service_type'])) {
+                    return false;
+                }
             }
+            // If guide has no specialties, allow them (they're flexible/multi-purpose guides)
         }
 
         return true;

@@ -1,298 +1,357 @@
-import React from 'react';
-import { Head } from '@inertiajs/react';
+﻿import React from 'react';
+import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import {
-    Calendar,
-    Users,
-    Clock,
+    TrendingUp,
     CheckCircle,
     AlertCircle,
-    XCircle,
-    Info,
-    AlertTriangle,
+    Clock,
+    Users,
     FileText,
-    Bell,
+    AlertTriangle,
+    Calendar,
+    ArrowRight,
+    Zap,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import type { BreadcrumbItem } from '@/types';
-
-// simple reusable stat card for the quick statistics grid
-function StatCard({ title, value, icon: Icon }: { title: string; value: number; icon: React.ComponentType<any> }) {
-    return (
-        <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6 flex items-center justify-between">
-            <div>
-                <p className="text-sm text-[#375534] dark:text-[#AEC3B0] mb-1">{title}</p>
-                <p className="text-2xl font-bold text-[#0F2A1D] dark:text-white">{value}</p>
-            </div>
-            <Icon className="w-8 h-8 text-[#375534]" />
-        </div>
-    );
-}
-
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Operator Dashboard', href: '/operator-dashboard' },
 ];
 
-// -------- sample / placeholder data for new layout --------
-const operatorStatus = {
-    status: 'Approved', // Approved | Pending | Rejected | Requires Update
-    businessName: 'Mountain Explorers Inc.',
-    operatorType: 'Adventure Tour',
-    dateSubmitted: '2025-02-10',
-    lguRemarks: 'All documents are in order.',
-};
-
-const stats = {
-    totalBookingsToday: 5,
-    totalGuestsToday: 24,
-    upcomingActivities: 3,
-    pendingGuestSubmissions: 1,
-    docsExpiringSoon: 2,
-};
-
-const todaysActivities = [
-    {
-        time: '8:00 AM',
-        service: 'Canyoneering',
-        guests: 12,
-        guide: 'Confirmed',
-        status: 'Ready',
-    },
-    {
-        time: '1:00 PM',
-        service: 'Boat Tour',
-        guests: 8,
-        guide: 'Not Assigned',
-        status: 'Action Needed',
-    },
-];
-
-const alerts = [
-    { id: 1, message: 'Weather Warning', type: 'warning' },
-    { id: 2, message: 'LGU Announcement', type: 'info' },
-    { id: 3, message: 'Guide not confirmed', type: 'alert' },
-    { id: 4, message: 'Capacity exceeded', type: 'alert' },
-];
-
-function AlertItem({ message, type }: { message: string; type: string }) {
-    const infoColor = 'text-[#375534]';
-    const warningColor = 'text-yellow-500';
-    const alertColor = 'text-red-500';
-    const iconProps = { className: 'w-5 h-5' };
-
-    let IconComponent;
-    let colorClass = infoColor;
-    switch (type) {
-        case 'warning':
-            IconComponent = AlertTriangle;
-            colorClass = warningColor;
-            break;
-        case 'alert':
-            IconComponent = XCircle;
-            colorClass = alertColor;
-            break;
-        default:
-            IconComponent = Info;
-            colorClass = infoColor;
-    }
-
+// Stat Card Component
+function StatCard({
+    title,
+    value,
+    icon: Icon,
+    color = 'text-[#a8d5ba]',
+}: {
+    title: string;
+    value: number | string;
+    icon: React.ComponentType<any>;
+    color?: string;
+}) {
     return (
-        <li className="flex items-center gap-2">
-            <IconComponent {...iconProps} className={`${iconProps.className} ${colorClass}`} />
-            <span className="text-sm text-[#0F2A1D] dark:text-[#E3EED4]">
-                {message}
-            </span>
-        </li>
+        <div className="rounded-lg border border-[#1a4d2e]/40 bg-[#1a4d2e] shadow-sm p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="text-xs text-[#a8d5ba] uppercase font-medium">{title}</p>
+                    <p className="text-3xl font-bold text-white mt-1">{value}</p>
+                </div>
+                <Icon className={`w-10 h-10 ${color}`} />
+            </div>
+        </div>
     );
 }
 
-const actionsRequired = [
-    'Submit Guest List for 1:00 PM Activity',
-    'Tourism Accreditation expires in 5 days',
-    'Guide not confirmed for booking #1023',
-];
+// Status Badge
+function StatusBadge({ status }: { status: string }) {
+    const statusConfig: Record<string, { bg: string; text: string }> = {
+        approved: { bg: 'bg-green-100 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-400' },
+        pending: { bg: 'bg-yellow-100 dark:bg-yellow-900/20', text: 'text-yellow-700 dark:text-yellow-400' },
+        rejected: { bg: 'bg-red-100 dark:bg-red-900/20', text: 'text-red-700 dark:text-red-400' },
+        active: { bg: 'bg-blue-100 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-400' },
+    };
 
-const crowd = {
-    level: 'Moderate',
-    risk: 'Low',
-    peak: '2:00 PM',
-};
+    const config = statusConfig[status.toLowerCase()] || statusConfig['pending'];
 
-// helper mappings for status card
-const statusColors: Record<string, string> = {
-    Approved: 'text-green-600 bg-green-100 dark:bg-green-900/20',
-    Pending: 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/20',
-    Rejected: 'text-red-600 bg-red-100 dark:bg-red-900/20',
-    'Requires Update': 'text-orange-600 bg-orange-100 dark:bg-orange-900/20',
-};
-const statusIcon: Record<string, React.ComponentType<any>> = {
-    Approved: CheckCircle,
-    Pending: AlertCircle,
-    Rejected: XCircle,
-    'Requires Update': Info,
-};
+    return (
+        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${config.bg} ${config.text}`}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+        </span>
+    );
+}
 
-export default function OperatorDashboard() {
+interface UpcomingActivity {
+    guide_assignment_id: number;
+    date: string;
+    time: string;
+    guide_name: string;
+    service_name: string;
+    status: string;
+}
+
+interface Alert {
+    operator_alert_id: number;
+    message: string;
+    type: string;
+    priority: string;
+    created_at: string;
+}
+
+interface ExpiringDocument {
+    document_id: number;
+    document_type: string;
+    expiry_date: string;
+    days_left: number;
+    status: string;
+}
+
+interface RecentService {
+    service_id: number;
+    service_name: string;
+    service_type: string;
+    status: string;
+    created_at: string;
+}
+
+interface DashboardProps {
+    operatorProfile: {
+        business_name: string;
+        status: string;
+        phone: string;
+        address: string;
+    };
+    stats: {
+        totalServices: number;
+        approvedServices: number;
+        pendingServices: number;
+        todayBookings: number;
+        todayGuests: number;
+        upcomingActivitiesCount: number;
+        pendingGuestSubmissions: number;
+        expiringDocuments: number;
+        expiredDocuments: number;
+    };
+    upcomingActivities: UpcomingActivity[];
+    alerts: Alert[];
+    actionItems: string[];
+    recentServices: RecentService[];
+    expiringDocuments: ExpiringDocument[];
+}
+
+export default function OperatorDashboard({
+    operatorProfile,
+    stats,
+    upcomingActivities,
+    alerts,
+    actionItems,
+    recentServices,
+    expiringDocuments,
+}: DashboardProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Operator Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-6 p-6 bg-[#E3EED4] dark:bg-[#0F2A1D]">
-                {/* 1. Profile & Approval Status */}
-                <div className="rounded-2xl shadow-lg p-8 bg-gradient-to-r from-[#375534] to-[#6B8071] text-white">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h2 className="text-2xl font-bold">{operatorStatus.businessName}</h2>
-                            <p className="text-sm">
-                                {operatorStatus.operatorType}
-                            </p>
-                            <p className="text-xs">
-                                Submitted {operatorStatus.dateSubmitted}
-                            </p>
-                            {operatorStatus.lguRemarks && (
-                                <p className="text-xs mt-1">
-                                    LGU Remarks: {operatorStatus.lguRemarks}
-                                </p>
+                {/* Header Section */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold text-[#375534] dark:text-[#E3EED4]">
+                            Welcome back, {operatorProfile.business_name.split(' ')[0]}!
+                        </h1>
+                        <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mt-1">
+                            Here'\''s what'\''s happening with your business today
+                        </p>
+                    </div>
+                    <StatusBadge status={operatorProfile.status} />
+                </div>
+
+                {/* Key Metrics Grid */}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <StatCard title="Total Services" value={stats.totalServices} icon={TrendingUp} />
+                    <StatCard title="Approved Services" value={stats.approvedServices} icon={CheckCircle} color="text-green-600" />
+                    <StatCard
+                        title="Today'\''s Bookings"
+                        value={stats.todayBookings}
+                        icon={Calendar}
+                        color="text-blue-600"
+                    />
+                    <StatCard
+                        title="Today'\''s Guests"
+                        value={stats.todayGuests}
+                        icon={Users}
+                        color="text-purple-600"
+                    />
+                </div>
+
+                {/* Main Content Grid */}
+                <div className="grid gap-6 lg:grid-cols-3">
+                    {/* Left Column - Main Content */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Upcoming Activities */}
+                        <div className="rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm overflow-hidden">
+                            <div className="p-6 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20 flex items-center justify-between">
+                                <h2 className="text-lg font-bold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                    Upcoming Activities
+                                </h2>
+                                <Link
+                                    href="/operator/services"
+                                    className="text-sm text-[#375534] dark:text-[#AEC3B0] hover:underline font-medium flex items-center gap-1"
+                                >
+                                    View All <ArrowRight className="w-4 h-4" />
+                                </Link>
+                            </div>
+                            {upcomingActivities.length > 0 ? (
+                                <div className="divide-y divide-[#AEC3B0]/20 dark:divide-[#375534]/20">
+                                    {upcomingActivities.map((activity) => (
+                                        <div
+                                            key={activity.guide_assignment_id}
+                                            className="p-4 hover:bg-[#E3EED4]/30 dark:hover:bg-[#375534]/20 transition-colors"
+                                        >
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <p className="font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                                        {activity.service_name}
+                                                    </p>
+                                                    <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mt-1">
+                                                        {activity.date} at {activity.time}
+                                                    </p>
+                                                    <p className="text-xs text-[#AEC3B0] dark:text-[#6B8071] mt-1">
+                                                        Guide: {activity.guide_name}
+                                                    </p>
+                                                </div>
+                                                <StatusBadge status={activity.status} />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-6 text-center text-[#6B8071] dark:text-[#AEC3B0]">
+                                    <Clock className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                    <p className="text-sm">No upcoming activities scheduled</p>
+                                </div>
                             )}
                         </div>
-                        <div className="flex items-center gap-2">
-                            {React.createElement(statusIcon[operatorStatus.status] || Info, {
-                                className: `w-8 h-8 ${statusColors[operatorStatus.status]}`,
-                            })}
-                            <span className={`font-semibold ${statusColors[operatorStatus.status]}`}>
-                                {operatorStatus.status}
-                            </span>
+
+                        {/* Recent Services */}
+                        <div className="rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm overflow-hidden">
+                            <div className="p-6 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20 flex items-center justify-between">
+                                <h2 className="text-lg font-bold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                    Recent Services
+                                </h2>
+                                <Link
+                                    href="/operator/services/create"
+                                    className="text-sm text-white bg-[#375534] hover:bg-[#2d4429] rounded-lg px-3 py-1 font-medium flex items-center gap-1 transition-colors"
+                                >
+                                    <Zap className="w-4 h-4" /> New Service
+                                </Link>
+                            </div>
+                            {recentServices.length > 0 ? (
+                                <div className="divide-y divide-[#AEC3B0]/20 dark:divide-[#375534]/20">
+                                    {recentServices.map((service) => (
+                                        <div
+                                            key={service.service_id}
+                                            className="p-4 hover:bg-[#E3EED4]/30 dark:hover:bg-[#375534]/20 transition-colors"
+                                        >
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <p className="font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                                        {service.service_name}
+                                                    </p>
+                                                    <p className="text-xs text-[#AEC3B0] dark:text-[#6B8071] mt-1">
+                                                        {service.service_type} • {service.created_at}
+                                                    </p>
+                                                </div>
+                                                <StatusBadge status={service.status} />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-6 text-center text-[#6B8071] dark:text-[#AEC3B0]">
+                                    <FileText className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                    <p className="text-sm">No services created yet</p>
+                                </div>
+                            )}
                         </div>
                     </div>
-                </div>
 
-                {/* 2. Quick Statistics */}
-                <div className="grid gap-6 md:grid-cols-4">
-                    <StatCard
-                        title="Total Bookings (Today)"
-                        value={stats.totalBookingsToday}
-                        icon={Calendar}
-                    />
-                    <StatCard
-                        title="Total Guests (Today)"
-                        value={stats.totalGuestsToday}
-                        icon={Users}
-                    />
-                    <StatCard
-                        title="Upcoming Activities"
-                        value={stats.upcomingActivities}
-                        icon={Clock}
-                    />
-                    <StatCard
-                        title="Pending Guest Submissions"
-                        value={stats.pendingGuestSubmissions}
-                        icon={AlertTriangle}
-                    />
-                    <StatCard
-                        title="Documents Expiring Soon"
-                        value={stats.docsExpiringSoon}
-                        icon={FileText}
-                    />
-                </div>
+                    {/* Right Column - Sidebar */}
+                    <div className="space-y-6">
+                        {/* Action Items */}
+                        <div className="rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm overflow-hidden">
+                            <div className="p-6 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20">
+                                <h3 className="text-lg font-bold text-[#0F2A1D] dark:text-[#E3EED4] flex items-center gap-2">
+                                    <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                                    Action Required
+                                </h3>
+                            </div>
+                            {actionItems.length > 0 ? (
+                                <div className="p-4 space-y-2">
+                                    {actionItems.map((item, idx) => (
+                                        <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/10">
+                                            <div className="w-2 h-2 rounded-full bg-yellow-600 mt-1.5 flex-shrink-0" />
+                                            <p className="text-sm text-[#375534] dark:text-[#AEC3B0]">{item}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-6 text-center text-[#6B8071] dark:text-[#AEC3B0]">
+                                    <CheckCircle className="w-8 h-8 mx-auto mb-2 opacity-30 text-green-600" />
+                                    <p className="text-sm">All clear! No action needed</p>
+                                </div>
+                            )}
+                        </div>
 
-                {/* 3. Today's Activity Overview */}
-                <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm overflow-hidden">
-                    <div className="p-6 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20">
-                        <h2 className="text-lg font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
-                            Today’s Activity Overview
-                        </h2>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="bg-[#E3EED4] dark:bg-[#0F2A1D]/50 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20">
-                                    <th className="text-left py-3 px-4 font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">Time</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">Service</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">Guests</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">Guide</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {todaysActivities.map((act, idx) => (
-                                    <tr
-                                        key={idx}
-                                        className="border-b border-[#AEC3B0]/20 dark:border-[#375534]/20 hover:bg-[#E3EED4]/50 dark:hover:bg-[#375534]/20 transition-colors"
-                                    >
-                                        <td className="py-3 px-4 text-[#0F2A1D] dark:text-[#E3EED4]">
-                                            {act.time}
-                                        </td>
-                                        <td className="py-3 px-4 text-[#6B8071] dark:text-[#AEC3B0]">
-                                            {act.service}
-                                        </td>
-                                        <td className="py-3 px-4 text-[#6B8071] dark:text-[#AEC3B0]">
-                                            {act.guests}
-                                        </td>
-                                        <td className="py-3 px-4 text-[#6B8071] dark:text-[#AEC3B0]">
-                                            {act.guide}
-                                        </td>
-                                        <td className="py-3 px-4 text-[#0F2A1D] dark:text-[#E3EED4]">
-                                            {act.status}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                        {/* Alerts */}
+                        <div className="rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm overflow-hidden">
+                            <div className="p-6 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20">
+                                <h3 className="text-lg font-bold text-[#0F2A1D] dark:text-[#E3EED4] flex items-center gap-2">
+                                    <AlertCircle className="w-5 h-5 text-red-600" />
+                                    Active Alerts
+                                </h3>
+                            </div>
+                            {alerts.length > 0 ? (
+                                <div className="p-4 space-y-2">
+                                    {alerts.map((alert) => (
+                                        <div key={alert.operator_alert_id} className="p-3 rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10">
+                                            <p className="text-xs font-semibold text-red-700 dark:text-red-400">{alert.type}</p>
+                                            <p className="text-sm text-red-800 dark:text-red-300 mt-1">{alert.message}</p>
+                                            <p className="text-xs text-red-600 dark:text-red-400 mt-1">{alert.created_at}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-6 text-center text-[#6B8071] dark:text-[#AEC3B0]">
+                                    <CheckCircle className="w-8 h-8 mx-auto mb-2 opacity-30 text-green-600" />
+                                    <p className="text-sm">No active alerts</p>
+                                </div>
+                            )}
+                        </div>
 
-                {/* 4. & 5. Alerts and Action Required */}
-                <div className="grid gap-6 lg:grid-cols-2">
-                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
-                        <h3 className="text-lg font-semibold mb-4 text-[#0F2A1D] dark:text-[#E3EED4]">
-                            Alerts & Notifications
-                        </h3>
-                        <ul className="space-y-2">
-                            {alerts.slice(0, 5).map((alert) => (
-                                <AlertItem
-                                    key={alert.id}
-                                    message={alert.message}
-                                    type={alert.type}
-                                />
-                            ))}
-                        </ul>
-                        <div className="mt-4 text-right">
-                            <a
-                                href="/operator/alerts"
-                                className="text-sm text-[#375534] dark:text-[#AEC3B0] font-medium hover:underline"
-                            >
-                                View All
-                            </a>
+                        {/* Expiring Documents */}
+                        {expiringDocuments.length > 0 && (
+                            <div className="rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm overflow-hidden">
+                                <div className="p-6 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20">
+                                    <h3 className="text-lg font-bold text-[#0F2A1D] dark:text-[#E3EED4] flex items-center gap-2">
+                                        <FileText className="w-5 h-5 text-orange-600" />
+                                        Documents Expiring
+                                    </h3>
+                                </div>
+                                <div className="p-4 space-y-2">
+                                    {expiringDocuments.map((doc) => (
+                                        <div key={doc.document_id} className="p-3 rounded-lg bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-900/30">
+                                            <p className="text-sm font-semibold text-orange-800 dark:text-orange-300">
+                                                {doc.document_type}
+                                            </p>
+                                            <p className="text-xs text-orange-700 dark:text-orange-400 mt-1">
+                                                Expires in {doc.days_left} days
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Quick Stats */}
+                        <div className="rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
+                            <h3 className="text-sm font-bold text-[#0F2A1D] dark:text-[#E3EED4] mb-4">Quick Stats</h3>
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-[#6B8071] dark:text-[#AEC3B0]">Pending Services</span>
+                                    <span className="font-bold text-[#0F2A1D] dark:text-[#E3EED4]">{stats.pendingServices}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-[#6B8071] dark:text-[#AEC3B0]">Guest Submissions</span>
+                                    <span className="font-bold text-[#0F2A1D] dark:text-[#E3EED4]">{stats.pendingGuestSubmissions}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-[#6B8071] dark:text-[#AEC3B0]">Expiring Docs</span>
+                                    <span className="font-bold text-[#0F2A1D] dark:text-[#E3EED4]">{stats.expiringDocuments}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
-                        <h3 className="text-lg font-semibold mb-4 text-[#0F2A1D] dark:text-[#E3EED4]">
-                            Action Required
-                        </h3>
-                        <ul className="list-disc list-inside space-y-2 text-[#0F2A1D] dark:text-[#E3EED4]">
-                            {actionsRequired.map((task, idx) => (
-                                <li key={idx} className="text-[#375534] dark:text-[#AEC3B0]">
-                                    {task}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </div>
-
-                {/* optional crowd indicator */}
-                <div className="rounded-2xl border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm p-6">
-                    <h3 className="text-lg font-semibold mb-2 text-[#0F2A1D] dark:text-[#E3EED4]">
-                        Crowd Indicator
-                    </h3>
-                    <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0]">
-                        Current crowd level: {crowd.level}
-                    </p>
-                    <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0]">
-                        Risk level: {crowd.risk}
-                    </p>
-                    <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0]">
-                        Peak forecast: {crowd.peak}
-                    </p>
                 </div>
             </div>
         </AppLayout>

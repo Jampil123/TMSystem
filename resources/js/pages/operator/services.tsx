@@ -90,16 +90,16 @@ export default function OperatorServices({ services, total, message }: ServicesP
             <Head title="Services" />
             <div className="flex h-full flex-1 flex-col gap-6 p-6 bg-[#E3EED4] dark:bg-[#0F2A1D]">
                 {/* Header with Create Button */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-[#0F2A1D] dark:text-white">Services</h1>
-                        <p className="mt-1 text-sm text-[#6B8071] dark:text-[#AEC3B0]">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between bg-[#375534] text-white p-4 rounded-lg">
+                    <div >
+                        <h1 className="text-2xl font-bold">Services</h1>
+                        <p className="text-[#E3EED4] text-sm mt-1">
                             Manage and view all your services
                         </p>
                     </div>
                     <Link
                         href="/operator/services/create"
-                        className="inline-flex items-center gap-2 rounded-lg bg-[#375534] hover:bg-[#2d4429] text-white px-4 py-2 font-medium transition-colors"
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#35ab33] hover:bg-[#298227] text-white px-4 py-2 font-medium transition-colors"
                     >
                         <Plus className="w-4 h-4" />
                         Create Service
@@ -154,20 +154,20 @@ export default function OperatorServices({ services, total, message }: ServicesP
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
-                                    <tr className="bg-[#E3EED4] dark:bg-[#0F2A1D]/50 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20">
-                                        <th className="px-6 py-3 text-left font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                    <tr className="bg-[#6B9071] dark:bg-[#0F2A1D]/50 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20">
+                                        <th className="px-6 py-3 text-left font-semibold text-white dark:text-[#E3EED4]">
                                             Service Name
                                         </th>
-                                        <th className="px-6 py-3 text-left font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                        <th className="px-6 py-3 text-left font-semibold text-white dark:text-[#E3EED4]">
                                             Type
                                         </th>
-                                        <th className="px-6 py-3 text-left font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                        <th className="px-6 py-3 text-left font-semibold text-white dark:text-[#E3EED4]">
                                             Location
                                         </th>
-                                        <th className="px-6 py-3 text-left font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                        <th className="px-6 py-3 text-left font-semibold text-white dark:text-[#E3EED4]">
                                             Status
                                         </th>
-                                        <th className="px-6 py-3 text-right font-semibold text-[#0F2A1D] dark:text-[#E3EED4]">
+                                        <th className="px-6 py-3 text-right font-semibold text-white dark:text-[#E3EED4]">
                                             Actions
                                         </th>
                                     </tr>

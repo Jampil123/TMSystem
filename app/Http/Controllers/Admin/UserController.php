@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\Userstatus;
+use App\Notifications\AccountApprovedNotification;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -89,9 +90,25 @@ class UserController extends Controller
             'account_status_id' => 'required|exists:user_statuses,id',
         ]);
 
+        $oldStatusId = $user->account_status_id;
         $user->update($validated);
 
-        return redirect()->route('users.index')->with('success', 'User updated successfully');
+        // Get the new status
+        $newStatus = Userstatus::find($validated['account_status_id']);
+        $approvedStatus = Userstatus::where('status', 'APPROVED')->where('type', 'ACCOUNT')->first();
+
+        // Send approval notification if status changed to APPROVED
+        $emailSent = false;
+        if ($newStatus && $approvedStatus && $newStatus->id === $approvedStatus->id && $oldStatusId !== $approvedStatus->id) {
+            $user->notify(new AccountApprovedNotification($user));
+            $emailSent = true;
+        }
+
+        return redirect()->route('users.index')->with([
+            'success' => 'User updated successfully' . ($emailSent ? " - Approval email sent to {$user->email}" : ''),
+            'email_sent' => $emailSent,
+            'email_recipient' => $emailSent ? $user->email : null,
+        ]);
     }
 
     /**

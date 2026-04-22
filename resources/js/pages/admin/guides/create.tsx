@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { ArrowLeft, Plus, Trash2, X as XIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, X as XIcon, CheckCircle } from 'lucide-react';
 import type { BreadcrumbItem } from '@/types';
 
 interface Certification {
@@ -37,18 +37,38 @@ export default function GuideCreate({ specialtyOptions = [] }: Props) {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [generalError, setGeneralError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [successGuideName, setSuccessGuideName] = useState('');
+
+    // Auto-redirect after showing success modal
+    React.useEffect(() => {
+        if (showSuccessModal) {
+            const timer = setTimeout(() => {
+                router.get('/guides');
+            }, 2000); // Redirect after 2 seconds
+            return () => clearTimeout(timer);
+        }
+    }, [showSuccessModal]);
 
     const defaultSpecialties = specialtyOptions.length > 0 ? specialtyOptions : [
+        'Canyoneering (Kawasan Falls)',
+        'Waterfall Tours',
+        'Kawasan Falls Guiding',
+        'River Trekking',
+        'Snorkeling Guide',
+        'Sardine Run Tour',
+        'Island Hopping',
+        'Marine Conservation Guide',
         'Hiking',
-        'Cultural Tours',
-        'Marine Activities',
-        'Mountain Climbing',
-        'Water Sports',
-        'Historical Sites',
-        'Wildlife Safari',
-        'Adventure Sports',
-        'Food & Wine',
-        'Photography Tours',
+        'Trekking Guide',
+        'Eco-Tour Guide',
+        'Nature Interpretation',
+        'Cultural Tour Guide',
+        'Local Community Guide',
+        'Heritage Tour',
+        'Transportation Service',
+        'Tour Coordinator',
+        'Equipment Handling',
     ];
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -185,7 +205,9 @@ export default function GuideCreate({ specialtyOptions = [] }: Props) {
                 setIsSubmitting(false);
             },
             onSuccess: () => {
-                router.get('/guides', {}, { preserveScroll: true });
+                setSuccessGuideName(formData.full_name);
+                setShowSuccessModal(true);
+                setIsSubmitting(false);
             },
         });
     };
@@ -476,6 +498,33 @@ export default function GuideCreate({ specialtyOptions = [] }: Props) {
                         </div>
                     </form>
                 </div>
+
+                {/* Success Modal - Floating Toast */}
+                {showSuccessModal && (
+                    <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-50 p-4">
+                        <div className="bg-white dark:bg-[#0F2A1D] rounded-3xl p-8 max-w-sm mx-auto w-full text-center shadow-2xl border border-gray-100 dark:border-[#375534]/20 backdrop-blur-sm animate-in fade-in zoom-in duration-500">
+                            {/* Animated Checkmark */}
+                            <div className="flex justify-center mb-5">
+                                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center animate-pulse">
+                                    <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
+                                </div>
+                            </div>
+                            
+                            <h3 className="text-xl font-bold text-[#0F2A1D] dark:text-[#E3EED4] mb-2">
+                                Success!
+                            </h3>
+                            
+                            <p className="text-[#6B8071] dark:text-[#AEC3B0] text-sm mb-4">
+                                Guide has been successfully created.
+                            </p>
+
+                            <div className="flex items-center justify-center gap-2 text-[#375534] dark:text-[#AEC3B0] text-sm">
+                                <div className="w-4 h-4 border-2 border-transparent border-t-[#375534] dark:border-t-[#AEC3B0] rounded-full animate-spin"></div>
+                                <span>Redirecting...</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </AppLayout>
     );

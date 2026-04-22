@@ -231,6 +231,38 @@ class GuestSubmissionController extends Controller
     }
 
     /**
+     * Print wristbands (QR codes) page for a guest submission.
+     */
+    public function printWristbands($id)
+    {
+        $user = auth()->user();
+
+        $guestList = GuestList::where('id', $id)
+            ->where('operator_id', $user->id)
+            ->firstOrFail();
+
+        $qrCodes = $guestList->qrCodes()
+            ->select('id', 'token')
+            ->get()
+            ->map(function ($qr) {
+                return [
+                    'id' => $qr->id,
+                    'token' => $qr->token,
+                ];
+            });
+
+        return Inertia::render('operator/print-qr-wristbands', [
+            'guestList' => [
+                'id' => $guestList->id,
+                'serviceName' => $guestList->service->service_name ?? 'Service',
+                'visitDate' => $guestList->visit_date->format('M d, Y'),
+                'guestNames' => $guestList->guest_names ?? [],
+            ],
+            'qrCodes' => $qrCodes,
+        ]);
+    }
+
+    /**
      * Delete a guest list.
      */
     public function destroy($id)

@@ -133,6 +133,15 @@ class GuideController extends Controller
                 }
             }
 
+            // Return JSON response for AJAX/Inertia requests
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Guide registration submitted successfully!',
+                    'guide' => $guide,
+                ]);
+            }
+
             return redirect()->route('guides.registration-success', ['guide' => $guide->id])
                 ->with('success', 'Guide registration submitted successfully!');
         } catch (\Illuminate\Validation\ValidationException $e) {

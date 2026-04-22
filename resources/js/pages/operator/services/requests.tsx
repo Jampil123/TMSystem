@@ -99,9 +99,9 @@ export default function ServiceRequests({ requests, totalPending }: ServiceReque
             <Head title="Service Requests" />
             <div className="flex h-full flex-1 flex-col gap-6 p-6 bg-[#E3EED4] dark:bg-[#0F2A1D]">
                 {/* Header */}
-                <div>
-                    <h1 className="text-3xl font-bold text-[#0F2A1D] dark:text-white">Service Requests</h1>
-                    <p className="mt-1 text-sm text-[#6B8071] dark:text-[#AEC3B0]">
+                <div className="rounded-2xl bg-[#375534] text-white p-4 rounded-lg">
+                    <h1 className="text-3xl font-bold">Service Requests</h1>
+                    <p className="text-[#E3EED4] text-sm mt-1">
                         Manage requests and inquiries for your services
                     </p>
                 </div>

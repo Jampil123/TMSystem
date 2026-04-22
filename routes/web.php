@@ -34,6 +34,7 @@ use App\Http\Controllers\Tourist\CrowdIdentifierController;
 use App\Http\Controllers\StaffArrivalidateController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Dashboard\OperatorDashboardController;
 
 Route::redirect('/', '/login')->name('home');
 
@@ -115,9 +116,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('tourist/crowd-identifier', [CrowdIdentifierController::class, 'index'])->name('tourist.crowd-identifier');
 });
 
-Route::get('operator-dashboard', function () {
-    return Inertia::render('dashboards/operator-dashboard');
-})->middleware(['auth', 'verified'])->name('operator.dashboard');
+Route::get('operator-dashboard', [OperatorDashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('operator.dashboard');
 
 Route::get('operator/documents', [DocumentController::class, 'index'])
     ->middleware(['auth', 'verified'])
@@ -179,6 +180,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('operator/guest-submission/{id}', [GuestSubmissionController::class, 'show'])
         ->name('operator.guest-submission.show');
+
+    // Print wristbands (QR codes) for a guest submission
+    Route::get('operator/guest-submission/{id}/print-qr-wristbands', [GuestSubmissionController::class, 'printWristbands'])
+        ->name('operator.guest-submission.print');
 
     Route::delete('operator/guest-submission/{id}', [GuestSubmissionController::class, 'destroy'])
         ->name('operator.guest-submission.destroy');
