@@ -40,14 +40,8 @@ Route::middleware(['auth', 'verified'])->prefix('staff')->name('staff.')->group(
     // Validate booking code from QR scan
     Route::post('validate-booking', [StaffArrivalidateController::class, 'validateBooking'])->name('validate-booking');
     
-    // Toggle guest status (entry/exit)
-    Route::post('toggle-guest-status', [StaffArrivalidateController::class, 'toggleGuestStatus'])->name('toggle-guest-status');
-    
     // Log arrival
     Route::post('log-arrival', [StaffArrivalidateController::class, 'logArrival'])->name('log-arrival');
-    
-    // Log departure
-    Route::post('log-departure', [StaffArrivalidateController::class, 'logDeparture'])->name('log-departure');
     
     // Deny arrival
     Route::post('deny-arrival', [StaffArrivalidateController::class, 'denyArrival'])->name('deny-arrival');

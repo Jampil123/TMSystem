@@ -20,12 +20,25 @@ interface ServiceTypes {
     [key: string]: string;
 }
 
+interface Service {
+    service_id: number;
+    service_name: string;
+    service_type: string;
+    description: string;
+    tourist_spot: {
+        attraction_name: string;
+    };
+    status: string;
+    approved_at: string | null;
+}
+
 interface CreateServiceProps {
     attractions: Attraction[];
     serviceTypes: ServiceTypes;
+    existingServices: Service[];
 }
 
-export default function CreateService({ attractions, serviceTypes }: CreateServiceProps) {
+export default function CreateService({ attractions, serviceTypes, existingServices }: CreateServiceProps) {
     const { data, setData, post, processing, errors } = useForm({
         service_name: '',
         service_type: '',
@@ -103,16 +116,17 @@ export default function CreateService({ attractions, serviceTypes }: CreateServi
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div>
-                        <h1 className="text-3xl font-bold text-[#0F2A1D] dark:text-white">Create New Service</h1>
-                        <p className="mt-1 text-sm text-[#6B8071] dark:text-[#AEC3B0]">
-                            Add a new service offering to your profile
-                        </p>
+                        <h1 className="text-2xl font-bold text-[#375534] dark:text-[#E3EED4]">Create New Service</h1>
                     </div>
                 </div>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="max-w-3xl">
-                    <div className="rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm overflow-hidden">
+                {/* Main Content Container - Form and Services List */}
+                <div className="flex gap-6 flex-1 overflow-hidden max-w-7xl">
+                    {/* Left Side - Form */}
+                    <div className="flex-1 overflow-y-auto">
+                        {/* Form */}
+                        <form onSubmit={handleSubmit} className="max-w-3xl">
+                            <div className="rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm overflow-hidden">
                         <div className="p-6 space-y-6">
                             {/* Service Name */}
                             <div>
@@ -561,17 +575,87 @@ export default function CreateService({ attractions, serviceTypes }: CreateServi
                             </button>
                         </div>
                     </div>
-                </form>
+                        </form>
 
-                {/* Info */}
-                <div className="rounded-lg border border-blue-200 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-900/20 p-4">
-                    <div className="flex gap-3">
-                        <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                        <div>
-                            <p className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1">Service Review Process</p>
-                            <p className="text-sm text-blue-700 dark:text-blue-400">
-                                After submission, your service will be reviewed by our team. You'll receive a notification when it's approved or if we need more information.
-                            </p>
+                        {/* Info */}
+                        <div className="rounded-lg border border-blue-200 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-900/20 p-4 mt-6">
+                            <div className="flex gap-3">
+                                <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1">Service Review Process</p>
+                                    <p className="text-sm text-blue-700 dark:text-blue-400">
+                                        After submission, your service will be reviewed by our team. You'll receive a notification when it's approved or if we need more information.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Side - Existing Services Card */}
+                    <div className="w-80 flex-shrink-0 overflow-y-auto max-h-full">
+                        <div className="rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] shadow-sm overflow-hidden h-full flex flex-col">
+                            <div className="p-6 border-b border-[#AEC3B0]/20 dark:border-[#375534]/20">
+                                <h2 className="text-lg font-bold text-[#375534] dark:text-[#E3EED4]">Your Services</h2>
+                                <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mt-1">
+                                    {existingServices.length === 0 ? 'No services yet' : `${existingServices.length} service${existingServices.length > 1 ? 's' : ''}`}
+                                </p>
+                            </div>
+
+                            {existingServices.length > 0 ? (
+                                <div className="flex-1 overflow-y-auto">
+                                    <div className="p-4 space-y-3">
+                                        {existingServices.map((service) => (
+                                            <div key={service.service_id} className="p-3 rounded-lg border border-[#AEC3B0]/20 dark:border-[#375534]/30 bg-[#E3EED4]/30 dark:bg-[#375534]/10 hover:border-[#AEC3B0]/40 dark:hover:border-[#375534]/50 transition-colors">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex-1 min-w-0">
+                                                        <h3 className="font-medium text-sm text-[#375534] dark:text-[#E3EED4] truncate">
+                                                            {service.service_name}
+                                                        </h3>
+                                                        <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mt-1 truncate">
+                                                            {service.tourist_spot.attraction_name}
+                                                        </p>
+                                                        <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] line-clamp-2 mt-1">
+                                                            {service.description}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-between mt-2">
+                                                    <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-[#375534]/10 dark:bg-[#AEC3B0]/10 text-[#375534] dark:text-[#AEC3B0]">
+                                                        {Object.values(serviceTypes).find((_, idx) => Object.keys(serviceTypes)[idx] === service.service_type) || service.service_type}
+                                                    </span>
+                                                    <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                                                        service.status === 'approved' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300' :
+                                                        service.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300' :
+                                                        'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300'
+                                                    }`}>
+                                                        {service.status.charAt(0).toUpperCase() + service.status.slice(1)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex-1 flex items-center justify-center p-6">
+                                    <div className="text-center">
+                                        <p className="text-sm text-[#6B8071] dark:text-[#AEC3B0] mb-2">
+                                            No services created yet
+                                        </p>
+                                        <p className="text-xs text-[#AEC3B0] dark:text-[#6B8071]">
+                                            Create your first service using the form
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="p-4 border-t border-[#AEC3B0]/20 dark:border-[#375534]/20 bg-[#E3EED4]/20 dark:bg-[#375534]/5">
+                                <Link
+                                    href="/operator/services"
+                                    className="block w-full text-center rounded-lg border border-[#375534] text-[#375534] dark:border-[#AEC3B0] dark:text-[#AEC3B0] hover:bg-[#375534] hover:text-white dark:hover:bg-[#AEC3B0] dark:hover:text-[#0F2A1D] px-4 py-2 text-sm font-medium transition-colors"
+                                >
+                                    View All Services
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { ArrowLeft, Users, Calendar, MapPin, QrCode, Eye, Download, Trash2, Info, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { ArrowLeft, Users, Calendar, MapPin, QrCode, Eye, Download, Trash2, Info, CheckCircle, AlertCircle, Clock, Printer } from 'lucide-react';
 import EligibleGuides from '@/components/admin/guides/EligibleGuides';
 import AssignmentConfirmModal from '@/components/admin/guides/AssignmentConfirmModal';
 import type { BreadcrumbItem } from '@/types';
@@ -127,7 +127,7 @@ export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats, as
                         >
                             <ArrowLeft className="w-5 h-5 text-[#375534] dark:text-[#E3EED4]" />
                         </Link>
-                        <h1 className="text-3xl font-bold text-[#375534] dark:text-[#E3EED4]">
+                        <h1 className="text-2xl font-bold text-[#375534] dark:text-[#E3EED4]">
                             Guest List Details
                         </h1>
                     </div>
@@ -140,6 +140,7 @@ export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats, as
                             Delete
                         </button>
                     )}
+                    {/* Print button moved to floating action button (bottom-right) */}
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-3">
@@ -598,6 +599,16 @@ export default function GuestSubmissionDetails({ guestList, qrCodes, qrStats, as
                         </div>
                     </div>
                 )}
+                {/* Floating Print Button */}
+                <div className="fixed bottom-6 right-6 z-50 no-print">
+                    <button
+                        onClick={() => window.open(`/operator/guest-submission/${guestList.id}/print-qr-wristbands`, '_blank')}
+                        title="Print Wristbands"
+                        className="flex items-center justify-center w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-colors"
+                    >
+                        <Printer className="w-6 h-6" />
+                    </button>
+                </div>
             </div>
         </AppLayout>
     );

@@ -70,9 +70,29 @@ class ServiceController extends Controller
             'other' => 'Other',
         ];
 
+        $user = auth()->user();
+        $existingServices = Service::where('operator_id', $user->id)
+            ->with(['touristSpot'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($service) {
+                return [
+                    'service_id' => $service->service_id,
+                    'service_name' => $service->service_name,
+                    'service_type' => $service->service_type,
+                    'description' => substr($service->description, 0, 100),
+                    'tourist_spot' => [
+                        'attraction_name' => $service->touristSpot?->name ?? 'Unknown Attraction',
+                    ],
+                    'status' => $service->status,
+                    'approved_at' => $service->approved_at,
+                ];
+            });
+
         return Inertia::render('operator/services/create', [
             'attractions' => $attractions,
             'serviceTypes' => $serviceTypes,
+            'existingServices' => $existingServices,
         ]);
     }
 

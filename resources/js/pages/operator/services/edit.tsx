@@ -81,10 +81,7 @@ export default function EditService({ service, attractions, serviceTypes }: Edit
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div>
-                        <h1 className="text-3xl font-bold text-[#0F2A1D] dark:text-white">Edit Service</h1>
-                        <p className="mt-1 text-sm text-[#6B8071] dark:text-[#AEC3B0]">
-                            Update your service details
-                        </p>
+                        <h1 className="text-2xl font-bold text-[#375534] dark:text-[#E3EED4]">Edit Service</h1>
                     </div>
                 </div>
 

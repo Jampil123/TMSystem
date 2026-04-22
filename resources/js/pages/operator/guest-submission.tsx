@@ -146,12 +146,12 @@ export default function GuestSubmission({ services, guestSubmissions }: Props) {
             <Head title="Guest Submission" />
             <div className="flex h-full flex-1 flex-col gap-6 p-6 bg-[#E3EED4] dark:bg-[#0F2A1D]">
                 {/* Header */}
-                <div className="rounded-2xl bg-gradient-to-r from-[#375534] to-[#6B8071] p-8 text-white shadow-lg">
+                <div className="rounded-2xl bg-[#375534] text-white p-4 rounded-lg">
                     <div className="flex items-center gap-3 mb-2">
                         <Users className="w-8 h-8" />
-                        <h1 className="text-3xl font-bold">Guest Submission</h1>
+                        <h1 className="text-2xl font-bold">Guest Submission</h1>
                     </div>
-                    <p className="text-[#E3EED4]">
+                    <p className="text-[#E3EED4] text-sm mt-1">
                         Submit guest information for your approved services
                     </p>
                 </div>
