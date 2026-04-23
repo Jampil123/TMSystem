@@ -1,5 +1,6 @@
-import { Link, router, usePage } from '@inertiajs/react';
-import Header from '@/layouts/portal/Header';
+import { Link, usePage } from '@inertiajs/react';
+import MainLayout from '@/layouts/portal/MainLayouts';
+import type { ReactNode } from 'react';
 
 // Theme Palette: #0F2A1D | #375534 | #6B9071 | #AEC3B0 | #E3EED4
 
@@ -35,18 +36,104 @@ const stats = [
 ];
 
 export default function Dashboard() {
-    const { auth } = usePage<PageProps>().props;
+    const page = usePage<PageProps>();
+    const { auth } = page.props;
+    const { url } = page;
     const user = auth?.user;
+    const params = new URLSearchParams(url.includes('?') ? url.split('?')[1] : '');
+    const activePanel = params.get('panel') ?? 'home';
 
-    const handleLogout = () => {
-        router.post('/portal/logout');
-    };
+    if (activePanel === 'about') {
+        return (
+            <div className="w-full max-w-7xl mx-auto px-6 py-8">
+                <div className="rounded-2xl p-8" style={{ backgroundColor: '#fff', border: '1px solid #AEC3B0' }}>
+                    <h1 className="text-2xl font-bold mb-3" style={{ color: '#0F2A1D' }}>About Badian</h1>
+                    <p className="text-sm leading-relaxed" style={{ color: '#375534' }}>
+                        Badian is one of Cebu's top destinations, known for waterfalls, beaches, and outdoor adventures.
+                        This section is displayed inside the dashboard child container for logged-in users.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    if (activePanel === 'activities') {
+        return (
+            <div className="w-full max-w-7xl mx-auto px-6 py-8">
+                <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: '#fff', border: '1px solid #AEC3B0' }}>
+                    <div className="px-6 py-4" style={{ borderBottom: '1px solid #E3EED4' }}>
+                        <h1 className="text-xl font-bold" style={{ color: '#0F2A1D' }}>Activities</h1>
+                    </div>
+                    <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {mockActivities.map((activity) => (
+                            <div
+                                key={activity.id}
+                                className="rounded-xl p-4 flex flex-col gap-3"
+                                style={{ backgroundColor: '#E3EED4', border: '1px solid #AEC3B0' }}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <span className="text-2xl">{activity.icon}</span>
+                                    <div>
+                                        <p className="text-sm font-semibold" style={{ color: '#0F2A1D' }}>{activity.name}</p>
+                                        <p className="text-xs" style={{ color: '#6B9071' }}>{activity.date}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: '#AEC3B0', color: '#0F2A1D' }}>
+                                        {activity.slots} slots left
+                                    </span>
+                                    <span className="text-sm font-bold" style={{ color: '#375534' }}>{activity.price}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (activePanel === 'attractions') {
+        return (
+            <div className="w-full max-w-7xl mx-auto px-6 py-8">
+                <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: '#fff', border: '1px solid #AEC3B0' }}>
+                    <div className="px-6 py-4" style={{ borderBottom: '1px solid #E3EED4' }}>
+                        <h1 className="text-xl font-bold" style={{ color: '#0F2A1D' }}>Attractions</h1>
+                    </div>
+                    <div className="divide-y" style={{ borderColor: '#E3EED4' }}>
+                        {mockAttractions.map((attraction) => (
+                            <div key={attraction.id} className="px-6 py-4 flex items-start gap-4">
+                                <div
+                                    className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+                                    style={{ backgroundColor: '#E3EED4' }}
+                                >
+                                    {attraction.emoji}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h3 className="font-semibold text-sm" style={{ color: '#0F2A1D' }}>{attraction.name}</h3>
+                                        <span
+                                            className="px-2 py-0.5 rounded-full text-xs font-medium"
+                                            style={{ backgroundColor: '#E3EED4', color: '#375534' }}
+                                        >
+                                            {attraction.category}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs truncate" style={{ color: '#6B9071' }}>{attraction.desc}</p>
+                                </div>
+                                <div className="text-right flex-shrink-0">
+                                    <p className="text-sm font-bold" style={{ color: '#375534' }}>⭐ {attraction.rating}</p>
+                                    <p className="text-xs" style={{ color: '#AEC3B0' }}>{attraction.visits} visits</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#E3EED4' }}>
-            <Header />
-
-            <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-8">
+        <div className="w-full max-w-7xl mx-auto px-6 py-8">
 
                 {/* Welcome Banner */}
                 <div
@@ -75,22 +162,12 @@ export default function Dashboard() {
                     </div>
                     <div className="flex items-center gap-3">
                         <Link
-                            href="/badian-portal/attractions"
+                            href="/badian-portal/dashboard?panel=attractions"
                             className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-90"
                             style={{ backgroundColor: '#375534', color: '#AEC3B0', border: '1px solid #6B9071' }}
                         >
                             🗺️ Explore
                         </Link>
-                        <button
-                            onClick={handleLogout}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-80"
-                            style={{ backgroundColor: 'rgba(248,113,113,0.15)', color: '#f87171', border: '1px solid rgba(248,113,113,0.3)' }}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
-                            Sign Out
-                        </button>
                     </div>
                 </div>
 
@@ -129,7 +206,7 @@ export default function Dashboard() {
                         >
                             <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #E3EED4' }}>
                                 <h2 className="font-bold text-base" style={{ color: '#0F2A1D' }}>Featured Attractions</h2>
-                                <Link href="/badian-portal/attractions" className="text-xs font-medium hover:underline" style={{ color: '#6B9071' }}>
+                                <Link href="/badian-portal/dashboard?panel=attractions" className="text-xs font-medium hover:underline" style={{ color: '#6B9071' }}>
                                     View all →
                                 </Link>
                             </div>
@@ -170,7 +247,7 @@ export default function Dashboard() {
                         >
                             <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #E3EED4' }}>
                                 <h2 className="font-bold text-base" style={{ color: '#0F2A1D' }}>Upcoming Activities</h2>
-                                <Link href="/badian-portal/activities" className="text-xs font-medium hover:underline" style={{ color: '#6B9071' }}>
+                                <Link href="/badian-portal/dashboard?panel=activities" className="text-xs font-medium hover:underline" style={{ color: '#6B9071' }}>
                                     View all →
                                 </Link>
                             </div>
@@ -206,91 +283,9 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {/* Right Sidebar */}
-                    <div className="flex flex-col gap-6">
-
-                        {/* Notifications */}
-                        <div
-                            className="rounded-2xl overflow-hidden"
-                            style={{ backgroundColor: '#fff', border: '1px solid #AEC3B0' }}
-                        >
-                            <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #E3EED4' }}>
-                                <h2 className="font-bold text-base" style={{ color: '#0F2A1D' }}>Notifications</h2>
-                                <span
-                                    className="text-xs px-2 py-0.5 rounded-full font-medium"
-                                    style={{ backgroundColor: '#6B9071', color: '#0F2A1D' }}
-                                >
-                                    {mockNotifications.filter((n) => !n.read).length} new
-                                </span>
-                            </div>
-                            <ul className="divide-y" style={{ borderColor: '#E3EED4' }}>
-                                {mockNotifications.map((notif) => (
-                                    <li key={notif.id} className="px-5 py-4 flex gap-3 items-start">
-                                        <div
-                                            className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
-                                            style={{ backgroundColor: notif.read ? '#AEC3B0' : '#6B9071' }}
-                                        />
-                                        <div>
-                                            <p className="text-xs leading-relaxed" style={{ color: notif.read ? '#6B9071' : '#0F2A1D', fontWeight: notif.read ? 400 : 600 }}>
-                                                {notif.text}
-                                            </p>
-                                            <p className="text-xs mt-1" style={{ color: '#AEC3B0' }}>{notif.time}</p>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        {/* Quick Links */}
-                        <div
-                            className="rounded-2xl overflow-hidden"
-                            style={{ backgroundColor: '#fff', border: '1px solid #AEC3B0' }}
-                        >
-                            <div className="px-5 py-4" style={{ borderBottom: '1px solid #E3EED4' }}>
-                                <h2 className="font-bold text-base" style={{ color: '#0F2A1D' }}>Quick Links</h2>
-                            </div>
-                            <div className="p-4 flex flex-col gap-2">
-                                {[
-                                    { label: 'Browse Attractions', href: '/badian-portal/attractions', icon: '⭐' },
-                                    { label: 'Explore Activities', href: '/badian-portal/activities', icon: '🏞️' },
-                                    { label: 'About Badian', href: '/badian-portal/about', icon: '📖' },
-                                    { label: 'Contact Us', href: '/badian-portal/contact', icon: '📬' },
-                                ].map((link) => (
-                                    <Link
-                                        key={link.label}
-                                        href={link.href}
-                                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-opacity hover:opacity-80"
-                                        style={{ backgroundColor: '#E3EED4', color: '#375534' }}
-                                    >
-                                        <span>{link.icon}</span>
-                                        {link.label}
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </Link>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Plan Your Visit CTA */}
-                        <div
-                            className="rounded-2xl p-5 text-center"
-                            style={{ background: 'linear-gradient(135deg, #0F2A1D, #375534)', border: '1px solid #6B9071' }}
-                        >
-                            <p className="text-2xl mb-2">🌊</p>
-                            <h3 className="font-bold text-sm mb-1" style={{ color: '#E3EED4' }}>Ready to Explore?</h3>
-                            <p className="text-xs mb-4" style={{ color: '#AEC3B0' }}>Discover Badian's breathtaking destinations and plan your next adventure.</p>
-                            <Link
-                                href="/badian-portal/attractions"
-                                className="inline-block w-full py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90"
-                                style={{ backgroundColor: '#6B9071', color: '#0F2A1D' }}
-                            >
-                                Start Exploring
-                            </Link>
-                        </div>
-                    </div>
                 </div>
-            </main>
         </div>
     );
 }
+
+Dashboard.layout = (page: ReactNode) => <MainLayout children={page} />;

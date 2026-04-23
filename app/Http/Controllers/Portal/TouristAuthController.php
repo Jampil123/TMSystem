@@ -53,8 +53,10 @@ class TouristAuthController extends Controller
             $remember
         )) {
             $request->session()->regenerate();
+            $request->session()->put('portal_context', 'badian');
+            $request->session()->forget('url.intended');
 
-            return redirect()->route('badian.dashboard');
+            return redirect()->to('/badian-portal/dashboard');
         }
 
         return back()
@@ -71,6 +73,7 @@ class TouristAuthController extends Controller
     {
         Auth::logout();
 
+        $request->session()->forget('portal_context');
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

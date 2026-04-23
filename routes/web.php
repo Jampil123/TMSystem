@@ -93,26 +93,42 @@ Route::prefix('portal')->name('portal.')->group(function () {
 // Badian Portal Routes
 Route::prefix('badian-portal')->name('badian.')->group(function () {
     Route::get('/', function () {
-        return Inertia::render('badian-portal/home');
+        $attractions = \App\Models\Attraction::query()
+            ->where('status', 'active')
+            ->select(['id', 'name', 'description', 'location', 'category', 'image_url', 'rating', 'entry_fee'])
+            ->orderBy('name')
+            ->get();
+
+        return Inertia::render('badian-portal/home', [
+            'attractions' => $attractions,
+        ]);
     })->name('home');
     Route::get('/register', function () {
         return Inertia::render('badian-portal/register');
     })->name('register');
+    Route::post('/login', [TouristAuthController::class, 'login'])->name('login');
+    Route::post('/logout', [TouristAuthController::class, 'logout'])->middleware('auth')->name('logout');
     Route::get('/dashboard', function () {
         return Inertia::render('badian-portal/dashboard');
     })->name('dashboard')->middleware('auth');
     Route::get('/about', function () {
         return Inertia::render('badian-portal/about');
     })->name('about');
+    Route::get('/attractions', function () {
+        return Inertia::render('badian-portal/attractions');
+    })->name('attractions');
 });
 
 // Main dashboard - redirects to role-based dashboard
 Route::get('dashboard', function () {
     $user = auth()->user();
     $role = $user?->role?->name ?? 'Tourist';
+    $portalContext = session('portal_context');
     
     return match($role) {
-        'Tourist' => redirect()->route('tourist.dashboard'),
+        'Tourist' => $portalContext === 'badian'
+            ? redirect()->route('badian.dashboard')
+            : redirect()->route('tourist.dashboard'),
         'External Operator' => redirect()->route('operator.dashboard'),
         'LGU Officer' => redirect()->route('lgu-dot.dashboard'),
         'Tourism Officer' => redirect()->route('lgu-dot.dashboard'),

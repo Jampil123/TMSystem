@@ -1,12 +1,64 @@
-import { FormEvent } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import { useForm, Link, usePage } from '@inertiajs/react';
 import Header from '@/layouts/portal/Header';
 
 // Theme Palette: #0F2A1D | #375534 | #6B9071 | #AEC3B0 | #E3EED4
+
+type Attraction = {
+    id: number;
+    name: string;
+    location: string;
+    category: string;
+    description?: string | null;
+    image_url?: string | null;
+    rating?: number;
+    entry_fee?: number | string | null;
+};
+
+type HomePageProps = {
+    attractions?: Attraction[];
+    auth?: {
+        user?: {
+            name?: string;
+            email?: string;
+        } | null;
+    };
+};
+
 export default function Home() {
     const { url } = usePage();
+    const { attractions = [], auth } = usePage<HomePageProps>().props;
+    const isLoggedIn = Boolean(auth?.user);
     const params = new URLSearchParams(url.includes('?') ? url.split('?')[1] : '');
     const activePanel = params.get('panel') ?? 'video';
+
+    const [attractionQuery, setAttractionQuery] = useState('');
+    const [attractionCategory, setAttractionCategory] = useState<string>('all');
+
+    const categories = useMemo(() => {
+        const unique = Array.from(
+            new Set(
+                attractions
+                    .map((a) => (a.category ?? '').trim())
+                    .filter(Boolean)
+            )
+        ).sort((a, b) => a.localeCompare(b));
+
+        return ['all', ...unique];
+    }, [attractions]);
+
+    const filteredAttractions = useMemo(() => {
+        const q = attractionQuery.trim().toLowerCase();
+        return attractions.filter((a) => {
+            if (attractionCategory !== 'all' && (a.category ?? '') !== attractionCategory) return false;
+            if (!q) return true;
+            return (
+                a.name.toLowerCase().includes(q) ||
+                a.location.toLowerCase().includes(q) ||
+                (a.category ?? '').toLowerCase().includes(q)
+            );
+        });
+    }, [attractionQuery, attractionCategory, attractions]);
 
     const { data, setData, post, processing, errors } = useForm({
         email: '',
@@ -16,7 +68,7 @@ export default function Home() {
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        post('/portal/login');
+        post('/badian-portal/login');
     };
 
     return (
@@ -74,6 +126,19 @@ export default function Home() {
 
                                 {/* Form */}
                                 <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                                    {isLoggedIn && (
+                                        <div
+                                            className="rounded-lg px-4 py-3 text-sm"
+                                            style={{
+                                                backgroundColor: 'rgba(107, 144, 113, 0.2)',
+                                                border: '1px solid #6B9071',
+                                                color: '#E3EED4',
+                                            }}
+                                        >
+                                            You are already logged in as {auth?.user?.email ?? auth?.user?.name ?? 'portal user'}.
+                                        </div>
+                                    )}
+
                                     {/* Email */}
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-sm font-medium" style={{ color: '#AEC3B0' }}>
@@ -84,6 +149,7 @@ export default function Home() {
                                             placeholder="you@example.com"
                                             value={data.email}
                                             onChange={(e) => setData('email', e.target.value)}
+                                            disabled={isLoggedIn}
                                             className="w-full px-4 py-3 rounded-lg text-sm outline-none transition-all"
                                             style={{
                                                 backgroundColor: '#375534',
@@ -109,6 +175,7 @@ export default function Home() {
                                                 placeholder="••••••••"
                                                 value={data.password}
                                                 onChange={(e) => setData('password', e.target.value)}
+                                                disabled={isLoggedIn}
                                                 className="w-full px-4 py-3 rounded-lg text-sm outline-none transition-all pr-11"
                                                 style={{
                                                     backgroundColor: '#375534',
@@ -135,6 +202,7 @@ export default function Home() {
                                             type="checkbox"
                                             checked={data.remember}
                                             onChange={(e) => setData('remember', e.target.checked)}
+                                            disabled={isLoggedIn}
                                             className="rounded"
                                             style={{ accentColor: '#6B9071' }}
                                         />
@@ -144,12 +212,22 @@ export default function Home() {
                                     {/* Submit */}
                                     <button
                                         type="submit"
-                                        disabled={processing}
+                                        disabled={processing || isLoggedIn}
                                         className="w-full py-3 rounded-lg font-semibold text-sm transition-opacity hover:opacity-90 mt-1 disabled:opacity-60"
                                         style={{ backgroundColor: '#6B9071', color: '#0F2A1D' }}
                                     >
-                                        {processing ? 'Signing in...' : 'Sign In'}
+                                        {isLoggedIn ? 'Session Active' : processing ? 'Signing in...' : 'Sign In'}
                                     </button>
+
+                                    {isLoggedIn && (
+                                        <Link
+                                            href="/badian-portal/dashboard"
+                                            className="w-full py-3 rounded-lg font-semibold text-sm text-center transition-opacity hover:opacity-90"
+                                            style={{ backgroundColor: '#375534', color: '#E3EED4', border: '1px solid #6B9071' }}
+                                        >
+                                            Go to Dashboard
+                                        </Link>
+                                    )}
 
                                     {/* Divider */}
                                     <div className="flex items-center gap-3">
@@ -237,6 +315,113 @@ export default function Home() {
                                         <Link
                                             href="/badian-portal"
                                             className="mt-auto inline-flex items-center gap-2 text-sm font-medium hover:underline"
+                                            style={{ color: '#6B9071' }}
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                            Back to Home
+                                        </Link>
+                                    </div>
+                                </div>
+                            ) : activePanel === 'attractions' ? (
+                                /* Attractions Panel (replaces video holder) */
+                                <div
+                                    className="rounded-2xl shadow-2xl h-[520px] md:h-[620px] flex flex-col overflow-hidden"
+                                    style={{
+                                        border: '1px solid #375534',
+                                        backdropFilter: 'blur(8px)',
+                                        backgroundColor: 'rgba(15, 42, 29, 0.85)',
+                                    }}
+                                >
+                                    {/* Header strip */}
+                                    <div className="px-7 pt-7 pb-4" style={{ borderBottom: '1px solid #375534' }}>
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <div
+                                                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                                                    style={{ backgroundColor: '#375534', border: '1px solid #6B9071' }}
+                                                >
+                                                    <span style={{ color: '#AEC3B0' }}>🏞️</span>
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-lg font-bold" style={{ color: '#E3EED4' }}>Attractions</h3>
+                                                    <p className="text-xs" style={{ color: '#6B9071' }}>Badian, Cebu</p>
+                                                </div>
+                                            </div>
+                                            <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: '#375534', color: '#AEC3B0' }}>
+                                                {filteredAttractions.length} item{filteredAttractions.length === 1 ? '' : 's'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Grid */}
+                                    <div className="px-7 py-6 flex-1 overflow-auto">
+                                        {filteredAttractions.length === 0 ? (
+                                            <div className="rounded-xl p-5" style={{ backgroundColor: '#375534', border: '1px dashed #6B9071' }}>
+                                                <p className="text-sm font-semibold" style={{ color: '#E3EED4' }}>
+                                                    No attractions match your search.
+                                                </p>
+                                                <p className="text-xs mt-1" style={{ color: '#AEC3B0' }}>
+                                                    Try clearing your filters.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {filteredAttractions.map((a) => (
+                                                    <div
+                                                        key={a.id}
+                                                        className="rounded-2xl overflow-hidden"
+                                                        style={{ backgroundColor: '#0F2A1D', border: '1px solid #375534' }}
+                                                    >
+                                                        <div className="relative w-full h-36 overflow-hidden bg-gray-200">
+                                                            <img
+                                                                src={a.image_url || 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1400&q=80'}
+                                                                alt={a.name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                            <div className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold" style={{ backgroundColor: '#375534', color: '#E3EED4' }}>
+                                                                {a.category}
+                                                            </div>
+                                                            {typeof a.rating === 'number' && (
+                                                                <div className="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1" style={{ backgroundColor: 'rgba(227, 238, 212, 0.92)', color: '#0F2A1D' }}>
+                                                                    <span>⭐</span>
+                                                                    {a.rating.toFixed(1)}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="p-4">
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <div>
+                                                                    <h4 className="text-sm font-bold" style={{ color: '#E3EED4' }}>
+                                                                        {a.name}
+                                                                    </h4>
+                                                                    <p className="text-xs mt-0.5" style={{ color: '#6B9071' }}>
+                                                                        📍 {a.location}
+                                                                    </p>
+                                                                </div>
+                                                                <span className="text-xs font-semibold" style={{ color: '#AEC3B0' }}>
+                                                                    {a.entry_fee !== null && a.entry_fee !== undefined && a.entry_fee !== ''
+                                                                        ? `₱${Number(a.entry_fee).toFixed(2)}`
+                                                                        : '—'}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs mt-3 leading-relaxed" style={{ color: '#AEC3B0' }}>
+                                                                {a.description ?? 'No description available yet.'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Back link */}
+                                    <div className="px-7 py-4" style={{ borderTop: '1px solid #375534' }}>
+                                        <Link
+                                            href="/badian-portal"
+                                            className="inline-flex items-center gap-2 text-sm font-medium hover:underline"
                                             style={{ color: '#6B9071' }}
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
