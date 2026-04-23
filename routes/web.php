@@ -16,6 +16,7 @@ use App\Http\Controllers\Portal\ContactController;
 use App\Http\Controllers\Portal\AboutController;
 use App\Http\Controllers\Portal\OperatorController;
 use App\Http\Controllers\Portal\TouristAuthController;
+use App\Http\Controllers\Portal\ActivityController;
 use App\Http\Controllers\Operator\ProfileController;
 use App\Http\Controllers\Operator\DocumentController;
 use App\Http\Controllers\Operator\ServiceController;
@@ -41,6 +42,7 @@ use App\Http\Controllers\Dashboard\OperatorDashboardController;
 use App\Http\Controllers\Staff\StaffAttractionController;
 
 Route::redirect('/', '/login')->name('home');
+Route::get('/activities', [ActivityController::class, 'index'])->name('activities.index');
 
 // Custom registration endpoint to handle pending users
 Route::post('/register', [RegisteredUserController::class, 'store']);
@@ -111,12 +113,286 @@ Route::prefix('badian-portal')->name('badian.')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('badian-portal/dashboard');
     })->name('dashboard')->middleware('auth');
+    Route::get('/portal-home', function () {
+        $today = now()->toDateString();
+        $crowdByAttraction = \App\Models\ArrivalLog::query()
+            ->join('guest_lists', 'arrival_logs.guest_list_id', '=', 'guest_lists.id')
+            ->whereDate('arrival_logs.arrival_date', $today)
+            ->where(function ($query) {
+                $query->whereNull('arrival_logs.status')
+                    ->orWhere('arrival_logs.status', '!=', 'Departed');
+            })
+            ->whereNotNull('guest_lists.attraction_id')
+            ->groupBy('guest_lists.attraction_id')
+            ->selectRaw('guest_lists.attraction_id as attraction_id, COUNT(arrival_logs.log_id) as current_tourists')
+            ->pluck('current_tourists', 'attraction_id');
+
+        $attractions = \App\Models\Attraction::query()
+            ->where('status', 'active')
+            ->select([
+                'id',
+                'name',
+                'description',
+                'location',
+                'category',
+                'image_url',
+                'rating',
+                'entry_fee',
+                'latitude',
+                'longitude',
+            ])
+            ->orderByDesc('rating')
+            ->orderBy('name')
+            ->get();
+
+        return Inertia::render('badian-portal/portal-home', [
+            'attractions' => $attractions->map(fn ($a) => [
+                'id' => $a->id,
+                'name' => $a->name,
+                'description' => $a->description,
+                'location' => $a->location,
+                'category' => $a->category,
+                'image_url' => $a->image_url,
+                'rating' => $a->rating,
+                'entry_fee' => $a->entry_fee,
+                'latitude' => $a->latitude,
+                'longitude' => $a->longitude,
+                'current_tourists' => (int) ($crowdByAttraction[$a->id] ?? 0),
+            ]),
+            'asOfDate' => $today,
+        ]);
+    })->name('portal-home')->middleware('auth');
     Route::get('/about', function () {
-        return Inertia::render('badian-portal/about');
+        $attractions = \App\Models\Attraction::query()
+            ->where('status', 'active')
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->limit(5)
+            ->get();
+
+        $activities = \App\Models\Service::query()
+            ->select(['service_name'])
+            ->whereIn('service_type', ['Activity', 'adventure', 'tour'])
+            ->orderBy('service_name')
+            ->limit(5)
+            ->get();
+
+        return Inertia::render('badian-portal/about', [
+            'attractions' => $attractions,
+            'activities' => $activities,
+        ]);
     })->name('about');
     Route::get('/attractions', function () {
-        return Inertia::render('badian-portal/attractions');
+        $attractions = \App\Models\Attraction::query()
+            ->where('status', 'active')
+            ->select(['id', 'name', 'description', 'location', 'category', 'image_url', 'rating', 'entry_fee'])
+            ->orderBy('name')
+            ->get();
+
+        return Inertia::render('badian-portal/attractions', [
+            'attractions' => $attractions,
+        ]);
     })->name('attractions');
+    Route::get('/operators', function () {
+        $operators = \App\Models\User::query()
+            ->whereHas('role', fn ($query) => $query->where('name', 'External Operator'))
+            ->with(['profile'])
+            ->select(['id', 'name', 'email', 'username'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($operator) => [
+                'id' => $operator->id,
+                'name' => $operator->name,
+                'email' => $operator->email,
+                'username' => $operator->username,
+                'company_name' => $operator->profile?->company_name,
+                'contact_number' => $operator->profile?->contact_number,
+                'office_address' => $operator->profile?->office_address,
+            ]);
+
+        return Inertia::render('badian-portal/operators', [
+            'operators' => $operators,
+        ]);
+    })->name('operators');
+    Route::get('/crowd-identifier', function () {
+        $today = now()->toDateString();
+
+        $attractions = \App\Models\Attraction::query()
+            ->where('status', 'active')
+            ->select(['id', 'name', 'location', 'category'])
+            ->orderBy('name')
+            ->get();
+
+        $capacityRules = \App\Models\CapacityRule::query()
+            ->select(['attraction_id', 'max_visitors'])
+            ->get();
+
+        $globalCapacityRule = $capacityRules->firstWhere('attraction_id', null);
+        $capacityByAttractionId = $capacityRules
+            ->filter(fn ($rule) => !is_null($rule->attraction_id))
+            ->keyBy('attraction_id');
+
+        $arrivalsByAttraction = \App\Models\ArrivalLog::query()
+            ->join('guest_lists', 'arrival_logs.guest_list_id', '=', 'guest_lists.id')
+            ->whereDate('arrival_logs.arrival_date', $today)
+            ->where(function ($query) {
+                $query->whereNull('arrival_logs.status')
+                    ->orWhere('arrival_logs.status', '!=', 'Departed');
+            })
+            ->whereNotNull('guest_lists.attraction_id')
+            ->groupBy('guest_lists.attraction_id')
+            ->selectRaw('guest_lists.attraction_id as attraction_id, COUNT(arrival_logs.log_id) as current_tourists')
+            ->pluck('current_tourists', 'attraction_id');
+
+        $crowdData = $attractions->map(function ($attraction) use ($arrivalsByAttraction, $capacityByAttractionId, $globalCapacityRule) {
+            $currentTourists = (int) ($arrivalsByAttraction[$attraction->id] ?? 0);
+
+            $capacityRule = $capacityByAttractionId->get($attraction->id);
+            $maxVisitors = (int) ($capacityRule?->max_visitors
+                ?? $globalCapacityRule?->max_visitors
+                ?? 0);
+
+            $utilizationPercent = $maxVisitors > 0
+                ? min(100, round(($currentTourists / $maxVisitors) * 100, 1))
+                : 0;
+
+            $crowdLevel = match (true) {
+                $utilizationPercent >= 90 => 'Critical',
+                $utilizationPercent >= 75 => 'High',
+                $utilizationPercent >= 50 => 'Moderate',
+                $utilizationPercent >= 25 => 'Low',
+                default => 'Very Low',
+            };
+
+            return [
+                'id' => $attraction->id,
+                'name' => $attraction->name,
+                'location' => $attraction->location,
+                'category' => $attraction->category,
+                'current_tourists' => $currentTourists,
+                'max_visitors' => $maxVisitors,
+                'utilization_percent' => $utilizationPercent,
+                'crowd_level' => $crowdLevel,
+            ];
+        })->sortByDesc('utilization_percent')->values();
+
+        return Inertia::render('badian-portal/crowd-identifier', [
+            'crowdData' => $crowdData,
+            'asOfDate' => $today,
+        ]);
+    })->name('crowd-identifier');
+    Route::get('/services', function () {
+        $services = \App\Models\Service::query()
+            ->with(['operator:id,name,email', 'touristSpot:id,name,location,image_url'])
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn ($service) => [
+                'service_id' => $service->service_id,
+                'service_name' => $service->service_name,
+                'service_type' => $service->service_type,
+                'description' => $service->description,
+                'facebook_url' => $service->facebook_url,
+                'status' => $service->status,
+                'operator_name' => $service->operator?->name,
+                'operator_email' => $service->operator?->email,
+                'attraction_name' => $service->touristSpot?->name,
+                'attraction_location' => $service->touristSpot?->location,
+                'attraction_image' => $service->touristSpot?->image_url,
+            ]);
+
+        return Inertia::render('badian-portal/services', [
+            'services' => $services,
+        ]);
+    })->name('services');
+    Route::get('/accomodations', function () {
+        $accommodations = \App\Models\Accommodation::query()
+            ->with([
+                'service.operator:id,name,email',
+                'service.touristSpot:id,name,location,image_url',
+            ])
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn ($accommodation) => [
+                'accommodation_id' => $accommodation->accommodation_id,
+                'service_id' => $accommodation->service_id,
+                'service_name' => $accommodation->service?->service_name,
+                'description' => $accommodation->service?->description,
+                'status' => $accommodation->service?->status,
+                'operator_name' => $accommodation->service?->operator?->name,
+                'operator_email' => $accommodation->service?->operator?->email,
+                'attraction_name' => $accommodation->service?->touristSpot?->name,
+                'attraction_location' => $accommodation->service?->touristSpot?->location,
+                'attraction_image' => $accommodation->service?->touristSpot?->image_url,
+                'room_type' => $accommodation->room_type,
+                'capacity' => $accommodation->capacity,
+                'price_per_night' => $accommodation->price_per_night,
+                'total_rooms' => $accommodation->total_rooms,
+            ]);
+
+        return Inertia::render('badian-portal/accomodations', [
+            'accommodations' => $accommodations,
+        ]);
+    })->name('accomodations');
+    Route::redirect('/accommodations', '/badian-portal/accomodations');
+    Route::get('/notifications', function () {
+        $user = auth()->user();
+        abort_unless($user, 403);
+
+        $notifications = \App\Models\Notification::query()
+            ->where('user_id', $user->id)
+            ->orderByDesc('created_at')
+            ->limit(200)
+            ->get()
+            ->map(fn ($notification) => [
+                'id' => $notification->id,
+                'title' => $notification->title,
+                'message' => $notification->message,
+                'details' => $notification->details,
+                'type' => $notification->type,
+                'severity' => $notification->severity ?? $notification->notification_type,
+                'notification_type' => $notification->notification_type,
+                'is_read' => $notification->is_read,
+                'time_ago' => $notification->created_at?->diffForHumans(),
+                'created_at' => $notification->created_at?->format('Y-m-d H:i:s'),
+            ]);
+
+        $unreadCount = \App\Models\Notification::query()
+            ->where('user_id', $user->id)
+            ->where('is_read', false)
+            ->count();
+
+        return Inertia::render('badian-portal/notifications', [
+            'notifications' => $notifications,
+            'unreadCount' => $unreadCount,
+        ]);
+    })->name('notifications')->middleware('auth');
+    Route::post('/notifications/mark-all-read', function () {
+        $user = auth()->user();
+        abort_unless($user, 403);
+
+        \App\Models\Notification::query()
+            ->where('user_id', $user->id)
+            ->where('is_read', false)
+            ->update([
+                'is_read' => true,
+                'read_at' => now(),
+            ]);
+
+        return back();
+    })->name('notifications.mark-all-read')->middleware('auth');
+    Route::post('/notifications/{notification}/mark-read', function (\App\Models\Notification $notification) {
+        $user = auth()->user();
+        abort_unless($user && $notification->user_id === $user->id, 403);
+
+        if (! $notification->is_read) {
+            $notification->update([
+                'is_read' => true,
+                'read_at' => now(),
+            ]);
+        }
+
+        return back();
+    })->name('notifications.mark-read')->middleware('auth');
 });
 
 // Main dashboard - redirects to role-based dashboard

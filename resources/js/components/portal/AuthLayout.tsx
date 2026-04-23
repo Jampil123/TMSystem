@@ -80,7 +80,14 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
                 </div>
 
                 {/* Right Side - Form */}
-                <div className="w-full lg:w-1/2 flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-br from-white via-slate-50 to-green-50">
+                <div className="w-full lg:w-1/2 flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-br from-white via-slate-50 to-green-50" style={{
+                    backgroundImage: 'url(/images/background.jpg)',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundAttachment: 'fixed',
+                    backgroundBlendMode: 'overlay',
+                    opacity: 0.9
+                }}>
                     {/* Background Images - Positioned for nature look */}
                     <div className="absolute inset-0">
                         {/* Top right waterfall image */}

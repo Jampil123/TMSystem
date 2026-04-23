@@ -83,7 +83,10 @@ export default function Home() {
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat',
+                    backgroundAttachment: 'fixed',
+                    backgroundBlendMode: 'overlay',
                     minHeight: 'calc(100vh - 64px)',
+                    opacity: 0.9
                 }}
             >
                 {/* Dark overlay */}
@@ -398,7 +401,7 @@ export default function Home() {
                                                                         {a.name}
                                                                     </h4>
                                                                     <p className="text-xs mt-0.5" style={{ color: '#6B9071' }}>
-                                                                        📍 {a.location}
+                                                                         {a.location}
                                                                     </p>
                                                                 </div>
                                                                 <span className="text-xs font-semibold" style={{ color: '#AEC3B0' }}>
@@ -468,19 +471,19 @@ export default function Home() {
                                             className="px-3 py-1 rounded-full text-xs font-medium"
                                             style={{ backgroundColor: '#375534', color: '#AEC3B0' }}
                                         >
-                                            🏞️ Nature
+                                            Nature
                                         </span>
                                         <span
                                             className="px-3 py-1 rounded-full text-xs font-medium"
                                             style={{ backgroundColor: '#375534', color: '#AEC3B0' }}
                                         >
-                                            🤿 Adventure
+                                             Adventure
                                         </span>
                                         <span
                                             className="px-3 py-1 rounded-full text-xs font-medium"
                                             style={{ backgroundColor: '#375534', color: '#AEC3B0' }}
                                         >
-                                            🎭 Culture
+                                            Culture
                                         </span>
                                     </div>
                                 </div>

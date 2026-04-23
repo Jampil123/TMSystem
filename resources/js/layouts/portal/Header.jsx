@@ -10,16 +10,16 @@ const Header = () => {
 
   const navigationLinks = isLoggedIn
     ? [
-        { name: 'Home', path: '/badian-portal/dashboard' },
-        { name: 'About', path: '/badian-portal/dashboard?panel=about' },
-        { name: 'Activities', path: '/badian-portal/dashboard?panel=activities' },
-        { name: 'Attractions', path: '/badian-portal/dashboard?panel=attractions' },
+        { name: 'Home', path: '/badian-portal/portal-home' },
+        { name: 'About', path: '/badian-portal/about' },
+        { name: 'Activities', path: '/activities' },
+        { name: 'Attractions', path: '/badian-portal/attractions' },
       ]
     : [
         { name: 'Home', path: '/badian-portal' },
-        { name: 'About', path: '/badian-portal?panel=about' },
-        { name: 'Activities', path: '/badian-portal/activities' },
-        { name: 'Attractions', path: '/badian-portal?panel=attractions' },
+        { name: 'About', path: '/badian-portal/about' },
+        { name: 'Activities', path: '/activities' },
+        { name: 'Attractions', path: '/badian-portal/attractions' },
       ];
 
   const isActive = (path) => url === path || (path.includes('?') && url.startsWith(path.split('?')[0]) && url.includes(path.split('?')[1]));
@@ -32,7 +32,7 @@ const Header = () => {
       {/* Top accent bar */}
       <div style={{ backgroundColor: '#6B9071', height: '3px' }} />
 
-      <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="w-full px-6 py-4">
         <div className="flex items-center justify-between">
 
           {/* Left — Branding */}

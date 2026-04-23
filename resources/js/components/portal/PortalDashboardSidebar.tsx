@@ -1,16 +1,16 @@
 import { Link, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import {
-    BarChart3,
+    Bell,
+    Building2,
     ChevronDown,
-    ClipboardList,
-    FileText,
+    Compass,
     Grid2X2,
     Layers,
     LogOut,
+    Hotel,
     Search,
     Settings,
-    ShieldCheck,
     User,
 } from 'lucide-react';
 
@@ -28,28 +28,33 @@ type NavSection = {
 
 const SECTIONS: NavSection[] = [
     {
-        title: 'Ooerations',
+        title: 'Operations',
         items: [
             { label: 'Operator List', href: '/badian-portal/operators', icon: Grid2X2 },
-            { label: 'Services', href: '/badian-portal/services', icon: ShieldCheck, badge: '12' },
-            { label: 'Accomodations', href: '/badian-portal/accomodations', icon: ShieldCheck, badge: '12' },
+            { label: 'Services', href: '/badian-portal/services', icon: Compass, badge: '12' },
+            { label: 'Accomodations', href: '/badian-portal/accomodations', icon: Hotel, badge: '12' },
         ],
     },
     {
         title: 'Monitoring',
         items: [
-            { label: 'Crowd Identifier', href: '/badian-portal/crowd-identifier', icon: Layers, badge: '12' },
+            { label: 'Crowd Identifier', href: '/badian-portal/crowd-identifier', icon: Building2, badge: '12' },
         ],
     },
     {
         title: 'Notifications',
         items: [
-            { label: 'Notifications', href: '/badian-portal/notifications', icon: BarChart3, badge: '12' },
+            { label: 'Notifications', href: '/badian-portal/notifications', icon: Bell, badge: '12' },
         ],
     },
 ];
 
-export default function PortalDashboardSidebar() {
+type PortalDashboardSidebarProps = {
+    collapsed?: boolean;
+    onToggleCollapsed?: () => void;
+};
+
+export default function PortalDashboardSidebar({ collapsed = false, onToggleCollapsed }: PortalDashboardSidebarProps) {
     const { url, props } = usePage<{
         auth?: {
             user?: {
@@ -57,12 +62,15 @@ export default function PortalDashboardSidebar() {
                 email?: string;
             } | null;
         };
+        portal?: {
+            navCounts?: Record<string, number>;
+        };
     }>();
-    const [collapsed, setCollapsed] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
     const user = props.auth?.user;
     const displayName = user?.name ?? 'Portal User';
     const displayEmail = user?.email ?? 'portal@example.com';
+    const navCounts = props.portal?.navCounts ?? {};
 
     const isActive = (href: string) => {
         if (href.includes('#')) {
@@ -100,7 +108,7 @@ export default function PortalDashboardSidebar() {
                     <button
                         type="button"
                         className="ml-auto h-9 w-9 rounded-xl grid place-items-center text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                        onClick={() => setCollapsed((v) => !v)}
+                        onClick={onToggleCollapsed}
                         aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                         title={collapsed ? 'Expand' : 'Collapse'}
                     >
@@ -156,6 +164,7 @@ export default function PortalDashboardSidebar() {
                                     {section.items.map((item) => {
                                         const Icon = item.icon;
                                         const active = isActive(item.href);
+                                        const badgeValue = navCounts[item.href];
                                         return (
                                             <Link
                                                 key={item.href}
@@ -169,9 +178,9 @@ export default function PortalDashboardSidebar() {
                                             >
                                                 <Icon className="w-4.5 h-4.5 text-white/70" />
                                                 <span className="truncate">{item.label}</span>
-                                                {item.badge && (
+                                                {(typeof badgeValue === 'number' ? badgeValue >= 0 : Boolean(item.badge)) && (
                                                     <span className="ml-auto text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }}>
-                                                        {item.badge}
+                                                        {typeof badgeValue === 'number' ? badgeValue : item.badge}
                                                     </span>
                                                 )}
                                             </Link>
