@@ -90,6 +90,22 @@ Route::prefix('portal')->name('portal.')->group(function () {
     Route::post('logout', [TouristAuthController::class, 'logout'])->middleware('auth')->name('logout');
 });
 
+// Badian Portal Routes
+Route::prefix('badian-portal')->name('badian.')->group(function () {
+    Route::get('/', function () {
+        return Inertia::render('badian-portal/home');
+    })->name('home');
+    Route::get('/register', function () {
+        return Inertia::render('badian-portal/register');
+    })->name('register');
+    Route::get('/dashboard', function () {
+        return Inertia::render('badian-portal/dashboard');
+    })->name('dashboard')->middleware('auth');
+    Route::get('/about', function () {
+        return Inertia::render('badian-portal/about');
+    })->name('about');
+});
+
 // Main dashboard - redirects to role-based dashboard
 Route::get('dashboard', function () {
     $user = auth()->user();

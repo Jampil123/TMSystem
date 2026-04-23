@@ -37,8 +37,8 @@ class RegisteredUserController extends Controller
         // For approved users (tourist), log them in and redirect to dashboard
         Auth::login($user, $request->boolean('remember'));
 
-        // Redirect to tourist dashboard
-        return redirect()->intended(route('tourist.dashboard'));
+        // Redirect to badian portal dashboard
+        return redirect()->route('badian.dashboard');
     }
 }
 

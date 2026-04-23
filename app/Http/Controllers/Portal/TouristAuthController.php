@@ -54,7 +54,7 @@ class TouristAuthController extends Controller
         )) {
             $request->session()->regenerate();
 
-            return redirect()->intended(route('tourist.dashboard'));
+            return redirect()->route('badian.dashboard');
         }
 
         return back()
@@ -74,7 +74,7 @@ class TouristAuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/portal');
+        return redirect('/badian-portal');
     }
 
     /**
