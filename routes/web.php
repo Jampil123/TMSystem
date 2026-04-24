@@ -196,7 +196,7 @@ Route::prefix('badian-portal')->name('badian.')->group(function () {
     Route::get('/operators', function () {
         $operators = \App\Models\User::query()
             ->whereHas('role', fn ($query) => $query->where('name', 'External Operator'))
-            ->with(['profile'])
+            ->with(['profile', 'operatorProfile', 'services.activity', 'services.accommodation'])
             ->select(['id', 'name', 'email', 'username'])
             ->orderBy('name')
             ->get()
@@ -205,9 +205,38 @@ Route::prefix('badian-portal')->name('badian.')->group(function () {
                 'name' => $operator->name,
                 'email' => $operator->email,
                 'username' => $operator->username,
-                'company_name' => $operator->profile?->company_name,
-                'contact_number' => $operator->profile?->contact_number,
-                'office_address' => $operator->profile?->office_address,
+                'company_name' => $operator->operatorProfile?->company_name ?? $operator->profile?->business_name,
+                'contact_person' => $operator->operatorProfile?->contact_person ?? $operator->profile?->contact_name,
+                'contact_number' => $operator->operatorProfile?->contact_number ?? $operator->profile?->phone,
+                'office_address' => $operator->operatorProfile?->business_address ?? $operator->profile?->address,
+                'description' => $operator->operatorProfile?->description ?? $operator->profile?->description,
+                'logo_url' => $operator->operatorProfile?->logo_path
+                    ? \Illuminate\Support\Facades\Storage::url($operator->operatorProfile->logo_path)
+                    : ($operator->profile?->profile_picture ? \Illuminate\Support\Facades\Storage::url($operator->profile->profile_picture) : null),
+                'services' => $operator->services->map(function ($service) {
+                    $activity = $service->activity;
+                    $accommodation = $service->accommodation;
+
+                    $price = $activity?->price_per_person ?? $accommodation?->price_per_night;
+                    $availability = $service->status ?? null;
+
+                    if ($activity && $activity->max_participants) {
+                        $availability = 'Up to '.$activity->max_participants.' guests';
+                    } elseif ($accommodation && $accommodation->total_rooms) {
+                        $availability = $accommodation->total_rooms.' rooms available';
+                    }
+
+                    return [
+                        'id' => $service->service_id,
+                        'service_type' => $service->service_type,
+                        'name' => $service->service_name,
+                        'description' => $service->description,
+                        'price' => $price,
+                        'availability' => $availability,
+                        'booking_url' => $service->facebook_url,
+                        'status' => $service->status,
+                    ];
+                })->values(),
             ]);
 
         return Inertia::render('badian-portal/operators', [
@@ -312,22 +341,39 @@ Route::prefix('badian-portal')->name('badian.')->group(function () {
             ])
             ->orderByDesc('created_at')
             ->get()
-            ->map(fn ($accommodation) => [
-                'accommodation_id' => $accommodation->accommodation_id,
-                'service_id' => $accommodation->service_id,
-                'service_name' => $accommodation->service?->service_name,
-                'description' => $accommodation->service?->description,
-                'status' => $accommodation->service?->status,
-                'operator_name' => $accommodation->service?->operator?->name,
-                'operator_email' => $accommodation->service?->operator?->email,
-                'attraction_name' => $accommodation->service?->touristSpot?->name,
-                'attraction_location' => $accommodation->service?->touristSpot?->location,
-                'attraction_image' => $accommodation->service?->touristSpot?->image_url,
-                'room_type' => $accommodation->room_type,
-                'capacity' => $accommodation->capacity,
-                'price_per_night' => $accommodation->price_per_night,
-                'total_rooms' => $accommodation->total_rooms,
-            ]);
+            ->map(function ($accommodation) {
+                $rawImage = $accommodation->service?->touristSpot?->image_url;
+                $resolvedImage = null;
+
+                if (is_string($rawImage) && trim($rawImage) !== '') {
+                    if (
+                        str_starts_with($rawImage, 'http://') ||
+                        str_starts_with($rawImage, 'https://') ||
+                        str_starts_with($rawImage, '/storage/')
+                    ) {
+                        $resolvedImage = $rawImage;
+                    } else {
+                        $resolvedImage = \Illuminate\Support\Facades\Storage::url(ltrim($rawImage, '/'));
+                    }
+                }
+
+                return [
+                    'accommodation_id' => $accommodation->accommodation_id,
+                    'service_id' => $accommodation->service_id,
+                    'service_name' => $accommodation->service?->service_name,
+                    'description' => $accommodation->service?->description,
+                    'status' => $accommodation->service?->status,
+                    'operator_name' => $accommodation->service?->operator?->name,
+                    'operator_email' => $accommodation->service?->operator?->email,
+                    'attraction_name' => $accommodation->service?->touristSpot?->name,
+                    'attraction_location' => $accommodation->service?->touristSpot?->location,
+                    'attraction_image' => $resolvedImage,
+                    'room_type' => $accommodation->room_type,
+                    'capacity' => $accommodation->capacity,
+                    'price_per_night' => $accommodation->price_per_night,
+                    'total_rooms' => $accommodation->total_rooms,
+                ];
+            });
 
         return Inertia::render('badian-portal/accomodations', [
             'accommodations' => $accommodations,

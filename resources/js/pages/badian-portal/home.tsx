@@ -348,17 +348,16 @@ export default function Home() {
                                         {/* Highlights */}
                                         <div className="grid grid-cols-2 gap-3">
                                             {[
-                                                { icon: '💧', label: 'Kawasan Falls' },
-                                                { icon: '🏖️', label: 'Pristine Beaches' },
-                                                { icon: '🪂', label: 'Canyoneering' },
-                                                { icon: '⛪', label: 'Heritage Sites' },
+                                                { label: 'Kawasan Falls' },
+                                                { label: 'Pristine Beaches' },
+                                                { label: 'Canyoneering' },
+                                                { label: 'Heritage Sites' },
                                             ].map((item) => (
                                                 <div
                                                     key={item.label}
                                                     className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
                                                     style={{ backgroundColor: '#375534', color: '#AEC3B0' }}
                                                 >
-                                                    <span>{item.icon}</span>
                                                     {item.label}
                                                 </div>
                                             ))}

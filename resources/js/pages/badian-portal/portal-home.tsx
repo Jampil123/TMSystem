@@ -112,7 +112,7 @@ export default function PortalHome() {
                                             {selected.name}
                                         </h2>
                                         <p className="text-sm mt-1" style={{ color: '#6B9071' }}>
-                                            📍 {selected.location}
+                                            {selected.location}
                                         </p>
                                     </div>
                                     {selected.category && (
@@ -283,7 +283,7 @@ export default function PortalHome() {
                                                 {a.name}
                                             </p>
                                             <p className="text-xs mt-1 line-clamp-1" style={{ color: '#6B9071' }}>
-                                                📍 {a.location}
+                                                {a.location}
                                             </p>
                                             <p className="text-xs mt-2 font-semibold" style={{ color: '#2E4A35' }}>
                                                 {a.entry_fee !== null && a.entry_fee !== undefined && a.entry_fee !== ''

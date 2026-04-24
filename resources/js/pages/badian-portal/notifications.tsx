@@ -67,7 +67,7 @@ export default function NotificationsPage() {
 
     return (
         <div className="w-full" style={{ backgroundColor: '#E3EED4' }}>
-            <div className="max-w-5xl mx-auto px-6 py-8">
+            <div className="max-w-8xl mx-auto px-6 py-8">
                 <div className="mb-5 flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between">
                     <div>
                         <h1 className="text-3xl font-bold" style={{ color: '#0F2A1D' }}>
