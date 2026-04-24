@@ -68,7 +68,7 @@ class GuestSubmissionController extends Controller
         $validated = $request->validate([
             'service_id' => 'required|integer',
             'attraction_id' => 'nullable|integer',
-            'visit_date' => 'required|date|after:today',
+            'visit_date' => 'required|date|after_or_equal:today',
             'total_guests' => 'required|integer|min:1',
             'local_tourists' => 'required|integer|min:0',
             'foreign_tourists' => 'required|integer|min:0',

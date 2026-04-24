@@ -43,6 +43,7 @@ export default function GuestSubmission({ services, guestSubmissions }: Props) {
     const [notes, setNotes] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const todayDate = new Date().toISOString().split('T')[0];
 
     // Computed properties
     const total = parseInt(totalGuests) || 0;
@@ -211,17 +212,18 @@ export default function GuestSubmission({ services, guestSubmissions }: Props) {
                                 {/* Visit Date */}
                                 <div>
                                     <label className="block text-sm font-medium text-[#0F2A1D] dark:text-[#E3EED4] mb-2">
-                                        Visit Date * (Future dates only)
+                                        Visit Date * (Today or future dates)
                                     </label>
                                     <input
                                         type="date"
                                         value={visitDate}
                                         onChange={(e) => setVisitDate(e.target.value)}
+                                        min={todayDate}
                                         className="w-full px-4 py-2 rounded-lg border border-[#AEC3B0]/40 dark:border-[#375534]/40 bg-white dark:bg-[#0F2A1D] text-[#0F2A1D] dark:text-[#E3EED4] focus:outline-none focus:ring-2 focus:ring-[#375534]"
                                         required
                                     />
                                     <p className="text-xs text-[#6B8071] dark:text-[#AEC3B0] mt-1">
-                                        Must be a future date
+                                        Must be today or a future date
                                     </p>
                                 </div>
 
