@@ -165,7 +165,7 @@ class StaffArrivalidateController extends Controller
             ]);
 
             return DB::transaction(function () use ($request) {
-                // Step 1: Get the QR code and mark it as used
+                // Step 1: Get QR code record
                 $qrCode = GuestListQRCode::where('token', $request->input('qr_token'))->first();
                 
                 if (!$qrCode) {
@@ -174,11 +174,6 @@ class StaffArrivalidateController extends Controller
                         'message' => 'QR code not found',
                     ], 404);
                 }
-
-                // Update QR code status to Used
-                $qrCode->status = 'Used';
-                $qrCode->used_at = now();
-                $qrCode->save();
 
                 // Step 2: Get the guest list
                 $guestList = GuestList::find($qrCode->guest_list_id);
@@ -190,40 +185,91 @@ class StaffArrivalidateController extends Controller
                     ], 404);
                 }
 
-                // Step 3: Check if all QR codes for this guest list are now used
-                $totalQRCodes = GuestListQRCode::where('guest_list_id', $guestList->id)->count();
-                $usedQRCodes = GuestListQRCode::where('guest_list_id', $guestList->id)
-                    ->where('status', 'Used')
-                    ->count();
-
-                // If all QR codes are scanned, mark guest_list as Completed
-                if ($totalQRCodes === $usedQRCodes) {
-                    $guestList->status = 'Completed';
+                // Resolve guest name from QR guest index whenever possible.
+                $guestNames = $guestList->guest_names ?? [];
+                $resolvedGuestName = $request->input('guest_name');
+                if (is_array($guestNames) && array_key_exists((int) $qrCode->guest_index, $guestNames)) {
+                    $resolvedGuestName = $guestNames[(int) $qrCode->guest_index];
                 }
 
-                $guestList->save();
+                // If this guest is already inside (arrived), second scan becomes departure.
+                $activeArrival = ArrivalLog::where('guest_list_id', $guestList->id)
+                    ->where('guest_name', $resolvedGuestName)
+                    ->where('status', 'arrived')
+                    ->latest('log_id')
+                    ->first();
 
-                // Step 4: Create arrival log entry
+                if ($activeArrival) {
+                    $activeArrival->status = 'departed';
+                    $activeArrival->departure_time = now()->format('H:i:s');
+                    $activeArrival->save();
+
+                    // Re-open QR for a possible future re-entry scan.
+                    $qrCode->status = 'Unused';
+                    $qrCode->used_at = null;
+                    $qrCode->save();
+
+                    $insideCount = ArrivalLog::where('guest_list_id', $guestList->id)
+                        ->where('status', 'arrived')
+                        ->count();
+                    $guestList->status = $insideCount > 0 ? 'Completed' : 'Pending Entrance';
+                    $guestList->save();
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Guest marked as departed',
+                        'data' => [
+                            'action' => 'departed',
+                            'arrival_log_id' => $activeArrival->log_id,
+                            'guest_list_id' => $guestList->id,
+                            'guest_name' => $resolvedGuestName,
+                            'departure_time' => $activeArrival->departure_time,
+                            'arrival_date' => $activeArrival->arrival_date,
+                            'all_guests_arrived' => false,
+                            'guests_arrived_count' => $insideCount,
+                            'total_guests' => (int) $guestList->total_guests,
+                            'qr_code' => $qrCode->token,
+                        ],
+                    ]);
+                }
+
+                // Arrival flow (first scan / re-entry)
+                $qrCode->status = 'Used';
+                $qrCode->used_at = now();
+                $qrCode->save();
+
                 $arrivalLog = ArrivalLog::create([
                     'guest_list_id' => $guestList->id,
-                    'guest_name' => $request->input('guest_name'),
+                    'guest_name' => $resolvedGuestName,
                     'guide_id' => $request->input('guide_id'),
                     'arrival_time' => $request->input('arrival_time') ?? now()->format('H:i:s'),
                     'arrival_date' => now()->toDateString(),
                     'status' => 'arrived',
                 ]);
 
+                $totalQRCodes = GuestListQRCode::where('guest_list_id', $guestList->id)->count();
+                $arrivedCount = ArrivalLog::where('guest_list_id', $guestList->id)
+                    ->where('status', 'arrived')
+                    ->count();
+                if ($arrivedCount >= $totalQRCodes) {
+                    $guestList->status = 'Completed';
+                } else {
+                    $guestList->status = 'Pending Entrance';
+                }
+                $guestList->save();
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Arrival logged successfully',
                     'data' => [
+                        'action' => 'arrived',
                         'arrival_log_id' => $arrivalLog->log_id,
                         'guest_list_id' => $guestList->id,
                         'guest_name' => $arrivalLog->guest_name,
                         'arrival_time' => $arrivalLog->arrival_time,
                         'arrival_date' => $arrivalLog->arrival_date,
-                        'all_guests_arrived' => $totalQRCodes === $usedQRCodes,
-                        'guests_arrived_count' => $usedQRCodes,
+                        'all_guests_arrived' => $arrivedCount >= $totalQRCodes,
+                        'guests_arrived_count' => $arrivedCount,
                         'total_guests' => $totalQRCodes,
                         'qr_code' => $qrCode->token,
                     ],

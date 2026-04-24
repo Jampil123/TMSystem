@@ -35,7 +35,7 @@ export default function QRCodeScanner() {
     const [isLoadingStats, setIsLoadingStats] = useState(false);
     const [isLoadingRecents, setIsLoadingRecents] = useState(false);
 
-    // Track scanned QR codes today to prevent duplicates
+    // Track scanned QR codes processed in this session (debug only)
     const [scannedQRCodes, setScannedQRCodes] = useState<Set<string>>(new Set());
     const [processingCode, setProcessingCode] = useState<string | null>(null);
 
@@ -327,27 +327,7 @@ export default function QRCodeScanner() {
         }
         setProcessingCode(cleanCode);
         
-        // CHECK: Validate QR code has not been scanned before today
-        addDebugInfo('Validation: Checking if code was already scanned today...');
-        if (scannedQRCodes.has(cleanCode)) {
-            addDebugInfo('❌ DUPLICATE QR CODE - Already scanned today!');
-            addDebugInfo('Previously scanned codes:', Array.from(scannedQRCodes));
-            
-            setScanResult('error');
-            setValidationDetails({ 
-                allValid: false, 
-                issues: [
-                    '❌ This QR code has already been scanned today.',
-                    'Each QR code can only be scanned once to prevent duplicate arrivals.',
-                    'If this is a different guest group, please use a different QR code.'
-                ] 
-            });
-            setShowValidationModal(true);
-            setProcessingCode(null);
-            return;
-        }
-        
-        addDebugInfo('✓ Code is new - proceeding with processing');
+        addDebugInfo('✓ Code accepted - proceeding with processing');
         
         setScanResult(null);
         setValidationDetails(null);
@@ -455,10 +435,10 @@ export default function QRCodeScanner() {
                 if (arrivalLogData.success) {
                     addDebugInfo('✅ ARRIVAL LOGGED SUCCESSFULLY!');
                     addDebugInfo('Arrival log data:', arrivalLogData.data);
-                    addDebugInfo('QR Code status updated to: Used');
-                    addDebugInfo('Guests scanned:', arrivalLogData.data.guests_arrived_count + '/' + arrivalLogData.data.total_guests);
+                    addDebugInfo('Action:', arrivalLogData.data.action || 'arrived');
+                    addDebugInfo('Guests inside now:', arrivalLogData.data.guests_arrived_count + '/' + arrivalLogData.data.total_guests);
                     
-                    // ADD CODE TO SCANNED CODES SET
+                    // Debug trace only; no duplicate blocking logic.
                     setScannedQRCodes(prev => new Set([...prev, cleanCode]));
                     addDebugInfo('✓ QR code added to scanned list');
                     
@@ -893,8 +873,14 @@ export default function QRCodeScanner() {
                                     <div className="flex items-center gap-3">
                                         <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
                                         <div>
-                                            <p className="font-semibold text-green-900 dark:text-green-300">✅ Arrival Logged Successfully</p>
-                                            <p className="text-sm text-green-700 dark:text-green-400">Guest entry recorded in system</p>
+                        <p className="font-semibold text-green-900 dark:text-green-300">
+                            {scannedBooking?.action === 'departed' ? 'Departure Logged Successfully' : 'Arrival Logged Successfully'}
+                        </p>
+                        <p className="text-sm text-green-700 dark:text-green-400">
+                            {scannedBooking?.action === 'departed'
+                                ? 'Guest exit recorded and capacity updated'
+                                : 'Guest entry recorded in system'}
+                        </p>
                                         </div>
                                     </div>
 
@@ -905,8 +891,12 @@ export default function QRCodeScanner() {
                                                 <p className="font-semibold text-gray-900 dark:text-white">{scannedBooking.guest_name || 'Group'}</p>
                                             </div>
                                             <div className="bg-white dark:bg-slate-800 p-4 rounded-lg">
-                                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Arrival Time</p>
-                                                <p className="font-mono font-bold text-gray-900 dark:text-white">{scannedBooking.arrival_time}</p>
+                                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                                    {scannedBooking?.action === 'departed' ? 'Departure Time' : 'Arrival Time'}
+                                                </p>
+                                                <p className="font-mono font-bold text-gray-900 dark:text-white">
+                                                    {scannedBooking.departure_time || scannedBooking.arrival_time}
+                                                </p>
                                             </div>
                                             <div className="bg-white dark:bg-slate-800 p-4 rounded-lg">
                                                 <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1">
