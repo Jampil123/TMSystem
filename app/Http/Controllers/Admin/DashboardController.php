@@ -9,11 +9,96 @@ use App\Models\Guide;
 use App\Models\GuideAssignment;
 use App\Models\SystemAlert;
 use App\Models\EmergencyLog;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
+    public function reportsPage()
+    {
+        $attractions = Attraction::query()
+            ->where('status', 'active')
+            ->select(['id', 'name', 'location', 'category'])
+            ->orderBy('name')
+            ->get();
+
+        return Inertia::render('admin/reports', [
+            'attractions' => $attractions,
+        ]);
+    }
+
+    public function reportsApi(Request $request)
+    {
+        $attractionId = $request->integer('attraction_id');
+        $baseQuery = DB::table('arrival_logs')
+            ->join('guest_lists', 'arrival_logs.guest_list_id', '=', 'guest_lists.id')
+            ->join('attractions', 'guest_lists.attraction_id', '=', 'attractions.id')
+            ->where('arrival_logs.status', 'arrived');
+
+        if ($attractionId) {
+            $baseQuery->where('guest_lists.attraction_id', $attractionId);
+        }
+
+        $today = now()->toDateString();
+        $weekStart = now()->startOfWeek()->toDateString();
+        $weekEnd = now()->endOfWeek()->toDateString();
+
+        $todaySummary = (clone $baseQuery)
+            ->whereDate('arrival_logs.arrival_date', $today)
+            ->selectRaw('
+                COUNT(arrival_logs.log_id) as arrivals,
+                COALESCE(SUM(guest_lists.total_guests), 0) as visitors,
+                COALESCE(SUM(arrival_logs.fee_paid), 0) as revenue
+            ')
+            ->first();
+
+        $weekSummary = (clone $baseQuery)
+            ->whereBetween('arrival_logs.arrival_date', [$weekStart, $weekEnd])
+            ->selectRaw('
+                COALESCE(SUM(guest_lists.total_guests), 0) as visitors,
+                COALESCE(SUM(arrival_logs.fee_paid), 0) as revenue
+            ')
+            ->first();
+
+        $monthSummary = (clone $baseQuery)
+            ->whereMonth('arrival_logs.arrival_date', now()->month)
+            ->whereYear('arrival_logs.arrival_date', now()->year)
+            ->selectRaw('
+                COALESCE(SUM(guest_lists.total_guests), 0) as visitors,
+                COALESCE(SUM(arrival_logs.fee_paid), 0) as revenue
+            ')
+            ->first();
+
+        $byAttraction = (clone $baseQuery)
+            ->selectRaw('
+                attractions.id as attraction_id,
+                attractions.name as attraction_name,
+                COALESCE(SUM(guest_lists.total_guests), 0) as total_visitors,
+                COALESCE(SUM(arrival_logs.fee_paid), 0) as total_revenue,
+                COUNT(arrival_logs.log_id) as total_arrivals
+            ')
+            ->groupBy('attractions.id', 'attractions.name')
+            ->orderByDesc('total_visitors')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'summary' => [
+                    'today_arrivals' => (int) ($todaySummary->arrivals ?? 0),
+                    'today_visitors' => (int) ($todaySummary->visitors ?? 0),
+                    'today_revenue' => (float) ($todaySummary->revenue ?? 0),
+                    'week_visitors' => (int) ($weekSummary->visitors ?? 0),
+                    'week_revenue' => (float) ($weekSummary->revenue ?? 0),
+                    'month_visitors' => (int) ($monthSummary->visitors ?? 0),
+                    'month_revenue' => (float) ($monthSummary->revenue ?? 0),
+                ],
+                'by_attraction' => $byAttraction,
+            ],
+        ]);
+    }
+
     /**
      * Show the LGU/DOT admin dashboard
      */

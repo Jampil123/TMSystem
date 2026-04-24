@@ -133,6 +133,12 @@ export function AppSidebar() {
             href: '/audit-logs',
             icon: ClipboardList,
         },
+        {
+            section: 'System',
+            title: 'Reports and Analytics',
+            href: '/reports',
+            icon: BarChart3,
+        },
     ];
 
     // items for external operator accounts

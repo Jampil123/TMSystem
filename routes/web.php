@@ -586,6 +586,11 @@ Route::get('lgu-dot-dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('lgu-dot.dashboard');
 
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('reports', [DashboardController::class, 'reportsPage'])->name('admin.reports');
+    Route::get('/admin/api/reports', [DashboardController::class, 'reportsApi'])->name('admin.api.reports');
+});
+
 Route::get('staff-dashboard', [StaffAttractionController::class, 'dashboard'])
     ->middleware(['auth', 'verified'])->name('staff.dashboard');
 
