@@ -303,7 +303,7 @@ export default function QRCodeScanner() {
         }
     };
 
-    // Handle scan result
+    // Handle scan result (first scan = arrival, second scan = departure)
     const handleScanResult = async (code: string) => {
         const cleanCode = code.trim();
         addDebugInfo('═══════════════════════════════════════════');
@@ -348,13 +348,21 @@ export default function QRCodeScanner() {
             addDebugInfo('CSRF token preview:', csrfToken ? csrfToken.substring(0, 20) + '...' : 'NOT FOUND');
             
             // Step 3: Prepare request
+            // We call log-arrival directly because backend handles both actions:
+            // - no active arrival -> create arrival (arrived)
+            // - active arrival exists -> mark departure (departed)
             addDebugInfo('Step 3: Preparing API request...');
-            const apiUrl = '/staff/api/validate-booking';
+            const apiUrl = '/staff/api/log-arrival';
             const requestHeaders = {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrfToken || '',
             };
-            const requestBody = JSON.stringify({ booking_code: cleanCode });
+            const requestBody = JSON.stringify({
+                qr_token: cleanCode,
+                guest_name: 'QR Guest',
+                guide_id: null,
+                arrival_time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+            });
             addDebugInfo('API URL:', apiUrl);
             addDebugInfo('Request headers:', requestHeaders);
             addDebugInfo('Request body:', requestBody);
@@ -411,50 +419,24 @@ export default function QRCodeScanner() {
             // Step 8: Process response
             addDebugInfo('Step 8: Processing API response...');
             if (data.success) {
-                addDebugInfo('✅ SUCCESS - QR Code Validated!');
-                addDebugInfo('Booking details:', data.booking);
-                
-                // Step 8.5: Now log the arrival with the QR token
-                addDebugInfo('Step 8.5: Logging arrival...');
-                const logArrivalResponse = await fetch('/staff/api/log-arrival', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken || '',
-                    },
-                    body: JSON.stringify({
-                        qr_token: cleanCode,
-                        guest_name: data.booking.first_guest_name,
-                        guide_id: null, // Can be updated if needed
-                        arrival_time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-                    }),
-                });
+                addDebugInfo('✅ QR PROCESSING SUCCESS!');
+                addDebugInfo('Arrival/Departure data:', data.data);
+                addDebugInfo('Action:', data.data?.action || 'arrived');
+                addDebugInfo('Guests inside now:', `${data.data?.guests_arrived_count ?? 0}/${data.data?.total_guests ?? 0}`);
 
-                const arrivalLogData = await logArrivalResponse.json();
-                
-                if (arrivalLogData.success) {
-                    addDebugInfo('✅ ARRIVAL LOGGED SUCCESSFULLY!');
-                    addDebugInfo('Arrival log data:', arrivalLogData.data);
-                    addDebugInfo('Action:', arrivalLogData.data.action || 'arrived');
-                    addDebugInfo('Guests inside now:', arrivalLogData.data.guests_arrived_count + '/' + arrivalLogData.data.total_guests);
-                    
-                    // Debug trace only; no duplicate blocking logic.
-                    setScannedQRCodes(prev => new Set([...prev, cleanCode]));
-                    addDebugInfo('✓ QR code added to scanned list');
-                    
-                    setScanResult('success');
-                    setScannedBooking(arrivalLogData.data);
-                    setValidationDetails({ allValid: true, issues: [] });
-                    
-                    addDebugInfo('Step 9: Updating statistics...');
-                    fetchTodayStats();
-                    fetchRecentArrivals();
-                    addDebugInfo('✓ Statistics fetch triggered');
-                } else {
-                    addDebugInfo('⚠️ Failed to log arrival:', arrivalLogData.message);
-                    setScanResult('error');
-                    setValidationDetails({ allValid: false, issues: [arrivalLogData.message] });
-                }
+                // Debug trace only; no duplicate blocking logic.
+                setScannedQRCodes(prev => new Set([...prev, cleanCode]));
+                addDebugInfo('✓ QR code added to scanned list');
+
+                setScanResult('success');
+                setScannedBooking(data.data);
+                setValidationDetails({ allValid: true, issues: [] });
+
+                // Refresh cards/lists so dashboard capacity and logs reflect latest DB state.
+                addDebugInfo('Step 9: Updating statistics...');
+                fetchTodayStats();
+                fetchRecentArrivals();
+                addDebugInfo('✓ Statistics fetch triggered');
                 
                 setTimeout(() => {
                     setScanResult(null);
@@ -463,7 +445,7 @@ export default function QRCodeScanner() {
                     setScanInput('');
                 }, 3000);
             } else {
-                addDebugInfo('✗ QR Code Validation Failed');
+                addDebugInfo('✗ QR scan processing failed');
                 addDebugInfo('Error message:', data.message);
                 
                 setScanResult('error');
