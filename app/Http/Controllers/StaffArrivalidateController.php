@@ -411,7 +411,7 @@ class StaffArrivalidateController extends Controller
                     'total_guests' => $guestCount,
                     'local_tourists' => $localTourists,
                     'foreign_tourists' => $foreignTourists,
-                    'status' => 'Completed',  // Walk-in is immediate arrival
+                    'status' => 'Pending Entrance',
                     'notes' => 'walk-in',  // Flag for walk-in identification
                     'guest_names' => $guestNames,
                 ]);
