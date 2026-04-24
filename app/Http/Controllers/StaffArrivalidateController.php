@@ -193,21 +193,28 @@ class StaffArrivalidateController extends Controller
                     $resolvedGuestName = $guestNames[(int) $qrCode->guest_index];
                 }
 
-                // If this guest is already inside (arrived), second scan becomes departure.
-                $activeArrival = ArrivalLog::where('guest_list_id', $guestList->id)
+                // Check latest arrival state for this guest (prevents re-entry after departure).
+                $latestArrival = ArrivalLog::where('guest_list_id', $guestList->id)
                     ->where('guest_name', $resolvedGuestName)
-                    ->where('status', 'arrived')
                     ->latest('log_id')
                     ->first();
 
-                if ($activeArrival) {
-                    $activeArrival->status = 'departed';
-                    $activeArrival->departure_time = now()->format('H:i:s');
-                    $activeArrival->save();
+                if ($latestArrival && strtolower((string) $latestArrival->status) === 'departed') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This QR code/arrival is already departed.',
+                    ], 422);
+                }
 
-                    // Re-open QR for a possible future re-entry scan.
-                    $qrCode->status = 'Unused';
-                    $qrCode->used_at = null;
+                // If this guest is already inside (arrived), second scan becomes departure.
+                if ($latestArrival && strtolower((string) $latestArrival->status) === 'arrived') {
+                    $latestArrival->status = 'departed';
+                    $latestArrival->departure_time = now()->format('H:i:s');
+                    $latestArrival->save();
+
+                    // Keep QR marked as used after departure to avoid re-entry on next scans.
+                    $qrCode->status = 'Used';
+                    $qrCode->used_at = $qrCode->used_at ?? now();
                     $qrCode->save();
 
                     $insideCount = ArrivalLog::where('guest_list_id', $guestList->id)
@@ -221,11 +228,11 @@ class StaffArrivalidateController extends Controller
                         'message' => 'Guest marked as departed',
                         'data' => [
                             'action' => 'departed',
-                            'arrival_log_id' => $activeArrival->log_id,
+                            'arrival_log_id' => $latestArrival->log_id,
                             'guest_list_id' => $guestList->id,
                             'guest_name' => $resolvedGuestName,
-                            'departure_time' => $activeArrival->departure_time,
-                            'arrival_date' => $activeArrival->arrival_date,
+                            'departure_time' => $latestArrival->departure_time,
+                            'arrival_date' => $latestArrival->arrival_date,
                             'all_guests_arrived' => false,
                             'guests_arrived_count' => $insideCount,
                             'total_guests' => (int) $guestList->total_guests,

@@ -23,7 +23,6 @@ export default function QRCodeScanner() {
     const [recentScansList, setRecentScansList] = useState<any[]>([]);
     const [isCameraActive, setIsCameraActive] = useState(false);
     const [cameraError, setCameraError] = useState<string>('');
-    const [debugInfo, setDebugInfo] = useState<string>('');
     
     // Stats from backend API
     const [todayStats, setTodayStats] = useState<any>({
@@ -35,16 +34,12 @@ export default function QRCodeScanner() {
     const [isLoadingStats, setIsLoadingStats] = useState(false);
     const [isLoadingRecents, setIsLoadingRecents] = useState(false);
 
-    // Track scanned QR codes processed in this session (debug only)
-    const [scannedQRCodes, setScannedQRCodes] = useState<Set<string>>(new Set());
     const [processingCode, setProcessingCode] = useState<string | null>(null);
 
-    // Debug function to add debug info
+    // Internal logger disabled for production scanner UI.
     const addDebugInfo = (message: string, data?: any) => {
-        const timestamp = new Date().toLocaleTimeString();
-        const logLine = `[${timestamp}] ${message}${data ? ': ' + JSON.stringify(data, null, 2) : ''}`;
-        console.log(logLine);
-        setDebugInfo(prev => prev + '\n' + logLine);
+        void message;
+        void data;
     };
 
     // Test camera function
@@ -424,10 +419,6 @@ export default function QRCodeScanner() {
                 addDebugInfo('Action:', data.data?.action || 'arrived');
                 addDebugInfo('Guests inside now:', `${data.data?.guests_arrived_count ?? 0}/${data.data?.total_guests ?? 0}`);
 
-                // Debug trace only; no duplicate blocking logic.
-                setScannedQRCodes(prev => new Set([...prev, cleanCode]));
-                addDebugInfo('✓ QR code added to scanned list');
-
                 setScanResult('success');
                 setScannedBooking(data.data);
                 setValidationDetails({ allValid: true, issues: [] });
@@ -491,16 +482,6 @@ export default function QRCodeScanner() {
         setScanResult(null);
         setValidationDetails(null);
         setScanInput('');
-    };
-
-    // Clear all scanned codes (admin reset)
-    const handleClearScannedCodes = () => {
-        addDebugInfo('');
-        addDebugInfo('🔄 CLEARING ALL SCANNED CODES');
-        addDebugInfo('Previous count:', scannedQRCodes.size);
-        setScannedQRCodes(new Set());
-        addDebugInfo('✓ All scanned codes cleared - scanner reset');
-        addDebugInfo('');
     };
 
     // Fetch today's stats
@@ -587,48 +568,6 @@ export default function QRCodeScanner() {
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Main Scanner Section */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Debug Panel - Only show in development */}
-                        <div className="bg-gray-900 text-green-400 rounded-lg border border-gray-700 p-4 font-mono text-xs overflow-auto max-h-64">
-                            <div className="flex justify-between items-center mb-2">
-                                <div>
-                                    <strong className="text-white">🔍 Debug Console</strong>
-                                    <span className="ml-3 text-yellow-400 font-semibold">
-                                        Scanned Today: {scannedQRCodes.size}
-                                    </span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button 
-                                        onClick={() => setDebugInfo('')}
-                                        className="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded"
-                                    >
-                                        Clear Log
-                                    </button>
-                                    {scannedQRCodes.size > 0 && (
-                                        <button 
-                                            onClick={handleClearScannedCodes}
-                                            className="text-xs bg-red-700 hover:bg-red-600 px-2 py-1 rounded"
-                                            title="Reset the scanned QR codes list (admin only)"
-                                        >
-                                            Reset Codes
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                            {scannedQRCodes.size > 0 && (
-                                <div className="mb-2 p-2 bg-gray-800 rounded border border-green-600">
-                                    <strong className="text-white">✅ Scanned Codes:</strong>
-                                    <div className="mt-1 text-cyan-400">
-                                        {Array.from(scannedQRCodes).map((code, idx) => (
-                                            <div key={idx}>• {code}</div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                            <pre className="whitespace-pre-wrap break-all">
-                                {debugInfo || 'Waiting for actions... Click "Start Camera Scanner" to begin'}
-                            </pre>
-                        </div>
-
                         {/* Camera Feed - Enhanced UI */}
                         <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-6">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
