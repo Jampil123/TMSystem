@@ -196,20 +196,6 @@ export default function StaffDashboard({ attraction, capacityRule }: Props) {
         }
     };
 
-    // Fetch attractions for walk-in modal
-    const fetchAttractions = async () => {
-        try {
-            const response = await fetch('/admin/api/attractions');
-            const data = await response.json();
-            
-            if (data.success) {
-                setServices(data.data || []);
-            }
-        } catch (error) {
-            console.error('Error fetching attractions:', error);
-        }
-    };
-    
     // Fetch guides for walk-in modal
     const fetchGuides = async () => {
         try {
@@ -230,7 +216,6 @@ export default function StaffDashboard({ attraction, capacityRule }: Props) {
         fetchCapacityStatus();
         fetchTodayStats();
         fetchRecentArrivals();
-        fetchAttractions();
         fetchGuides();
         
         // Set up intervals for real-time updates
@@ -244,6 +229,21 @@ export default function StaffDashboard({ attraction, capacityRule }: Props) {
             clearInterval(arrivalsInterval);
         };
     }, []);
+
+    useEffect(() => {
+        setServices(
+            attraction
+                ? [
+                      {
+                          id: attraction.id,
+                          name: attraction.name,
+                          location: attraction.location ?? undefined,
+                          category: attraction.category ?? undefined,
+                      },
+                  ]
+                : [],
+        );
+    }, [attraction]);
 
     // Cleanup camera scanner on unmount
     useEffect(() => {

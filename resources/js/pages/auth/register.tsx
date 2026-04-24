@@ -37,7 +37,7 @@ export default function Register() {
 
                 {/* Admin Approval Notice */}
                 <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 text-sm text-amber-900 mb-6">
-                    <p className="font-semibold mb-2">⏳ Admin Approval Required</p>
+                    <p className="font-semibold mb-2">Admin Approval Required</p>
                     <p>Your account will be reviewed by our administrators. You will receive an email once your account is approved. This typically takes 24-48 hours.</p>
                 </div>
 

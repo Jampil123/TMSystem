@@ -15,6 +15,12 @@ use Illuminate\Support\Facades\DB;
 
 class QRCodeArrivalController extends Controller
 {
+    private function getSelectedAttractionId(Request $request): ?int
+    {
+        $attractionId = $request->session()->get('staff_attraction_id');
+        return $attractionId ? (int) $attractionId : null;
+    }
+
     /**
      * Verify guide presence and assignment status
      * 
@@ -302,23 +308,31 @@ class QRCodeArrivalController extends Controller
     /**
      * Get arrival statistics for today
      */
-    public function getTodayStats()
+    public function getTodayStats(Request $request)
     {
         try {
             $today = Carbon::today();
+            $attractionId = $this->getSelectedAttractionId($request);
 
-            $totalArrivals = ArrivalLog::whereDate('arrival_date', $today)->count();
-            $verifiedArrivals = ArrivalLog::whereDate('arrival_date', $today)
+            $baseQuery = ArrivalLog::whereDate('arrival_date', $today)
+                ->whereHas('guestList', function ($query) use ($attractionId) {
+                    if ($attractionId) {
+                        $query->where('attraction_id', $attractionId);
+                    }
+                });
+
+            $totalArrivals = (clone $baseQuery)->count();
+            $verifiedArrivals = (clone $baseQuery)
                 ->where('status', 'arrived')
                 ->count();
-            $deniedArrivals = ArrivalLog::whereDate('arrival_date', $today)
+            $deniedArrivals = (clone $baseQuery)
                 ->where('status', 'denied')
                 ->count();
 
             // Get total guests with safer query
             $totalGuests = 0;
             try {
-                $totalGuests = ArrivalLog::whereDate('arrival_date', $today)
+                $totalGuests = (clone $baseQuery)
                     ->where('status', 'arrived')
                     ->with('guestList')
                     ->get()
@@ -357,12 +371,18 @@ class QRCodeArrivalController extends Controller
     /**
      * Get recent arrivals for today
      */
-    public function getRecentArrivals()
+    public function getRecentArrivals(Request $request)
     {
         try {
             $today = Carbon::today();
+            $attractionId = $this->getSelectedAttractionId($request);
 
             $arrivals = ArrivalLog::whereDate('arrival_date', $today)
+                ->whereHas('guestList', function ($query) use ($attractionId) {
+                    if ($attractionId) {
+                        $query->where('attraction_id', $attractionId);
+                    }
+                })
                 ->with(['guestList.qrCodes', 'guide'])
                 ->orderBy('arrival_time', 'desc')
                 ->limit(20)
@@ -404,15 +424,21 @@ class QRCodeArrivalController extends Controller
      * Get real-time visitor count and capacity status
      * Returns the current number of visitors inside the site based on arrival_logs
      */
-    public function getVisitorCount()
+    public function getVisitorCount(Request $request)
     {
         try {
             $today = Carbon::today();
+            $attractionId = $this->getSelectedAttractionId($request);
 
             // Get current visitor count by summing total_guests from guest_lists
             // where the corresponding arrival_log has status = 'arrived' for today
             $currentVisitors = ArrivalLog::whereDate('arrival_date', $today)
                 ->where('status', 'arrived')
+                ->whereHas('guestList', function ($query) use ($attractionId) {
+                    if ($attractionId) {
+                        $query->where('attraction_id', $attractionId);
+                    }
+                })
                 ->with('guestList')
                 ->get()
                 ->sum(function ($arrival) {
@@ -468,15 +494,21 @@ class QRCodeArrivalController extends Controller
      * Get hourly capacity history for today
      * Returns cumulative visitor counts for each hour
      */
-    public function getCapacityHistory()
+    public function getCapacityHistory(Request $request)
     {
         try {
             $today = Carbon::today();
             $maximumCapacity = (int) env('SITE_MAXIMUM_CAPACITY', 350);
+            $attractionId = $this->getSelectedAttractionId($request);
             
             // Get all arrivals for today, ordered by time
             $arrivals = ArrivalLog::whereDate('arrival_date', $today)
                 ->where('status', 'arrived')
+                ->whereHas('guestList', function ($query) use ($attractionId) {
+                    if ($attractionId) {
+                        $query->where('attraction_id', $attractionId);
+                    }
+                })
                 ->get();
 
             // Build hourly history

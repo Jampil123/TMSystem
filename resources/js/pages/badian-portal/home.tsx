@@ -399,7 +399,7 @@ export default function Home() {
                                                     className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
                                                     style={{ backgroundColor: '#375534', border: '1px solid #6B9071' }}
                                                 >
-                                                    <span style={{ color: '#AEC3B0' }}>🏞️</span>
+                                                    <span style={{ color: '#AEC3B0' }}></span>
                                                 </div>
                                                 <div>
                                                     <h3 className="text-lg font-bold" style={{ color: '#E3EED4' }}>Attractions</h3>
@@ -505,7 +505,7 @@ export default function Home() {
                                                     className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
                                                     style={{ backgroundColor: '#375534', border: '1px solid #6B9071' }}
                                                 >
-                                                    <span style={{ color: '#AEC3B0' }}>🎯</span>
+                                                    <span style={{ color: '#AEC3B0' }}></span>
                                                 </div>
                                                 <div>
                                                     <h3 className="text-lg font-bold" style={{ color: '#E3EED4' }}>Activities</h3>

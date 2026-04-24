@@ -143,19 +143,10 @@ export default function Arrivals({ attraction, capacityRule }: Props) {
         }
     };
 
-    // Fetch attractions and guides for walk-in modal
-    const fetchServicesAndGuides = async () => {
+    // Fetch guides for walk-in modal (attraction is staff-selected from props)
+    const fetchGuides = async () => {
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            
-            // Fetch attractions (instead of services)
-            const attractionsRes = await fetch('/admin/api/attractions', {
-                headers: { 'X-CSRF-TOKEN': csrfToken || '' }
-            });
-            const attractionsData = await attractionsRes.json();
-            if (attractionsData.success && attractionsData.data) {
-                setServices(attractionsData.data);
-            }
 
             // Fetch approved guides
             const guidesRes = await fetch('/admin/api/guides', {
@@ -166,7 +157,7 @@ export default function Arrivals({ attraction, capacityRule }: Props) {
                 setGuides(guidesData.data);
             }
         } catch (error) {
-            console.error('Error fetching attractions and guides:', error);
+            console.error('Error fetching guides:', error);
         }
     };
 
@@ -261,10 +252,25 @@ export default function Arrivals({ attraction, capacityRule }: Props) {
 
     // Load services and guides when modal opens
     useEffect(() => {
-        if (showWalkInModal && services.length === 0) {
-            fetchServicesAndGuides();
+        if (showWalkInModal) {
+            setServices(
+                attraction
+                    ? [
+                          {
+                              id: attraction.id,
+                              name: attraction.name,
+                              location: attraction.location ?? undefined,
+                              category: attraction.category ?? undefined,
+                          },
+                      ]
+                    : [],
+            );
+
+            if (guides.length === 0) {
+                fetchGuides();
+            }
         }
-    }, [showWalkInModal]);
+    }, [showWalkInModal, attraction, guides.length]);
 
     // Calculate metrics
     const totalArrivals = arrivals.length;

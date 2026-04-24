@@ -344,7 +344,9 @@ class StaffArrivalidateController extends Controller
     {
         try {
             $validated = $request->validate([
-                'guest_name' => 'required|string|max:255',
+                'guest_name' => 'nullable|string|max:255',
+                'guest_names' => 'nullable|array',
+                'guest_names.*' => 'nullable|string|max:255',
                 'guest_count' => 'required|integer|min:1|max:500',
                 'service_id' => 'required|integer|exists:attractions,id',
                 'guide_id' => 'nullable|integer|exists:guides,id',
@@ -370,6 +372,22 @@ class StaffArrivalidateController extends Controller
                 $guestCount = $validated['guest_count'];
                 $localTourists = $validated['local_tourists'] ?? $guestCount;
                 $foreignTourists = $validated['foreign_tourists'] ?? 0;
+                $guestNames = collect($validated['guest_names'] ?? [])
+                    ->map(fn ($name) => trim((string) $name))
+                    ->filter()
+                    ->values()
+                    ->all();
+
+                if (count($guestNames) !== $guestCount) {
+                    if (!empty($validated['guest_name'])) {
+                        $guestNames = array_pad([$validated['guest_name']], $guestCount, 'Walk-in Guest');
+                    } else {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Please provide exactly {$guestCount} guest names.",
+                        ], 422);
+                    }
+                }
 
                 // Validate tourist counts
                 if (($localTourists + $foreignTourists) != $guestCount) {
@@ -395,31 +413,39 @@ class StaffArrivalidateController extends Controller
                     'foreign_tourists' => $foreignTourists,
                     'status' => 'Completed',  // Walk-in is immediate arrival
                     'notes' => 'walk-in',  // Flag for walk-in identification
-                    'guest_names' => [$validated['guest_name']],
+                    'guest_names' => $guestNames,
                 ]);
 
-                // Step 3: Generate unique QR code for walk-in
-                $qrToken = 'WALK-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6));
-                
-                $qrCode = GuestListQRCode::create([
-                    'guest_list_id' => $guestList->id,
-                    'token' => $qrToken,
-                    'status' => 'Used',  // Already used since walk-in is immediate arrival
-                    'expiration_date' => null,
-                    'used_at' => now(),
-                ]);
+                // Step 3: Generate one unique QR code per guest
+                $qrTokens = [];
+                foreach ($guestNames as $index => $name) {
+                    $qrToken = 'WALK-' . now()->format('YmdHis') . '-' . str_pad((string) ($index + 1), 3, '0', STR_PAD_LEFT) . '-' . Str::upper(Str::random(4));
+                    $qrTokens[] = $qrToken;
+
+                    GuestListQRCode::create([
+                        'guest_list_id' => $guestList->id,
+                        'guest_index' => $index,
+                        'token' => $qrToken,
+                        'status' => 'Used',  // Already used since walk-in is immediate arrival
+                        'expiration_date' => null,
+                        'used_at' => now(),
+                    ]);
+                }
 
                 // Step 4: Get entry fee from attraction
                 $entryFee = $attraction->entry_fee ?? 0;
-                $arrivalLog = ArrivalLog::create([
-                    'guest_list_id' => $guestList->id,
-                    'guest_name' => $validated['guest_name'],
-                    'guide_id' => $validated['guide_id'] ?? null,
-                    'arrival_time' => now()->format('H:i:s'),
-                    'arrival_date' => now()->toDateString(),
-                    'fee_paid' => $guestCount * $entryFee,
-                    'status' => 'arrived',
-                ]);
+                $arrivalLogs = [];
+                foreach ($guestNames as $name) {
+                    $arrivalLogs[] = ArrivalLog::create([
+                        'guest_list_id' => $guestList->id,
+                        'guest_name' => $name,
+                        'guide_id' => $validated['guide_id'] ?? null,
+                        'arrival_time' => now()->format('H:i:s'),
+                        'arrival_date' => now()->toDateString(),
+                        'fee_paid' => $entryFee,
+                        'status' => 'arrived',
+                    ]);
+                }
 
                 // Step 5: Notify about arrival (optional - catch errors)
                 try {
@@ -431,10 +457,10 @@ class StaffArrivalidateController extends Controller
 
                     if (class_exists('App\Services\NotificationService')) {
                         NotificationService::arrivalLogged(
-                            $validated['guest_name'],
+                            $guestNames[0],
                             $guestCount,
                             $guideName ?? 'Walk-in (No Guide)',
-                            $arrivalLog->log_id
+                            $arrivalLogs[0]->log_id
                         );
                     }
                 } catch (\Exception $notifyError) {
@@ -469,16 +495,18 @@ class StaffArrivalidateController extends Controller
                     'message' => '✅ Walk-in arrival logged successfully!',
                     'code' => 'WALK_IN_SUCCESS',
                     'data' => [
-                        'arrival_log_id' => $arrivalLog->log_id,
+                        'arrival_log_ids' => collect($arrivalLogs)->pluck('log_id')->values()->all(),
                         'guest_list_id' => $guestList->id,
-                        'guest_name' => $validated['guest_name'],
+                        'guest_name' => $guestNames[0],
+                        'guest_names' => $guestNames,
                         'guide_name' => $guideName ?? 'None',
-                        'arrival_time' => $arrivalLog->arrival_time,
-                        'arrival_date' => $arrivalLog->arrival_date,
+                        'arrival_time' => $arrivalLogs[0]->arrival_time,
+                        'arrival_date' => $arrivalLogs[0]->arrival_date,
                         'total_guests' => $guestCount,
-                        'qr_token' => $qrToken,
+                        'qr_token' => $qrTokens[0] ?? null,
+                        'qr_tokens' => $qrTokens,
                         'service_name' => $attraction->name ?? 'Unknown Attraction',
-                        'fee_paid' => $arrivalLog->fee_paid,
+                        'fee_paid' => $guestCount * $entryFee,
                         'is_walk_in' => true,
                     ],
                 ], 201);
