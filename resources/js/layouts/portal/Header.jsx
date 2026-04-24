@@ -17,9 +17,9 @@ const Header = () => {
       ]
     : [
         { name: 'Home', path: '/badian-portal' },
-        { name: 'About', path: '/badian-portal/about' },
-        { name: 'Activities', path: '/activities' },
-        { name: 'Attractions', path: '/badian-portal/attractions' },
+        { name: 'About', path: '/badian-portal?panel=about' },
+        { name: 'Activities', path: '/badian-portal?panel=activities' },
+        { name: 'Attractions', path: '/badian-portal?panel=attractions' },
       ];
 
   const isActive = (path) => url === path || (path.includes('?') && url.startsWith(path.split('?')[0]) && url.includes(path.split('?')[1]));
@@ -136,12 +136,12 @@ const Header = () => {
               ))}
               <li>
                 <Link
-                  href={isLoggedIn ? '/badian-portal/dashboard' : '/badian-portal/contact'}
+                  href={isLoggedIn ? '/badian-portal/portal-home' : '/badian-portal/contact'}
                   onClick={() => setIsMobileMenuOpen(false)}
                   style={{ backgroundColor: '#6B9071', color: '#0F2A1D' }}
                   className="block px-4 py-3 rounded-lg text-sm font-semibold mt-2 text-center transition-opacity hover:opacity-90"
                 >
-                  {isLoggedIn ? 'Open Dashboard' : 'Plan Your Visit'}
+                  {isLoggedIn ? 'Open Portal Home' : 'Plan Your Visit'}
                 </Link>
               </li>
             </ul>

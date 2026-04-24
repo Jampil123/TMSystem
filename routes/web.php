@@ -403,7 +403,7 @@ Route::get('dashboard', function () {
     
     return match($role) {
         'Tourist' => $portalContext === 'badian'
-            ? redirect()->route('badian.dashboard')
+            ? redirect()->route('badian.portal-home')
             : redirect()->route('tourist.dashboard'),
         'External Operator' => redirect()->route('operator.dashboard'),
         'LGU Officer' => redirect()->route('lgu-dot.dashboard'),

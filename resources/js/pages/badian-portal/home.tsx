@@ -15,8 +15,19 @@ type Attraction = {
     entry_fee?: number | string | null;
 };
 
+type Activity = {
+    id: number;
+    name: string;
+    location?: string | null;
+    description?: string | null;
+    image?: string | null;
+    image_url?: string | null;
+    price?: number | string | null;
+};
+
 type HomePageProps = {
     attractions?: Attraction[];
+    activities?: Activity[];
     auth?: {
         user?: {
             name?: string;
@@ -27,10 +38,41 @@ type HomePageProps = {
 
 export default function Home() {
     const { url } = usePage();
-    const { attractions = [], auth } = usePage<HomePageProps>().props;
+    const { attractions = [], activities = [], auth } = usePage<HomePageProps>().props;
     const isLoggedIn = Boolean(auth?.user);
     const params = new URLSearchParams(url.includes('?') ? url.split('?')[1] : '');
     const activePanel = params.get('panel') ?? 'video';
+    const isSessionOut = params.get('session') === 'out';
+    const fallbackActivities: Activity[] = [
+        {
+            id: 9001,
+            name: 'Canyoneering',
+            location: 'Badian - Kawasan Falls Canyoneering',
+            description:
+                "Join the fun at Kawasan Falls with an action packed canyoneering adventure. Feel the rush with water jumps and swings, rapid slides and rock traversing. It's a great day out for the Badian tourist (20 min ride from Badian).",
+            image:
+                'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80',
+        },
+        {
+            id: 9002,
+            name: 'Trekking',
+            location: 'Sunset at Osmena Peak overlooking Badian',
+            description:
+                "Join in our trek to Osmena Peak, the highest point on Cebu Island, while enjoying breathtaking views over Badian and the Tanton Strait. It's a fantastic view for any Badian tourist (1 hour ride from Badian).",
+            image:
+                'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1400&q=80',
+        },
+        {
+            id: 9003,
+            name: 'Snorkeling',
+            location: 'Corals at Pescador Island off the coast of Badian',
+            description:
+                'Enjoy a day out on a boat exploring marine life and snorkeling at Pescador Island. You can also cruise to Lambug Beach and enjoy the sunset over the Tanton Strait (30 min boat ride from Badian).',
+            image:
+                'https://images.unsplash.com/photo-1682686581498-5e85c7228119?auto=format&fit=crop&w=1400&q=80',
+        },
+    ];
+    const displayActivities = activities.length > 0 ? activities : fallbackActivities;
 
     const [attractionQuery, setAttractionQuery] = useState('');
     const [attractionCategory, setAttractionCategory] = useState<string>('all');
@@ -129,6 +171,19 @@ export default function Home() {
 
                                 {/* Form */}
                                 <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                                    {isSessionOut && !isLoggedIn && (
+                                        <div
+                                            className="rounded-lg px-4 py-3 text-sm"
+                                            style={{
+                                                backgroundColor: 'rgba(107, 144, 113, 0.2)',
+                                                border: '1px solid #6B9071',
+                                                color: '#E3EED4',
+                                            }}
+                                        >
+                                            Session out. You have been logged out.
+                                        </div>
+                                    )}
+
                                     {isLoggedIn && (
                                         <div
                                             className="rounded-lg px-4 py-3 text-sm"
@@ -224,11 +279,11 @@ export default function Home() {
 
                                     {isLoggedIn && (
                                         <Link
-                                            href="/badian-portal/dashboard"
+                                            href="/badian-portal/portal-home"
                                             className="w-full py-3 rounded-lg font-semibold text-sm text-center transition-opacity hover:opacity-90"
                                             style={{ backgroundColor: '#375534', color: '#E3EED4', border: '1px solid #6B9071' }}
                                         >
-                                            Go to Dashboard
+                                            Go to Portal Home
                                         </Link>
                                     )}
 
@@ -421,6 +476,89 @@ export default function Home() {
                                     </div>
 
                                     {/* Back link */}
+                                    <div className="px-7 py-4" style={{ borderTop: '1px solid #375534' }}>
+                                        <Link
+                                            href="/badian-portal"
+                                            className="inline-flex items-center gap-2 text-sm font-medium hover:underline"
+                                            style={{ color: '#6B9071' }}
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                            Back to Home
+                                        </Link>
+                                    </div>
+                                </div>
+                            ) : activePanel === 'activities' ? (
+                                /* Activities Panel (for guest/non-logged-in view) */
+                                <div
+                                    className="rounded-2xl shadow-2xl h-[520px] md:h-[620px] flex flex-col overflow-hidden"
+                                    style={{
+                                        border: '1px solid #375534',
+                                        backdropFilter: 'blur(8px)',
+                                        backgroundColor: 'rgba(15, 42, 29, 0.85)',
+                                    }}
+                                >
+                                    <div className="px-7 pt-7 pb-4" style={{ borderBottom: '1px solid #375534' }}>
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <div
+                                                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                                                    style={{ backgroundColor: '#375534', border: '1px solid #6B9071' }}
+                                                >
+                                                    <span style={{ color: '#AEC3B0' }}>🎯</span>
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-lg font-bold" style={{ color: '#E3EED4' }}>Activities</h3>
+                                                    <p className="text-xs" style={{ color: '#6B9071' }}>Badian, Cebu</p>
+                                                </div>
+                                            </div>
+                                            <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: '#375534', color: '#AEC3B0' }}>
+                                                {displayActivities.length} item{displayActivities.length === 1 ? '' : 's'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="px-7 py-6 flex-1 overflow-auto">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {displayActivities.map((activity) => (
+                                                    <div
+                                                        key={activity.id}
+                                                        className="rounded-2xl overflow-hidden"
+                                                        style={{ backgroundColor: '#0F2A1D', border: '1px solid #375534' }}
+                                                    >
+                                                        <div className="relative w-full h-36 overflow-hidden bg-gray-200">
+                                                            <img
+                                                                src={activity.image || activity.image_url || 'https://images.unsplash.com/photo-1526778548025-fa2f459cd5ce?auto=format&fit=crop&w=1400&q=80'}
+                                                                alt={activity.name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        </div>
+                                                        <div className="p-4">
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <div>
+                                                                    <h4 className="text-sm font-bold" style={{ color: '#E3EED4' }}>
+                                                                        {activity.name}
+                                                                    </h4>
+                                                                    <p className="text-xs mt-0.5" style={{ color: '#6B9071' }}>
+                                                                        {activity.location ?? 'Badian, Cebu'}
+                                                                    </p>
+                                                                </div>
+                                                                <span className="text-xs font-semibold" style={{ color: '#AEC3B0' }}>
+                                                                    {activity.price !== null && activity.price !== undefined && activity.price !== ''
+                                                                        ? `₱${Number(activity.price).toFixed(2)}`
+                                                                        : '—'}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs mt-3 leading-relaxed" style={{ color: '#AEC3B0' }}>
+                                                                {activity.description ?? 'No description available yet.'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                    </div>
+
                                     <div className="px-7 py-4" style={{ borderTop: '1px solid #375534' }}>
                                         <Link
                                             href="/badian-portal"

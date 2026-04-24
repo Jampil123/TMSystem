@@ -56,7 +56,7 @@ class TouristAuthController extends Controller
             $request->session()->put('portal_context', 'badian');
             $request->session()->forget('url.intended');
 
-            return redirect()->to('/badian-portal/dashboard');
+            return redirect()->to('/badian-portal/portal-home');
         }
 
         return back()
@@ -77,7 +77,7 @@ class TouristAuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/badian-portal');
+        return redirect('/badian-portal?session=out');
     }
 
     /**
