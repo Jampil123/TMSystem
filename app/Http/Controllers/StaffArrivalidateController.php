@@ -126,7 +126,8 @@ class StaffArrivalidateController extends Controller
         
         // Check if status indicates a valid booking (allow various status values)
         $status = strtolower($guestList->status);
-        $validStatus = in_array($status, ['approved', 'pending', 'pending entrance', 'arrived']);
+        // "completed" is also valid here so second scan can log departure.
+        $validStatus = in_array($status, ['approved', 'pending', 'pending entrance', 'arrived', 'completed']);
         
         $validation = [
             'validDate' => $validDate,
